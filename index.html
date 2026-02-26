@@ -1,14 +1,1763 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Master (Final v19 - Scroll Fixed & AI Design)</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Prop-types -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+    
+    <!-- Recharts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.5.0/Recharts.min.js"></script>
+
+    <!-- Babel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(241, 245, 249, 0.5); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+
+        .sticky-col-header { position: sticky; left: 0; z-index: 50 !important; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
+        .sticky-col-cell { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
+        .sticky-sum-cell { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(248, 250, 252, 0.95); backdrop-filter: blur(8px); }
+        .sticky-category { position: sticky; left: 0; z-index: 45 !important; }
+        .cursor-move { cursor: move; }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
 </head>
-<body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+<body class="bg-[#F8FAFC] text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+        // ResizeObserver Polyfill
+        if (typeof ResizeObserver === 'undefined') {
+            window.ResizeObserver = class ResizeObserver {
+                constructor(callback) { this.callback = callback; }
+                observe() {} unobserve() {} disconnect() {}
+            };
+        }
+
+        const { useState, useMemo, useEffect, useRef, useCallback } = React;
+        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area, Sector } = Recharts;
+
+        // --- Firebase Setup ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyCE0_4D3wqRhweC_ZUxtr3LjAWXNK9i_Q8",
+          authDomain: "yungki-sua.firebaseapp.com",
+          projectId: "yungki-sua",
+          storageBucket: "yungki-sua.firebasestorage.app",
+          messagingSenderId: "154724593376",
+          appId: "1:154724593376:web:7d3876ff45ddd4e02faa85"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'financial-app-v1';
+
+        const Icons = {
+            LayoutDashboard: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+            Table2: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>,
+            CreditCard: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>,
+            Banknote: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>,
+            TrendingUp: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+            TrendingDown: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>,
+            Activity: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
+            Plus: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+            Trash2: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
+            CalendarPlus: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M10 16h4"/><path d="M12 14v4"/></svg>,
+            ChevronRight: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
+            ChevronLeft: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
+            Bot: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>,
+            Target: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            Bell: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+            ThumbsUp: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/></svg>,
+            AlertCircle: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+            AlertTriangle: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
+            Download: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+            Upload: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
+            CandlestickChart: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5v4"/><rect width="4" height="6" x="7" y="9" rx="1"/><path d="M9 15v2"/><path d="M17 3v2"/><rect width="4" height="8" x="15" y="5" rx="1"/><path d="M17 13v3"/><path d="M3 3v18h18"/></svg>,
+            Calendar: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>,
+            GripVertical: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>,
+            Loader2: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>,
+            Eye: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+            EyeOff: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>,
+            Edit2: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
+            Check: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+            RefreshCw: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+            Info: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            Calculator: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+            Sparkles: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M3 7V3"/><path d="M7 5h-4"/></svg>,
+            AlertOctagon: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+            Wallet: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>,
+            DollarSign: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+            PieChart: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>,
+            Globe: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+            Minus: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/></svg>,
+            Cloud: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19c0-1.7-1.3-3-3-3h-11"/><path d="M7 16.5L3.5 19 7 21.5"/><path d="M6.5 5c0 1.7 1.3 3 3 3h11"/><path d="M17 7.5L20.5 5 17 2.5"/></svg>,
+            Copy: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
+            CheckCircle2: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>,
+            X: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 18 18"/></svg>,
+            Settings: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
+            Flag: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>,
+            ShieldCheck: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>,
+        };
+
+        // --- Error Boundary & Utilities ---
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+            static getDerivedStateFromError(error) { return { hasError: true, error }; }
+            componentDidCatch(error, errorInfo) { console.error("App Error:", error, errorInfo); }
+            handleReset = () => {
+                if (confirm("데이터를 초기화하고 복구하시겠습니까?")) {
+                    localStorage.removeItem('financialData');
+                    localStorage.removeItem('fm_sync_id'); 
+                    window.location.reload();
+                }
+            };
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+                            <Icons.AlertOctagon className="w-16 h-16 text-rose-500 mb-4" />
+                            <h2 className="text-2xl font-bold text-slate-800 mb-2">시스템 오류 발생</h2>
+                            <p className="text-slate-600 mb-6">오류 내용: {this.state.error?.message || "알 수 없는 오류"}</p>
+                            <button onClick={this.handleReset} className="bg-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-700 transition-colors shadow-lg">데이터 초기화 및 복구</button>
+                        </div>
+                    );
+                }
+                return this.props.children; 
+            }
+        }
+
+        const formatCurrency = (value) => {
+            if (typeof value !== 'number' || isNaN(value)) return '0';
+            return new Intl.NumberFormat('ko-KR', { style: 'decimal', maximumFractionDigits: 0 }).format(value);
+        };
+
+        const formatNumberWithCommas = (value) => {
+            if (!value && value !== 0) return '';
+            return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        };
+
+        const getPreviousMonth = (ym) => {
+            if (!ym || typeof ym !== 'string') return '2024-01';
+            const [y, m] = ym.split('-').map(Number);
+            if (isNaN(y) || isNaN(m)) return '2024-01';
+            let py = y - 1, pm = m; 
+            if (py < 2024) return ym;
+            return `${py}-${String(pm).padStart(2, '0')}`;
+        };
+
+        const isMonthKey = (key) => /^\d{4}-\d{2}$/.test(key);
+
+        const generateInitialData = () => {
+            const data = {};
+            data['2024-01'] = { assets: [], loans: [], budget: [], stockProfit: [] };
+            data.meta = { sortOrder: {}, dashboardMemo: '', hiddenRows: {}, goals: { loan: 30, invest: 30, netWorth: 1000000000 }, dashboardLayout: {} };
+            // Initialize salary data with expanded range (2014~)
+            const startYear = 2014;
+            const endYear = 2025;
+            const years = [];
+            for (let y = startYear; y <= endYear; y++) years.push(String(y));
+            
+            data.salary = {
+                years: years,
+                items: [
+                    { id: 1, name: '융기', values: {} },
+                    { id: 2, name: '수아', values: {} }
+                ]
+            };
+            // Initialize values to 0
+            data.salary.items.forEach(item => {
+                years.forEach(y => item.values[y] = 0);
+            });
+            
+            return data;
+        };
+
+        const ASSET_CATEGORIES = {
+            SAVINGS:       { label: '예적금',   color: '#3B82F6', bg: 'bg-blue-50',    text: 'text-blue-700' }, 
+            INVESTMENT:    { label: '주식',     color: '#8B5CF6', bg: 'bg-violet-50',  text: 'text-violet-700' }, 
+            COIN:          { label: '코인',     color: '#F59E0B', bg: 'bg-amber-50',   text: 'text-amber-700' }, 
+            REAL_ESTATE:   { label: '부동산',   color: '#10B981', bg: 'bg-emerald-50', text: 'text-emerald-700' }, 
+            PENSION:       { label: '연금',     color: '#EC4899', bg: 'bg-pink-50',    text: 'text-pink-700' }  
+        };
+
+        const BUDGET_CATEGORIES = {
+            INCOME:  { label: '수입', type: 'income',  bg: 'bg-sky-100',  text: 'text-sky-900' },
+            SAVING:  { label: '저축', type: 'expense', bg: 'bg-teal-50',  text: 'text-teal-700' }, 
+            INVEST:  { label: '투자', type: 'expense', bg: 'bg-indigo-50', text: 'text-indigo-700' }, 
+            EXPENSE: { label: '지출', type: 'expense', bg: 'bg-rose-50',  text: 'text-rose-700' },        
+        };
+
+        const normalizeCategory = (cat, type) => {
+             if (!cat) return '';
+            const upper = String(cat).toUpperCase().trim();
+            if (type === 'assets') {
+                if (['SAVING', 'SAVINGS', '예적금', '현금', '적금', '예금', '저축', 'BANK', 'DEPOSIT'].some(k => upper.includes(k))) return 'SAVINGS';
+                if (['INVEST', 'STOCK', '주식', '증권', '펀드'].some(k => upper.includes(k))) return 'INVESTMENT';
+                if (['COIN', 'CRYPTO', '코인', '비트코인'].some(k => upper.includes(k))) return 'COIN';
+                if (['ESTATE', 'REAL', '부동산', '전세', '보증금', '아파트', '주택', 'REALESTATE'].some(k => upper.includes(k))) return 'REAL_ESTATE';
+                if (['PENSION', 'IRP', '퇴직연금', '연금'].some(k => upper.includes(k))) return 'PENSION';
+                if (ASSET_CATEGORIES[upper]) return upper;
+                return 'SAVINGS'; 
+            }
+            if (type === 'budget') {
+                if (['수입', '급여', '월급'].some(k => upper.includes(k))) return 'INCOME';
+                if (['저축', '적금'].some(k => upper.includes(k)))          return 'SAVING';
+                if (['투자'].some(k => upper.includes(k)))                  return 'INVEST';
+                if (['지출', '소비', '카드'].some(k => upper.includes(k))) return 'EXPENSE';
+                if (BUDGET_CATEGORIES[upper]) return upper;
+                return 'EXPENSE'; 
+            }
+            if (type === 'loans') {
+                if (upper === 'LEASE' || upper.includes('전세')) return 'LEASE';
+                return 'LOAN';
+            }
+            return upper;
+        };
+
+        // ... (CSV Parsing functions remain same) ...
+        const parseCSVLine = (text) => {
+            const result = []; let current = ''; let inQuote = false;
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char === '"') inQuote = !inQuote;
+                else if (char === ',' && !inQuote) { result.push(current.trim()); current = ''; } 
+                else current += char;
+            }
+            result.push(current.trim());
+            return result.map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, ''));
+        };
+
+        const parseDateHeader = (header) => {
+            if (!header) return null;
+            let cleanHeader = header.replace(/^\uFEFF/, '').trim();
+            const matchStandard = cleanHeader.match(/^(\d{4})[-./](\d{1,2})$/);
+            if (matchStandard) return `${matchStandard[1]}-${String(matchStandard[2]).padStart(2, '0')}`;
+            const matchShort = cleanHeader.match(/^(\d{2})[-./](\d{1,2})$/);
+            if (matchShort) return `20${matchShort[1]}-${String(matchShort[2]).padStart(2, '0')}`;
+            if (/^\d{6}$/.test(cleanHeader)) return `${cleanHeader.substring(0,4)}-${cleanHeader.substring(4,6)}`;
+            const matchKorean = cleanHeader.match(/^(\d{4})년\s*(\d{1,2})월$/);
+            if (matchKorean) return `${matchKorean[1]}-${String(matchKorean[2]).padStart(2, '0')}`;
+            const months = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' };
+            const lowerHeader = cleanHeader.toLowerCase();
+            const matchEngYearFirst = lowerHeader.match(/^(\d{2})[-.\s]([a-z]{3})$/);
+            if (matchEngYearFirst && months[matchEngYearFirst[2]]) return `20${matchEngYearFirst[1]}-${months[matchEngYearFirst[2]]}`;
+            const matchEngMonthFirst = lowerHeader.match(/^([a-z]{3})[-.\s]?(\d{2,4})$/);
+            if (matchEngMonthFirst && months[matchEngMonthFirst[1]]) {
+                let year = matchEngMonthFirst[2]; if (year.length === 2) year = '20' + year;
+                return `${year}-${months[matchEngMonthFirst[1]]}`;
+            }
+            return null;
+        };
+
+        const processFileUpload = (file, currentData, type, onUpdate, setIsUploading) => {
+            if (!file) return;
+            setIsUploading(true);
+            const parseFile = (encoding) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsText(file, encoding);
+                });
+            };
+            const processText = (text) => {
+                if (text.charCodeAt(0) === 0xFEFF) text = text.substr(1);
+                const lines = text.split(/\r\n|\n|\r/).filter(line => line.trim() !== '');
+                if (lines.length < 2) return { success: false, message: "데이터가 부족합니다." };
+                const header = parseCSVLine(lines[0]);
+                const monthIndices = {};
+                header.forEach((col, idx) => {
+                    const parsedDate = parseDateHeader(col);
+                    if (parsedDate) monthIndices[parsedDate] = idx;
+                });
+                if (Object.keys(monthIndices).length === 0) return { success: false, message: "날짜 컬럼을 찾을 수 없습니다." };
+                const newData = JSON.parse(JSON.stringify(currentData));
+                Object.keys(monthIndices).forEach(m => {
+                    if (!newData[m]) newData[m] = { assets: [], loans: [], budget: [], stockProfit: [] };
+                });
+                for (let i = 1; i < lines.length; i++) {
+                    const row = parseCSVLine(lines[i]);
+                    if (row.length < 2) continue;
+                    let category = ''; let name = '';
+                    if (type === 'stockProfit') {
+                        const rawType = (row[0] || '').trim().toUpperCase();
+                        category = (rawType === 'PROFIT' || rawType === 'DIVIDEND') ? rawType : 'PROFIT'; 
+                        name = (row[1] || '').trim();
+                    } else {
+                        category = normalizeCategory((row[0] || '').trim(), type); 
+                        name = (row[1] || '').trim(); 
+                    }
+                    if (!name) continue;
+                    Object.entries(monthIndices).forEach(([month, colIdx]) => {
+                        const rawVal = row[colIdx] ? row[colIdx].replace(/,/g, '') : '0';
+                        const val = parseFloat(rawVal) || 0;
+                        if (!newData[month]) newData[month] = { assets: [], loans: [], budget: [], stockProfit: [] }; 
+                        const listKey = type === 'stockProfit' ? 'stockProfit' : type;
+                        if (!newData[month][listKey]) newData[month][listKey] = [];
+                        const list = newData[month][listKey];
+                        const existingItem = list.find(item => item.name === name);
+                        if (existingItem) {
+                            if (type === 'stockProfit') {
+                                if (category === 'DIVIDEND') existingItem.dividend = val; else existingItem.profit = val;
+                            } else {
+                                if (category) existingItem.category = category;
+                                if (type === 'assets') existingItem.value = val; else existingItem.amount = val;
+                            }
+                        } else {
+                            const newItem = { id: Date.now() + Math.random() + i, name };
+                            if (type === 'stockProfit') {
+                                newItem.profit = 0; newItem.dividend = 0;
+                                if (category === 'DIVIDEND') newItem.dividend = val; else newItem.profit = val;
+                            } else {
+                                if (category) newItem.category = category;
+                                if (type === 'assets') newItem.value = val; else newItem.amount = val;
+                            }
+                            list.push(newItem);
+                        }
+                    });
+                }
+                return { success: true, data: newData };
+            };
+            parseFile('UTF-8').then(text => {
+                let result = processText(text);
+                if (result.success) { onUpdate(result.data); alert('데이터 업로드 완료!'); setIsUploading(false); } 
+                else {
+                    parseFile('EUC-KR').then(textKR => {
+                        result = processText(textKR);
+                        if (result.success) { onUpdate(result.data); alert('데이터 업로드 완료! (EUC-KR)'); } 
+                        else { alert(`오류: ${result.message}\n(지원 형식: 2024-01, 24.01, 2024년 1월 등)`); }
+                        setIsUploading(false);
+                    }).catch(() => { alert(`오류: ${result.message}\n(지원 형식: 2024-01, 24.01, 2024년 1월 등)`); setIsUploading(false); });
+                }
+            }).catch(err => { console.error(err); alert("파일 읽기 실패"); setIsUploading(false); });
+        };
+
+        const downloadCSV = (data, type) => {
+            const months = Object.keys(data).filter(isMonthKey).sort();
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
+            let header = (type === 'stockProfit') ? "Type,Item" : "Category,Item";
+            months.forEach(m => header += `,${m}`);
+            csvContent += header + "\n";
+            const listKey = type === 'stockProfit' ? 'stockProfit' : type;
+            const uniqueItemsMap = new Map();
+            months.forEach(m => { (data[m]?.[listKey] || []).forEach(item => { if (!uniqueItemsMap.has(item.name)) uniqueItemsMap.set(item.name, item.category || ''); }); });
+            uniqueItemsMap.forEach((category, name) => {
+                if (type === 'stockProfit') {
+                    const rowProfit = [`PROFIT`, `"${name}"`];
+                    const rowDividend = [`DIVIDEND`, `"${name}"`];
+                    months.forEach(m => {
+                        const found = (data[m]?.[listKey] || []).find(i => i.name === name);
+                        rowProfit.push(found ? (found.profit || 0) : 0);
+                        rowDividend.push(found ? (found.dividend || 0) : 0);
+                    });
+                    csvContent += rowProfit.join(",") + "\n" + rowDividend.join(",") + "\n";
+                } else {
+                    const row = [`"${category}"`, `"${name}"`];
+                    months.forEach(m => {
+                        const found = (data[m]?.[listKey] || []).find(i => i.name === name);
+                        let val = 0;
+                        if (found) { if (type === 'assets') val = found.value; else val = found.amount; }
+                        row.push(val);
+                    });
+                    csvContent += row.join(",") + "\n";
+                }
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${type}_data.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // --- Base UI Components ---
+        const GlassCard = ({ children, className = "", onClick }) => (
+            <div onClick={onClick} className={`bg-white/90 backdrop-blur-xl border border-slate-100 shadow-sm rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${className}`}>
+                {children}
+            </div>
+        );
+
+        const GlassButton = ({ children, onClick, active, className = "", disabled }) => (
+            <button onClick={onClick} disabled={disabled} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all duration-200 border ${active ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-indigo-600'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
+                {children}
+            </button>
+        );
+
+        const CurrencyInput = ({ value, onChange, className }) => {
+            const [localValue, setLocalValue] = useState(formatNumberWithCommas(value));
+            const [isEditing, setIsEditing] = useState(false);
+            useEffect(() => { if (!isEditing) setLocalValue(formatNumberWithCommas(value)); }, [value, isEditing]);
+            const calculate = (expression) => {
+                try {
+                    const cleanExpr = expression.replace(/,/g, '');
+                    if (cleanExpr.startsWith('=')) { const formula = cleanExpr.substring(1); if (/[^0-9+\-*/().\s]/.test(formula)) return null; return new Function('return ' + formula)(); }
+                    return parseFloat(cleanExpr);
+                } catch (e) { return null; }
+            };
+            const handleBlur = () => {
+                setIsEditing(false);
+                const result = calculate(localValue);
+                if (result !== null && !isNaN(result) && isFinite(result)) { const finalVal = Math.round(result); onChange(finalVal); setLocalValue(formatNumberWithCommas(finalVal)); } 
+                else { setLocalValue(formatNumberWithCommas(value)); }
+            };
+            return (
+                <input type="text" value={localValue} onChange={(e) => setLocalValue(e.target.value)} onFocus={() => { setIsEditing(true); setLocalValue(value === 0 ? '' : String(value)); }} onBlur={handleBlur} onKeyDown={(e) => e.key === 'Enter' && e.target.blur()} className={`bg-transparent border-none outline-none w-full text-right font-medium text-slate-700 placeholder:text-slate-300 focus:ring-0 ${className}`} />
+            );
+        };
+
+        const SortableRow = ({ item, category, onDrop, children, isHidden, onToggleHide, onDelete, onRename }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [newName, setNewName] = useState(item.name);
+            useEffect(() => { setNewName(item.name); }, [item.name]);
+            const handleDragStart = (e) => { if (isEditing) { e.preventDefault(); return; } e.dataTransfer.setData('app/json', JSON.stringify({ name: item.name, category })); };
+            const handleDrop = (e) => { e.preventDefault(); try { const data = JSON.parse(e.dataTransfer.getData('app/json')); if (data.name !== item.name) onDrop(category, data.name, item.name, data.category); } catch (err) {} };
+            const saveName = () => { if (newName && newName !== item.name) onRename(item.name, newName); setIsEditing(false); };
+            return (
+                <tr draggable={!isEditing} onDragStart={handleDragStart} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} className={`group transition-colors border-b border-slate-100 last:border-0 hover:bg-white/60 ${isHidden ? 'opacity-40 bg-slate-100/50' : ''}`}>
+                    <td className="sticky-col-cell border-r border-slate-100 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] align-middle">
+                        <div className="flex items-center gap-2 p-3 min-w-[220px]">
+                            <div className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-white rounded-lg text-slate-400 transition-colors"><Icons.GripVertical className="w-4 h-4" /></div>
+                            <button onClick={(e) => { e.stopPropagation(); onToggleHide(); }} className="p-1.5 text-slate-400 hover:text-indigo-500 rounded-lg hover:bg-white transition-colors">{isHidden ? <Icons.EyeOff className="w-3.5 h-3.5"/> : <Icons.Eye className="w-3.5 h-3.5"/>}</button>
+                            {isEditing ? (
+                                <div className="flex items-center flex-1">
+                                    <input autoFocus type="text" value={newName} onChange={(e) => setNewName(e.target.value)} onBlur={saveName} onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) saveName(); }} className="bg-white/80 border border-indigo-200 rounded-lg px-2 py-1 text-sm w-full focus:outline-none shadow-sm text-left" onClick={(e) => e.stopPropagation()} />
+                                    <button onClick={saveName} className="p-1.5 text-emerald-600 ml-1"><Icons.Check className="w-3.5 h-3.5" /></button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center flex-1 min-w-0 cursor-text group/edit" onClick={() => setIsEditing(true)}>
+                                    <span className="truncate text-sm font-semibold text-slate-700 flex-1 text-left" title={item.name}>{item.name}</span>
+                                    <button className="p-1.5 text-slate-300 hover:text-indigo-600 opacity-0 group-hover/edit:opacity-100 transition-opacity"><Icons.Edit2 className="w-3.5 h-3.5" /></button>
+                                </div>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><Icons.Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                    </td>
+                    {children}
+                </tr>
+            );
+        };
+
+        const renderActiveShape = (props) => {
+            const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+            return (
+                <g>
+                    <Sector cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 6} startAngle={startAngle} endAngle={endAngle} fill={fill} />
+                    <Sector cx={cx} cy={cy} startAngle={startAngle} endAngle={endAngle} innerRadius={outerRadius + 6} outerRadius={outerRadius + 10} fill={fill} />
+                </g>
+            );
+        };
+
+        // --- Widget Components ---
+
+        const CompactScoreCard = ({ title, value, yoy, icon: Icon, colorClass, tooltip, breakdown }) => {
+            let trendColor = 'text-slate-400', trendBg = 'bg-slate-100', TrendIcon = Icons.TrendingUp;
+            if (yoy !== undefined && yoy !== null && !isNaN(yoy) && value !== 0) {
+                if (yoy > 0) { trendColor = 'text-rose-600'; trendBg = 'bg-rose-50'; TrendIcon = Icons.TrendingUp; } 
+                else if (yoy < 0) { trendColor = 'text-blue-600'; trendBg = 'bg-blue-50'; TrendIcon = Icons.TrendingDown; }
+            }
+            let valueColor = colorClass || 'text-slate-800';
+            if (title.includes('손익') || title.includes('수익')) { if (value > 0) valueColor = 'text-rose-600'; else if (value < 0) valueColor = 'text-blue-600'; }
+            return (
+                <GlassCard className="p-3 flex flex-col justify-between h-full min-h-[90px] relative overflow-visible group hover:-translate-y-1 transition-transform">
+                    <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center gap-1.5 relative"><div className={`p-1 rounded bg-slate-50 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors`}>{Icon ? <Icon className="w-3.5 h-3.5" /> : <Icons.Wallet className="w-3.5 h-3.5"/>}</div><span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</span>{(tooltip || breakdown) && (<div className="group/tip relative flex items-center"><Icons.Info className="w-3 h-3 text-slate-300 hover:text-indigo-500 cursor-help" /><div className="absolute left-0 top-full mt-2 w-48 bg-slate-800/95 backdrop-blur-sm text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl border border-slate-700/50">{breakdown ? (<div className="space-y-1.5"><div className="font-bold text-slate-300 border-b border-slate-600 pb-1 mb-1">{title} 구성</div>{breakdown.map((item, idx) => (<div key={idx} className="flex justify-between items-center"><span className="text-slate-400">{item.label}</span><span className={`font-mono ${item.value < 0 ? 'text-rose-400' : 'text-slate-200'}`}>{formatNumberWithCommas(item.value)}</span></div>))}</div>) : tooltip}</div></div>)}</div>
+                        {yoy !== undefined && !isNaN(yoy) && (<div className={`inline-flex items-center text-[9px] font-bold px-1 py-0.5 rounded-full ${trendBg} ${trendColor}`}><TrendIcon className="w-2.5 h-2.5 mr-0.5" />YoY {Math.abs(yoy).toFixed(1)}%</div>)}
+                    </div>
+                    <div><h3 className={`text-2xl font-black tracking-tight ${valueColor} truncate`}>{formatCurrency(value)}</h3></div>
+                </GlassCard>
+            );
+        };
+
+        const AnnualStockCard = ({ profit, dividend, year }) => (
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-3 shadow-sm flex flex-col justify-center h-full min-h-[90px] relative overflow-hidden hover:-translate-y-1 transition-transform hover:-translate-y-1 hover:shadow-lg">
+                 <div className="flex items-center gap-1.5 mb-2"><div className="p-1 rounded bg-white text-indigo-600 shadow-sm"><Icons.Calendar className="w-3 h-3"/></div><span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{year}년 누적 실적</span></div>
+                <div className="flex flex-col gap-1"><div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-400">실현손익</span><span className={`text-xs font-bold ${profit >= 0 ? 'text-rose-500' : 'text-blue-500'}`}>{formatCurrency(profit)}</span></div><div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-400">배당금</span><span className="text-xs font-bold text-slate-700">{formatCurrency(dividend)}</span></div><div className="w-full h-px bg-indigo-200/50 my-1"></div><div className="flex justify-between items-center"><span className="text-[10px] font-bold text-indigo-500">합계</span><span className={`text-sm font-black ${profit + dividend >= 0 ? 'text-rose-600' : 'text-blue-600'}`}>{formatCurrency(profit + dividend)}</span></div></div>
+            </div>
+        );
+
+        const SalarySheet = ({ data, onUpdate }) => {
+            const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: '융기', values: {} }, { id: 2, name: '수아', values: {} }] };
+            const [years, setYears] = useState(salaryData.years);
+            const fileInputRef = useRef(null);
+            
+            useEffect(() => { if (data.salary) setYears(data.salary.years); }, [data.salary]);
+
+            const handleValueChange = (itemId, year, val) => {
+                const newData = JSON.parse(JSON.stringify(data));
+                if (!newData.salary) newData.salary = salaryData;
+                const item = newData.salary.items.find(i => i.id === itemId);
+                if (item) { item.values[year] = val; onUpdate(newData); }
+            };
+
+            const addYear = () => {
+                const lastYear = parseInt(years[years.length - 1]);
+                const newYear = String(lastYear + 1);
+                const newData = JSON.parse(JSON.stringify(data));
+                if (!newData.salary) newData.salary = salaryData;
+                newData.salary.years.push(newYear);
+                newData.salary.items.forEach(item => item.values[newYear] = 0);
+                onUpdate(newData);
+            };
+
+            // [추가] 연도 삭제 핸들러
+            const handleDeleteYear = (yearToDelete) => {
+                if (!confirm(`${yearToDelete}년 데이터를 삭제하시겠습니까?`)) return;
+                const newData = JSON.parse(JSON.stringify(data));
+                if (!newData.salary) return;
+                
+                newData.salary.years = newData.salary.years.filter(y => y !== yearToDelete);
+                newData.salary.items.forEach(item => {
+                    if (item.values) delete item.values[yearToDelete];
+                });
+                onUpdate(newData);
+            };
+
+            const processSalaryFileUpload = (file) => {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    const lines = text.split(/\r\n|\n|\r/).filter(line => line.trim() !== '');
+                    if (lines.length < 2) { alert("데이터가 부족합니다."); return; }
+                    
+                    const header = lines[0].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+                    // Expect format: Name, 2014, 2015, ...
+                    const fileYears = header.slice(1);
+                    
+                    const newData = JSON.parse(JSON.stringify(data));
+                    if(!newData.salary) newData.salary = { years: [], items: [] };
+                    
+                    // Update years if needed, simply replace or merge? Let's merge unique years
+                    const allYears = Array.from(new Set([...newData.salary.years, ...fileYears])).sort();
+                    newData.salary.years = allYears;
+
+                    for(let i=1; i<lines.length; i++) {
+                        const row = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+                        if(row.length < 2) continue;
+                        const name = row[0];
+                        
+                        let item = newData.salary.items.find(it => it.name === name);
+                        if (!item) {
+                            item = { id: Date.now() + i, name: name, values: {} };
+                            newData.salary.items.push(item);
+                        }
+                        
+                        fileYears.forEach((year, idx) => {
+                           const val = parseFloat(row[idx+1] || 0);
+                           item.values[year] = val;
+                        });
+                    }
+                    onUpdate(newData);
+                    alert("연봉 데이터 업로드 완료!");
+                    if(fileInputRef.current) fileInputRef.current.value = '';
+                };
+                reader.readAsText(file);
+            };
+
+            const downloadSalaryCSV = () => {
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+                csvContent += "Name," + years.join(",") + "\n";
+                salaryData.items.forEach(item => {
+                    const row = [item.name];
+                    years.forEach(year => {
+                        row.push(item.values[year] || 0);
+                    });
+                    csvContent += row.join(",") + "\n";
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "salary_data.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const chartData = years.map(year => {
+                const point = { year };
+                salaryData.items.forEach(item => point[item.name] = item.values[year] || 0);
+                return point;
+            });
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <GlassCard className="p-6">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.TrendingUp className="w-5 h-5 text-indigo-600"/> 연봉 추이 (원천징수 기준)</h3>
+                        <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="year" fontSize={12} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={12} width={60} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '12px'}} /><Legend /><Line type="monotone" dataKey="융기" stroke="#3b82f6" strokeWidth={3} activeDot={{r:6}} /><Line type="monotone" dataKey="수아" stroke="#ec4899" strokeWidth={3} activeDot={{r:6}} /></LineChart></ResponsiveContainer></div>
+                    </GlassCard>
+                    <GlassCard className="flex flex-col overflow-hidden">
+                        <div className="p-4 bg-white/50 border-b border-white/50 flex justify-between items-center text-xs backdrop-blur-md">
+                            <div className="font-bold text-slate-600">연봉 데이터 입력 (단위: 원)</div>
+                            <div className="flex gap-2">
+                                <button onClick={addYear} className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-indigo-700 transition-colors"><Icons.Plus className="w-3.5 h-3.5"/> 연도 추가</button>
+                                <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={(e) => processSalaryFileUpload(e.target.files[0])} />
+                                <GlassButton onClick={() => fileInputRef.current.click()}><Icons.Upload className="w-3.5 h-3.5"/> 업로드</GlassButton>
+                                <GlassButton onClick={downloadSalaryCSV}><Icons.Download className="w-3.5 h-3.5"/> 다운로드</GlassButton>
+                            </div>
+                        </div>
+                        <div className="overflow-auto custom-scrollbar">
+                            <table className="min-w-full text-sm text-right">
+                                <thead className="bg-slate-50 text-slate-500">
+                                    <tr>
+                                        <th className="p-3 text-left w-32 font-bold border-r border-slate-200 sticky left-0 bg-slate-50 z-10">이름</th>
+                                        {years.map(year => (
+                                            <th key={year} className="p-3 min-w-[120px] font-medium border-r border-slate-200 last:border-0 group/th relative">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    {year}
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteYear(year); }}
+                                                        className="opacity-0 group-hover/th:opacity-100 p-1 hover:bg-rose-100 rounded text-slate-300 hover:text-rose-500 transition-all absolute right-2 top-1/2 -translate-y-1/2"
+                                                        title="연도 삭제"
+                                                    >
+                                                        <Icons.X className="w-3 h-3"/>
+                                                    </button>
+                                                </div>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {salaryData.items.map(item => (
+                                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="p-3 text-left font-bold text-slate-700 bg-white sticky left-0 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{item.name}</td>
+                                            {years.map(year => (
+                                                <td key={year} className="p-0 border-r border-slate-100 last:border-0">
+                                                    <CurrencyInput value={item.values[year] || 0} onChange={(val) => handleValueChange(item.id, year, val)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-50/30 outline-none"/>
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </GlassCard>
+                </div>
+            );
+        };
+
+        const AIAnalysisCard = ({ assets, liabilities, netWorth, income, expense, year, data }) => {
+            const debtRatio = assets > 0 ? (liabilities / assets) * 100 : 0;
+            const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
+            let assetStatus = "안정", assetColor = "text-emerald-500", assetBg = "bg-emerald-500";
+            if (debtRatio > 40) { assetStatus = "위험"; assetColor = "text-rose-500"; assetBg = "bg-rose-500"; } else if (debtRatio > 20) { assetStatus = "주의"; assetColor = "text-amber-500"; assetBg = "bg-amber-500"; }
+            let budgetStatus = "양호", budgetColor = "text-emerald-500", budgetBg = "bg-emerald-500";
+            if (income === 0) { budgetStatus = "정보 없음"; budgetColor = "text-slate-400"; budgetBg = "bg-slate-400"; } else if (savingsRate < 0) { budgetStatus = "적자"; budgetColor = "text-rose-500"; budgetBg = "bg-rose-500"; } else if (savingsRate < 20) { budgetStatus = "부족"; budgetColor = "text-amber-500"; budgetBg = "bg-amber-500"; }
+            
+            let adviceTitle = "안정적인 자산 관리 중입니다.";
+            let adviceDetail = "부채 비율과 저축률이 건전합니다. 현재 기조를 유지하며 투자를 늘려보세요.";
+            if (assetStatus === "위험") { adviceTitle = "재무 구조 개선이 시급합니다."; adviceDetail = "부채 비율이 위험 수준입니다. 고정 지출을 줄이고 부채 상환을 최우선으로 하세요."; } 
+            else if (budgetStatus === "적자") { adviceTitle = "지출 통제가 필요합니다."; adviceDetail = "수입보다 지출이 많습니다. 불필요한 소비를 점검하고 예산을 다시 세우세요."; } 
+            else if (assetStatus === "주의" || budgetStatus === "부족") { adviceTitle = "조금 더 노력이 필요합니다."; adviceDetail = "저축률을 높이거나 부채를 조금 더 줄이면 훨씬 안정적인 상태가 될 것입니다."; }
+
+            return (
+                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-700 text-white rounded-2xl shadow-xl h-full flex flex-col p-4 sm:p-5 group transition-all hover:shadow-2xl hover:scale-[1.01]">
+                    {/* Background Accents */}
+                    <div className="absolute top-0 right-0 w-56 h-56 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-purple-500/30 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+
+                    {/* Header */}
+                    <div className="relative z-10 flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-white/20 backdrop-blur-md rounded-xl border border-white/20 shadow-inner">
+                                <Icons.Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
+                            </div>
+                            <span className="font-bold text-base tracking-tight leading-tight">AI Asset Advisor</span>
+                        </div>
+                        <div className="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-lg border border-white/10 text-[10px] font-bold uppercase tracking-wider text-indigo-100">
+                           Beta
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="relative z-10 flex-1 flex flex-col min-h-0">
+                        {/* Score Section (Top) */}
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200 leading-none">
+                                {Math.max(0, 100 - (debtRatio * 0.5) + (savingsRate * 0.5)).toFixed(0)}
+                            </span>
+                            <span className="text-xs font-medium text-indigo-200 leading-tight">
+                                / 100 Financial Health Score
+                            </span>
+                        </div>
+
+                        {/* Metrics Grid (Middle) */}
+                        <div className="grid grid-cols-2 gap-2 mt-3">
+                            <div className="bg-black/20 rounded-lg p-2.5 backdrop-blur-sm border border-white/5">
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-[9px] text-indigo-200 font-bold uppercase tracking-wider">Debt Ratio</span>
+                                    <span
+                                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                            assetStatus === "안정"
+                                                ? "bg-emerald-500/20 text-emerald-300"
+                                                : assetStatus === "주의"
+                                                    ? "bg-amber-500/20 text-amber-300"
+                                                    : "bg-rose-500/20 text-rose-300"
+                                        }`}
+                                    >
+                                        {assetStatus}
+                                    </span>
+                                </div>
+                                <div className="flex items-end gap-1.5">
+                                    <span className="text-base font-bold text-white leading-tight">{debtRatio.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full bg-white/10 h-1 rounded-full mt-2 overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ${assetBg}`}
+                                        style={{ width: `${Math.min(debtRatio, 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="bg-black/20 rounded-lg p-2.5 backdrop-blur-sm border border-white/5">
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-[9px] text-indigo-200 font-bold uppercase tracking-wider">Savings</span>
+                                    <span
+                                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                            budgetStatus === "양호"
+                                                ? "bg-emerald-500/20 text-emerald-300"
+                                                : budgetStatus === "적자"
+                                                    ? "bg-rose-500/20 text-rose-300"
+                                                    : "bg-amber-500/20 text-amber-300"
+                                        }`}
+                                    >
+                                        {budgetStatus}
+                                    </span>
+                                </div>
+                                <div className="flex items-end gap-1.5">
+                                    <span className="text-base font-bold text-white leading-tight">{savingsRate.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full bg-white/10 h-1 rounded-full mt-2 overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ${budgetBg}`}
+                                        style={{ width: `${Math.min(Math.max(0, savingsRate), 100)}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Insight Banner (Bottom / One-line wide) */}
+                        <div className="mt-auto pt-3">
+                            <div
+                                className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-2 border border-white/10 shadow-lg flex items-center gap-2"
+                                title={`${adviceTitle} ${adviceDetail}`}  // 마우스 올리면 전체 내용 확인
+                            >
+                                <div className="w-2 h-2 rounded-full bg-yellow-300/90 shrink-0" />
+                                <p className="text-[11px] text-indigo-100 opacity-95 min-w-0 truncate leading-snug">
+                                    <span className="font-bold text-white">{adviceTitle}</span>
+                                    <span className="opacity-90"> {adviceDetail}</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MemoCard = ({ memo, onUpdate }) => {
+            const [text, setText] = useState(memo || '');
+            useEffect(() => { setText(memo || ''); }, [memo]);
+            const handleBlur = () => { if (text !== memo) onUpdate(text); };
+            return (
+                <GlassCard className="p-5 flex flex-col h-full"><div className="flex items-center gap-2 mb-3 text-slate-500 font-bold text-sm"><Icons.Edit2 className="w-4 h-4"/> 메모</div><textarea className="flex-1 w-full bg-slate-50/50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 outline-none resize-none transition-all custom-scrollbar placeholder:text-slate-400 text-slate-700" placeholder="자유롭게 메모를 남기세요..." value={text} onChange={(e) => setText(e.target.value)} onBlur={handleBlur}></textarea></GlassCard>
+            );
+        };
+
+        const MonthlyAssetRatioCard = ({ date, data }) => {
+             const stats = useMemo(() => {
+                const budget = data[date]?.budget || [];
+                const income = budget.filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const expense = budget.filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const saving = budget.filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const invest = budget.filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                return { income, expense, saving, invest };
+            }, [date, data]);
+            const getPercent = (val) => stats.income > 0 ? (val / stats.income) * 100 : 0;
+            const items = [ { label: '지출', value: stats.expense, color: '#fb7185', percent: getPercent(stats.expense) }, { label: '저축', value: stats.saving, color: '#34d399', percent: getPercent(stats.saving) }, { label: '투자', value: stats.invest, color: '#818cf8', percent: getPercent(stats.invest) } ];
+
+            return (
+                <GlassCard className="w-full p-5 h-full flex flex-col">
+                      <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><div className="p-2 rounded-lg bg-sky-100 text-sky-600"><Icons.PieChart className="w-5 h-5" /></div><div><h4 className="text-sm font-bold text-slate-700">월별 자산 비율</h4><p className="text-[10px] text-slate-500 font-medium">{date} 기준</p></div></div></div>
+                    <div className="flex w-full h-3 rounded-full overflow-hidden bg-slate-100 mb-4">{items.map((item, idx) => ( <div key={idx} className="h-full transition-all duration-1000" style={{ width: `${item.percent}%`, backgroundColor: item.color }} title={`${item.label} ${item.percent.toFixed(1)}%`}></div> ))}</div>
+                    <div className="space-y-1.5">{items.map((item) => (<div key={item.label} className="flex justify-between items-center text-xs"><span className="text-slate-500 font-bold flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor: item.color}}></div>{item.label}</span><div className="flex items-center gap-2"><span className="text-slate-400 font-mono text-[10px]">{formatCurrency(item.value)}</span><span className="font-bold text-slate-700 w-10 text-right">{item.percent.toFixed(1)}%</span></div></div>))}</div>
+                </GlassCard>
+            );
+        }
+
+        const LoanRepaymentCard = ({ year, data, onGoalChange, goalPercent }) => {
+        const { requiredRepayment, actualRepayment } = useMemo(() => {
+            let totalIncome = 0, actualRepayment = 0;
+            for (let m = 1; m <= 12; m++) {
+            const monthKey = `${year}-${String(m).padStart(2, '0')}`;
+            const monthData = data[monthKey];
+            if (monthData && monthData.budget) {
+                if ([3, 6, 9, 12].includes(m)) {
+                totalIncome += monthData.budget
+                    .filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME'))
+                    .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+                }
+                const repaymentItem = monthData.budget.find(b => b.name.replace(/\s/g, '') === '대출상환');
+                if (repaymentItem) actualRepayment += (Number(repaymentItem.amount) || 0);
+            }
+            }
+            return { requiredRepayment: totalIncome * (goalPercent / 100), actualRepayment };
+        }, [year, data, goalPercent]);
+
+        const progress = requiredRepayment > 0 ? Math.min((actualRepayment / requiredRepayment) * 100, 100) : 0;
+        const isSuccess = actualRepayment >= requiredRepayment;
+
+        // [추가] 목표-현재 차이
+        const gap = (requiredRepayment || 0) - (actualRepayment || 0);
+        const gapLabel = gap > 0 ? '남은 금액' : (gap < 0 ? '초과 달성' : '목표 달성');
+        const gapClass = gap > 0 ? 'text-rose-600' : (gap < 0 ? 'text-emerald-600' : 'text-slate-600');
+
+        return (
+            <GlassCard className="p-5 h-full flex flex-col justify-center relative">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-lg ${isSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                    {isSuccess ? <Icons.ThumbsUp className="w-5 h-5"/> : <Icons.AlertCircle className="w-5 h-5"/>}
+                </div>
+                <div><h4 className="text-sm font-bold text-slate-700">{year}년 대출 상환</h4></div>
+                </div>
+                <button
+                onClick={() => { const val = prompt("목표 비율(%)", goalPercent); if (val) onGoalChange(Number(val)); }}
+                className="text-slate-400 hover:text-indigo-600"
+                >
+                <Icons.Settings className="w-4 h-4"/>
+                </button>
+            </div>
+
+            <div className="w-full bg-slate-100 rounded-full h-2.5 mb-3 overflow-hidden">
+                <div className={`h-2.5 rounded-full transition-all duration-1000 ${isSuccess ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${progress}%` }}></div>
+            </div>
+
+            {/* [추가] 차이 표시 */}
+            <div className="flex items-center justify-between text-xs mb-3">
+                <span className="text-slate-400 font-bold uppercase tracking-wider">{gapLabel}</span>
+                <span className={`font-black ${gapClass}`}>
+                {formatCurrency(Math.abs(gap))}
+                </span>
+            </div>
+
+            <div className="flex justify-between items-center text-sm mt-auto">
+                <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">목표 ({goalPercent}%)</span>
+                <span className="font-bold text-slate-700">{formatCurrency(requiredRepayment)}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">현재</span>
+                <span className={`font-bold ${isSuccess ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(actualRepayment)}</span>
+                </div>
+            </div>
+            </GlassCard>
+        );
+        };
+
+        const InvestmentStatusCard = ({ year, data, onGoalChange, goalPercent }) => {
+        const { targetInvest, actualInvest } = useMemo(() => {
+            let totalIncome = 0, actualInvest = 0;
+            for (let m = 1; m <= 12; m++) {
+            const monthKey = `${year}-${String(m).padStart(2, '0')}`;
+            const monthData = data[monthKey];
+            if (monthData && monthData.budget) {
+                totalIncome += monthData.budget
+                .filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME'))
+                .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+
+                actualInvest += monthData.budget
+                .filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST'))
+                .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+            }
+            }
+            return { targetInvest: totalIncome * (goalPercent / 100), actualInvest };
+        }, [year, data, goalPercent]);
+
+        const progress = targetInvest > 0 ? Math.min((actualInvest / targetInvest) * 100, 100) : 0;
+        const isSuccess = actualInvest >= targetInvest;
+
+        // [추가] 목표-현재 차이
+        const gap = (targetInvest || 0) - (actualInvest || 0);
+        const gapLabel = gap > 0 ? '남은 금액' : (gap < 0 ? '초과 달성' : '목표 달성');
+        const gapClass = gap > 0 ? 'text-rose-600' : (gap < 0 ? 'text-emerald-600' : 'text-slate-600');
+
+        return (
+            <GlassCard className="p-5 h-full flex flex-col justify-center relative">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-lg ${isSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                    {isSuccess ? <Icons.ThumbsUp className="w-5 h-5"/> : <Icons.AlertCircle className="w-5 h-5"/>}
+                </div>
+                <div><h4 className="text-sm font-bold text-slate-700">{year}년 투자 현황</h4></div>
+                </div>
+                <button
+                onClick={() => { const val = prompt("목표 비율(%)", goalPercent); if (val) onGoalChange(Number(val)); }}
+                className="text-slate-400 hover:text-indigo-600"
+                >
+                <Icons.Settings className="w-4 h-4"/>
+                </button>
+            </div>
+
+            <div className="w-full bg-slate-100 rounded-full h-2.5 mb-3 overflow-hidden">
+                <div className={`h-2.5 rounded-full transition-all duration-1000 ${isSuccess ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${progress}%` }}></div>
+            </div>
+
+            {/* [추가] 차이 표시 */}
+            <div className="flex items-center justify-between text-xs mb-3">
+                <span className="text-slate-400 font-bold uppercase tracking-wider">{gapLabel}</span>
+                <span className={`font-black ${gapClass}`}>
+                {formatCurrency(Math.abs(gap))}
+                </span>
+            </div>
+
+            <div className="flex justify-between items-center text-sm mt-auto">
+                <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">목표 ({goalPercent}%)</span>
+                <span className="font-bold text-slate-700">{formatCurrency(targetInvest)}</span>
+                </div>
+                <div className="flex flex-col items-end">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">현재</span>
+                <span className={`font-bold ${isSuccess ? 'text-emerald-600' : 'text-rose-600'}`}>{formatCurrency(actualInvest)}</span>
+                </div>
+            </div>
+            </GlassCard>
+        );
+        };
+
+        const NetWorthGoalCard = ({ netWorth, onGoalChange, targetAmount }) => {
+            const progress = targetAmount > 0 ? Math.min((netWorth / targetAmount) * 100, 100) : 0;
+            const isSuccess = netWorth >= targetAmount;
+
+            return (
+                <GlassCard className="p-5 h-full flex flex-col justify-center relative">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className={`p-2 rounded-lg ${isSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                                <Icons.Flag className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-700">순자산 목표 (FIRE)</h4>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                const newGoal = prompt("목표 순자산 금액을 입력하세요 (원):", targetAmount);
+                                if (newGoal !== null && !isNaN(newGoal)) {
+                                    onGoalChange(Number(newGoal));
+                                }
+                            }}
+                            className="text-slate-400 hover:text-indigo-600"
+                        >
+                            <Icons.Settings className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-2.5 mb-4 overflow-hidden">
+                        <div className={`h-2.5 rounded-full transition-all duration-1000 ${isSuccess ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <div className="flex justify-between items-center text-sm mt-auto">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">목표 달성률</span>
+                            <span className="font-bold text-slate-700">{progress.toFixed(1)}%</span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">목표 금액</span>
+                            <span className="font-bold text-indigo-600">{formatCurrency(targetAmount)}</span>
+                        </div>
+                    </div>
+                </GlassCard>
+            );
+        };
+
+        const YearlyRatioCard = ({ year, data }) => {
+            const stats = useMemo(() => {
+                let totalIncome = 0, totalExpense = 0, totalSaving = 0, totalInvest = 0;
+                const months = Object.keys(data).filter(k => k.startsWith(year));
+                months.forEach(m => {
+                    const budget = data[m]?.budget || [];
+                    totalIncome += budget.filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    totalExpense += budget.filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    totalSaving += budget.filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    totalInvest += budget.filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                });
+                return { totalIncome, totalExpense, totalSaving, totalInvest };
+            }, [year, data]);
+
+            const getPercent = (val) => stats.totalIncome > 0 ? (val / stats.totalIncome) * 100 : 0;
+
+            const items = [
+                { label: '지출', value: stats.totalExpense, color: '#fb7185', percent: getPercent(stats.totalExpense) },
+                { label: '저축', value: stats.totalSaving, color: '#34d399', percent: getPercent(stats.totalSaving) },
+                { label: '투자', value: stats.totalInvest, color: '#818cf8', percent: getPercent(stats.totalInvest) },
+            ];
+
+            return (
+                <GlassCard className="w-full p-5 h-full flex flex-col">
+                    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><div className="p-2 rounded-lg bg-indigo-100 text-indigo-600"><Icons.PieChart className="w-5 h-5" /></div><div><h4 className="text-sm font-bold text-slate-700">{year}년 누적 비율</h4><p className="text-[10px] text-slate-500 font-medium">Annual Total</p></div></div></div>
+                    <div className="flex w-full h-3 rounded-full overflow-hidden bg-slate-100 mb-4">{items.map((item, idx) => ( <div key={idx} className="h-full transition-all duration-1000" style={{ width: `${item.percent}%`, backgroundColor: item.color }} title={`${item.label} ${item.percent.toFixed(1)}%`}></div> ))}</div>
+                    <div className="space-y-1.5">{items.map((item) => (<div key={item.label} className="flex justify-between items-center text-xs"><span className="text-slate-500 font-bold flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor: item.color}}></div>{item.label}</span><div className="flex items-center gap-2"><span className="text-slate-400 font-mono text-[10px]">{formatCurrency(item.value)}</span><span className="font-bold text-slate-700 w-10 text-right">{item.percent.toFixed(1)}%</span></div></div>))}</div>
+                </GlassCard>
+            );
+        };
+
+        // --- 8. Dashboard Subpage ---
+        const Dashboard = ({ data = {}, onUpdate }) => {
+            const safeData = data || {};
+            const allMonths = Object.keys(safeData).filter(isMonthKey).sort();
+            const [viewDate, setViewDate] = useState(() => {
+                const today = new Date();
+                const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                return allMonths.includes(key) ? key : (allMonths[allMonths.length - 1] || '2024-01');
+            });
+            const viewYear = viewDate.split('-')[0];
+            const todayStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // [수정] 아이템 순서 및 항목 추가 (invest 추가)
+            const [items, setItems] = useState([{ id: 'total' }, { id: 'net' }, { id: 'debt' }, { id: 'invest' }, { id: 'annual' }]);
+            const dragItem = useRef(null);
+            const dragOverItem = useRef(null);
+
+            const [heights, setHeights] = useState(safeData.meta?.layout?.heights || {});
+             useEffect(() => {
+                const timer = setTimeout(() => {
+                    if (Object.keys(heights).length > 0) {
+                        const newData = JSON.parse(JSON.stringify(safeData));
+                        if (!newData.meta) newData.meta = {};
+                        if (!newData.meta.layout) newData.meta.layout = {};
+                        newData.meta.layout.heights = heights;
+                    }
+                }, 1000);
+                return () => clearTimeout(timer);
+            }, [heights]);
+
+            const currentData = safeData[viewDate] || { assets: [], loans: [], budget: [], stockProfit: [] };
+            const prevYearDate = getPreviousMonth(viewDate);
+            const prevYearData = safeData[prevYearDate] || null;
+
+            const assetBreakdown = Object.keys(ASSET_CATEGORIES).map(catKey => {
+                const sum = (currentData.assets || []).filter(a => a.category === catKey).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
+                return { label: ASSET_CATEGORIES[catKey].label, value: sum };
+            }).filter(i => i.value > 0);
+
+            const totalAssets = (currentData.assets || []).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
+            const prevTotalAssets = prevYearData ? (prevYearData.assets || []).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0) : 0;
+            const liabilitiesExclJeonse = (currentData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0);
+            const prevLiabilities = prevYearData ? (prevYearData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0) : 0;
+            const netWorth = totalAssets - liabilitiesExclJeonse;
+            const prevNetWorth = prevTotalAssets - prevLiabilities;
+            const calcYoY = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / prev) * 100 : 0;
+            
+            // [신규 계산] 주식 평가액 (INVESTMENT 카테고리 합계)
+            const totalStockAssets = (currentData.assets || [])
+                .filter(a => a.category === 'INVESTMENT')
+                .reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
+            const prevTotalStockAssets = prevYearData ? (prevYearData.assets || [])
+                .filter(a => a.category === 'INVESTMENT')
+                .reduce((acc, cur) => acc + (Number(cur.value) || 0), 0) : 0;
+
+
+            const annualData = useMemo(() => {
+                const months = allMonths.filter(m => m.startsWith(viewYear));
+                let profit = 0, dividend = 0;
+                months.forEach(m => {
+                    const d = safeData[m]?.stockProfit || [];
+                    profit += d.reduce((sum, i) => sum + (Number(i.profit) || 0), 0);
+                    dividend += d.reduce((sum, i) => sum + (Number(i.dividend) || 0), 0);
+                });
+                return { profit, dividend, year: viewYear };
+            }, [safeData, viewYear, allMonths]);
+
+            const totalIncome = (currentData.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+            const totalExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+
+            const fullGrowthData = allMonths.map(month => {
+                const d = safeData[month];
+                const assets = (d?.assets || []).reduce((a,b)=>a+(Number(b.value) || 0), 0);
+                const loans = (d?.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
+                return { name: month, 총자산: assets, 순자산: assets - loans, 부채비율: assets > 0 ? parseFloat(((loans / assets) * 100).toFixed(1)) : 0 };
+            });
+
+            const recentMonths = allMonths.slice(Math.max(0, allMonths.indexOf(viewDate) - 11), allMonths.indexOf(viewDate) + 1);
+            const assetGrowthData = recentMonths.map(month => {
+                const d = safeData[month];
+                const result = { name: month };
+                Object.keys(ASSET_CATEGORIES).forEach(key => {
+                    result[ASSET_CATEGORIES[key].label] = (d?.assets || []).filter(a => a.category === key).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
+                });
+                return result;
+            });
+            
+            const cashFlowData = recentMonths.map(month => {
+                const d = safeData[month];
+                return {
+                    name: month,
+                    수입: (d?.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
+                    지출: (d?.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
+                    저축: (d?.budget || []).filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
+                    투자: (d?.budget || []).filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
+                };
+            });
+            
+            const portfolioData = Object.keys(ASSET_CATEGORIES).map(catKey => {
+                const categoryItems = (currentData.assets || []).filter(a => a.category === catKey);
+                const val = categoryItems.reduce((a,b)=>a+(Number(b.value) || 0), 0);
+                return { name: ASSET_CATEGORIES[catKey].label, value: val, color: ASSET_CATEGORIES[catKey].color };
+            }).filter(i => i.value > 0);
+            
+            const [activeItem, setActiveIndex] = useState(null); 
+
+            const handleDragStart = (e, index) => { dragItem.current = index; };
+            const handleDragEnter = (e, index) => {
+              dragOverItem.current = index;
+              const newItems = [...items];
+              const dragItemContent = newItems[dragItem.current];
+              newItems.splice(dragItem.current, 1);
+              newItems.splice(dragOverItem.current, 0, dragItemContent);
+              dragItem.current = index;
+              setItems(newItems);
+            };
+            const handleDragEnd = (e) => {
+              dragItem.current = null;
+              dragOverItem.current = null;
+              const newData = JSON.parse(JSON.stringify(safeData));
+              if (!newData.meta) newData.meta = {};
+              if (!newData.meta.layout) newData.meta.layout = {};
+              newData.meta.layout.scoreCardOrder = items.map(item => item.id);
+              onUpdate(newData);
+            };
+
+            useEffect(() => {
+                if (safeData.meta?.layout?.scoreCardOrder) {
+                    const savedOrder = safeData.meta.layout.scoreCardOrder;
+                    const newItems = savedOrder.map(id => items.find(i => i.id === id)).filter(Boolean);
+                    if (newItems.length === items.length) setItems(newItems);
+                }
+            }, []);
+
+            const updateGoal = (type, value) => {
+                const newData = JSON.parse(JSON.stringify(safeData));
+                if (!newData.meta) newData.meta = {};
+                if (!newData.meta.goals) newData.meta.goals = { loan: 30, invest: 30, netWorth: 1000000000 };
+                newData.meta.goals[type] = value;
+                onUpdate(newData);
+            };
+
+            const loanGoal = safeData.meta?.goals?.loan || 30;
+            const investGoal = safeData.meta?.goals?.invest || 30;
+            const netWorthGoal = safeData.meta?.goals?.netWorth || 1000000000;
+
+            const handleMonthChange = (direction) => {
+                const idx = allMonths.indexOf(viewDate);
+                if (idx === -1) return;
+                const newIdx = idx + direction;
+                if (newIdx >= 0 && newIdx < allMonths.length) setViewDate(allMonths[newIdx]);
+            };
+
+            const renderScoreCard = (id) => {
+                 switch(id) {
+                    case 'total': return <CompactScoreCard title="총 자산" value={totalAssets} yoy={calcYoY(totalAssets, prevTotalAssets)} icon={Icons.Wallet} breakdown={assetBreakdown}/>;
+                    case 'net': return <CompactScoreCard title="순자산" value={netWorth} yoy={calcYoY(netWorth, prevNetWorth)} icon={Icons.Sparkles} colorClass="text-emerald-600" />;
+                    case 'debt': return <CompactScoreCard title="부채 (전세제외)" value={liabilitiesExclJeonse} yoy={calcYoY(liabilitiesExclJeonse, prevLiabilities)} icon={Icons.CreditCard} tooltip="부채" colorClass="text-rose-600" />;
+                    case 'invest': return <CompactScoreCard title="주식 평가액" value={totalStockAssets} yoy={calcYoY(totalStockAssets, prevTotalStockAssets)} icon={Icons.CandlestickChart} colorClass="text-violet-600" />;
+                    case 'annual': return <AnnualStockCard profit={annualData.profit} dividend={annualData.dividend} year={annualData.year} />;
+                    default: return null;
+                }
+            }
+
+            return (
+                <div className="space-y-6 pb-12 animate-fade-in">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+                        <div className="flex items-center gap-4"><h2 className="text-2xl font-black text-slate-800 tracking-tighter">Dashboard</h2><div className="h-6 w-px bg-slate-300 mx-2"></div><p className="text-slate-500 text-sm font-bold flex items-center gap-2">{todayStr}<span className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-400 font-mono">Today</span></p></div>
+                        <div className="flex items-center gap-4 bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-200"><button onClick={() => handleMonthChange(-1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"><Icons.ChevronLeft className="w-4 h-4"/></button><span className="text-base font-extrabold text-indigo-600 min-w-[80px] text-center">{viewDate}</span><button onClick={() => handleMonthChange(1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"><Icons.ChevronRight className="w-4 h-4"/></button></div>
+                    </div>
+
+                    {/* Row 1: Scorecards (5개 배치) */}
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                        {items.map((item, index) => (
+                            <div 
+                                key={item.id} 
+                                draggable 
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => e.preventDefault()}
+                                className="cursor-move"
+                            >
+                                {renderScoreCard(item.id)}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Row 2: 전체 자산 흐름 (왼쪽), 대출/투자 현황 (오른쪽 분할) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 h-[400px]">
+                                <GlassCard className="p-6 h-full flex flex-col">
+                                    <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4"><Icons.Activity className="w-5 h-5 text-indigo-600"/> 전체 자산 흐름</h3>
+                                    <div className="flex-1"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={fullGrowthData}><defs><linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/><stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={10} axisLine={false} tickLine={false} /><YAxis yAxisId="left" fontSize={10} width={45} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#cbd5e1" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ borderRadius: '12px' }} /><Area yAxisId="left" type="monotone" dataKey="총자산" stroke="#4F46E5" strokeWidth={2} fill="url(#colorTotal)" /><Line yAxisId="left" type="monotone" dataKey="순자산" stroke="#10B981" strokeWidth={2} dot={false} /><Line yAxisId="right" type="monotone" dataKey="부채비율" stroke="#f43f5e" strokeWidth={1.5} strokeDasharray="4 4" dot={false} /></ComposedChart></ResponsiveContainer></div>
+                                </GlassCard>
+                        </div>
+                        <div className="lg:col-span-1 flex flex-col gap-6 h-[400px]">
+                            <div className="flex-1">
+                                <LoanRepaymentCard year={viewYear} data={safeData} goalPercent={loanGoal} onGoalChange={(val) => updateGoal('loan', val)} />
+                            </div>
+                            <div className="flex-1">
+                                <InvestmentStatusCard year={viewYear} data={safeData} goalPercent={investGoal} onGoalChange={(val) => updateGoal('invest', val)} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Row 3: 자산별 성장, 자금 흐름, 자산 포트폴리오 */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="h-64"><GlassCard className="p-6 h-full"><div className="flex items-center justify-between mb-4"><h3 className="font-bold text-slate-800 text-lg flex items-center gap-2"><Icons.Activity className="w-5 h-5 text-indigo-600"/> 자산별 성장</h3></div><div className="h-5/6"><ResponsiveContainer width="100%" height="100%"><LineChart data={assetGrowthData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={5} axisLine={false} tickLine={false} /><YAxis fontSize={10} width={40} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ borderRadius: '8px', padding: '6px 10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />{Object.keys(ASSET_CATEGORIES).map((key) => (<Line key={key} type="monotone" dataKey={ASSET_CATEGORIES[key].label} stroke={ASSET_CATEGORIES[key].color} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />))}</LineChart></ResponsiveContainer></div></GlassCard></div>
+                        <div className="h-64"><GlassCard className="p-6 h-full"><h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4"><Icons.Banknote className="w-5 h-5 text-sky-500"/> 자금 흐름</h3><div className="h-5/6"><ResponsiveContainer width="100%" height="100%"><BarChart data={cashFlowData} barGap={4}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={40} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} /><RechartsTooltip cursor={{fill: '#f8fafc'}} formatter={(val) => formatCurrency(val)} contentStyle={{ borderRadius: '8px', padding: '6px 10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} /><Legend wrapperStyle={{fontSize:'11px'}} /><Bar dataKey="수입" fill="#38bdf8" radius={[4,4,0,0]} barSize={12} /><Bar dataKey="지출" stackId="out" fill="#fb7185" barSize={12} /><Bar dataKey="저축" stackId="out" fill="#34d399" barSize={12} /><Bar dataKey="투자" stackId="out" fill="#818cf8" radius={[4,4,0,0]} barSize={12} /></BarChart></ResponsiveContainer></div></GlassCard></div>
+                        <div className="h-64"><GlassCard className="p-4 flex flex-col h-full"><h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 mb-2"><Icons.PieChart className="w-5 h-5 text-pink-500"/> 자산 포트폴리오</h3><div className="flex-1 flex items-center gap-2 min-h-0"><div className="w-2/5 h-full relative"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={portfolioData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem === null ? -1 : activeItem} activeShape={renderActiveShape}>{portfolioData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}</Pie></PieChart></ResponsiveContainer><div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span className="text-[10px] font-bold text-slate-400">Total</span></div></div><div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar"><div className="space-y-1">{portfolioData.map((entry, index) => (<div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === index ? 'bg-slate-50' : ''}`} onMouseEnter={() => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)}><div className="flex items-center gap-1.5 overflow-hidden"><div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div><span className="font-bold text-slate-600 truncate" title={entry.name}>{entry.name}</span></div><div className="flex items-center gap-2 flex-shrink-0"><span className="font-bold text-slate-700">{formatCurrency(entry.value)}</span><span className="text-slate-400 font-mono w-8 text-right">{((entry.value/totalAssets)*100).toFixed(0)}%</span></div></div>))}</div></div></div></GlassCard></div>
+                    </div>
+
+                    {/* Row 4: 월별 자산 비율, 누적 자산 비율 (1:1) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="h-50"><MonthlyAssetRatioCard date={viewDate} data={safeData} /></div>
+                        <div className="h-50"><YearlyRatioCard year={viewYear} data={safeData} /></div>
+                    </div>
+
+                    {/* Row 5: AI 자산 분석 (Full-width wide) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 -mt-2">
+                        <div className="h-64 lg:col-span-3">
+                            <AIAnalysisCard assets={totalAssets} liabilities={liabilitiesExclJeonse} netWorth={netWorth} income={totalIncome} expense={totalExpense} year={viewYear} data={safeData} />
+                        </div>
+                    </div>
+
+                    {/* Row 7: 순자산 목표, 메모 (3열) */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                         <div className="h-50"><NetWorthGoalCard netWorth={netWorth} targetAmount={safeData.meta?.goals?.netWorth || 1000000000} onGoalChange={(val) => updateGoal('netWorth', val)} /></div>
+                         <div className="h-50"><MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} /></div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 9. Spreadsheet Component ---
+        const GenericSpreadsheet = ({ data = {}, type, onUpdate, categories, hasCategory }) => {
+            const safeData = data || {};
+            const months = Object.keys(safeData).filter(isMonthKey).sort();
+            const listKey = (type === 'stockProfit') ? 'stockProfit' : type;
+            const [newItemName, setNewItemName] = useState('');
+            const [targetCategory, setTargetCategory] = useState(hasCategory ? Object.keys(categories)[0] : '');
+            const [isUploading, setIsUploading] = useState(false);
+            const fileInputRef = useRef(null);
+            
+            const [hiddenItems, setHiddenItems] = useState(() => {
+                const savedHidden = safeData.meta?.hiddenRows?.[type];
+                return new Set(savedHidden || []);
+            });
+            
+            const [showHidden, setShowHidden] = useState(false);
+            const [orderedItems, setOrderedItems] = useState({});
+
+            useEffect(() => {
+                const savedHidden = safeData.meta?.hiddenRows?.[type];
+                if (savedHidden) {
+                    setHiddenItems(new Set(savedHidden));
+                }
+            }, [safeData.meta?.hiddenRows, type]);
+
+            const toggleHide = (name) => { 
+                const next = new Set(hiddenItems); 
+                if (next.has(name)) next.delete(name); 
+                else next.add(name); 
+                
+                setHiddenItems(next); 
+
+                const newData = JSON.parse(JSON.stringify(safeData));
+                if (!newData.meta) newData.meta = {};
+                if (!newData.meta.hiddenRows) newData.meta.hiddenRows = {};
+                newData.meta.hiddenRows[type] = Array.from(next);
+                onUpdate(newData);
+            };
+
+            useEffect(() => {
+                const currentUnique = new Set();
+                const tempGroups = hasCategory ? Object.fromEntries(Object.keys(categories).map(k => [k, []])) : { ALL: [] };
+                
+                Object.values(safeData).forEach(m => { (m[listKey] || []).forEach(i => {
+                    if (!currentUnique.has(i.name)) {
+                        currentUnique.add(i.name);
+                        const cat = hasCategory ? i.category : 'ALL';
+                        const validCat = (hasCategory && categories[cat]) ? cat : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                        
+                        if(tempGroups[validCat]) {
+                            tempGroups[validCat].push({ name: i.name, category: validCat });
+                        }
+                    }
+                }); });
+
+                setOrderedItems(prev => {
+                    const next = { ...prev }; 
+                    let changed = false;
+                    const keys = hasCategory ? Object.keys(categories) : ['ALL'];
+                    
+                    keys.forEach(cat => {
+                        const itemsInGroup = tempGroups[cat] || [];
+                        itemsInGroup.sort((a, b) => a.name.localeCompare(b.name));
+
+                        if (JSON.stringify(itemsInGroup) !== JSON.stringify(next[cat])) { next[cat] = itemsInGroup; changed = true; }
+                    });
+                    return changed ? next : prev;
+                });
+            }, [safeData, listKey, hasCategory, categories]);
+
+            const handleReorder = (targetCat, fromName, toName, sourceCat) => {
+                if (fromName === toName && targetCat === sourceCat) return;
+                
+                if (hasCategory && targetCat !== sourceCat) {
+                    if(confirm(`'${fromName}' 항목을 '${categories[sourceCat]?.label}'에서 '${categories[targetCat]?.label}'(으)로 이동하시겠습니까?`)) {
+                        const newData = JSON.parse(JSON.stringify(safeData));
+                        
+                        Object.keys(newData).forEach(month => {
+                            if (isMonthKey(month) && newData[month][listKey]) {
+                                const item = newData[month][listKey].find(i => i.name === fromName);
+                                if (item) {
+                                    item.category = targetCat;
+                                }
+                            }
+                        });
+                        
+                        onUpdate(newData);
+                    }
+                }
+            };
+
+            const handleDeleteRow = (name) => { if (!confirm(`'${name}' 항목을 정말 삭제하시겠습니까?`)) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) newData[m][listKey] = newData[m][listKey].filter(i => i.name !== name); }); onUpdate(newData); };
+            
+            const handleRename = (oldN, newN) => { 
+                if (!newN || oldN === newN) return;
+                const newData = JSON.parse(JSON.stringify(safeData)); 
+                
+                Object.keys(newData).forEach(m => { 
+                    if (isMonthKey(m) && newData[m][listKey]) { 
+                        const item = newData[m][listKey].find(i => i.name === oldN); 
+                        if (item) item.name = newN; 
+                    } 
+                }); 
+                onUpdate(newData); 
+            };
+            
+            const handleCellChange = (month, itemName, field, val, itemCategory) => {
+                const newData = JSON.parse(JSON.stringify(safeData));
+                if (!newData[month][listKey]) newData[month][listKey] = [];
+                const list = newData[month][listKey];
+                const idx = list.findIndex(i => i.name === itemName);
+                if (idx >= 0) { list[idx][field] = val; } 
+                else {
+                    const newItem = { id: Date.now(), name: itemName };
+                    if (hasCategory) newItem.category = itemCategory || targetCategory || Object.keys(categories)[0];
+                    if(type === 'assets') newItem.value = 0; else if(type === 'stockProfit') { newItem.profit = 0; newItem.dividend = 0; } else newItem.amount = 0;
+                    newItem[field] = val; list.push(newItem);
+                }
+                onUpdate(newData);
+            };
+            const handleAddRow = () => { if(!newItemName) return; const lastMonth = months[months.length-1]; if (lastMonth) { const defaultField = type === 'assets' ? 'value' : type === 'stockProfit' ? 'profit' : 'amount'; handleCellChange(lastMonth, newItemName, defaultField, 0); } setNewItemName(''); };
+            
+            const handleAddMonth = () => { 
+                const last = months[months.length - 1]; 
+                let newKey;
+                if (!last) {
+                    const now = new Date();
+                    newKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                } else {
+                    const [y, m] = last.split('-').map(Number); 
+                    let ny = y, nm = m + 1; 
+                    if (nm > 12) { ny++; nm = 1; } 
+                    newKey = `${ny}-${String(nm).padStart(2, '0')}`; 
+                }
+                
+                const newData = JSON.parse(JSON.stringify(safeData)); 
+                if (!newData[newKey]) newData[newKey] = { assets: [], loans: [], budget: [], stockProfit: [] }; 
+                onUpdate(newData); 
+            };
+
+            const handleDeleteMonth = (month) => {
+                if (!confirm(`${month} 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+                const newData = JSON.parse(JSON.stringify(safeData));
+                delete newData[month];
+                onUpdate(newData);
+            };
+
+            return (
+                <GlassCard className="flex flex-col h-[calc(100vh-180px)] overflow-hidden">
+                    <div className="p-4 bg-white/50 border-b border-white/50 flex flex-wrap gap-3 justify-between items-center text-xs backdrop-blur-md z-40 relative">
+                        <div className="flex gap-2 items-center">
+                            {hasCategory && (
+                                <select className="p-2 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm outline-none focus:ring-2 ring-indigo-500/20" value={targetCategory} onChange={(e) => setTargetCategory(e.target.value)}>
+                                    {Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
+                                </select>
+                            )}
+                            <input type="text" placeholder="항목명 입력" className="p-2 border border-white/60 rounded-xl bg-white/60 w-32 outline-none focus:ring-2 ring-indigo-500/20" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+                            <GlassButton onClick={handleAddRow} active><Icons.Plus className="w-3.5 h-3.5"/> 추가</GlassButton>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none mr-2 px-2 py-1 rounded-lg hover:bg-white/40"><input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} className="rounded text-indigo-600"/> 숨김 항목</label>
+                            <button onClick={handleAddMonth} className="bg-emerald-500 text-white px-3 py-2.5 rounded-xl hover:bg-emerald-600 flex gap-1 font-bold shadow-emerald-200 shadow-md transition-all hover:-translate-y-0.5"><Icons.CalendarPlus className="w-3.5 h-3.5"/> 월 추가</button>
+                            <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={(e) => processFileUpload(e.target.files[0], safeData, type, onUpdate, setIsUploading)} />
+                            <GlassButton onClick={() => fileInputRef.current.click()} disabled={isUploading}>{isUploading ? <Icons.Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Icons.Upload className="w-3.5 h-3.5"/>} CSV 업로드</GlassButton>
+                            <GlassButton onClick={() => downloadCSV(safeData, type)}><Icons.Download className="w-3.5 h-3.5"/> CSV 다운로드</GlassButton>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-auto custom-scrollbar bg-white/30 relative">
+                        <table className="min-w-max text-sm text-right border-collapse">
+                            <thead className="bg-white/60 backdrop-blur-md text-slate-500 sticky top-0 z-40 shadow-sm">
+                                <tr>
+                                    <th className="sticky-col-header p-3 text-left border-r border-slate-200/60 w-56 pl-8 font-bold">항목명</th>
+                                    {months.map(m => (
+                                        <th key={m} className="p-3 min-w-[120px] border-r border-slate-200/60 font-medium text-center text-slate-600 group/th relative">
+                                            <div className="flex items-center justify-center gap-1">
+                                                {m}
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }}
+                                                    className="opacity-0 group-hover/th:opacity-100 p-1 hover:bg-rose-100 rounded text-slate-300 hover:text-rose-500 transition-all absolute right-2 top-1/2 -translate-y-1/2"
+                                                    title="열 삭제"
+                                                >
+                                                    <Icons.X className="w-3 h-3"/>
+                                                </button>
+                                            </div>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100/50">
+                            {(hasCategory ? Object.keys(categories) : ['ALL']).map(catKey => {
+                                const items = orderedItems[catKey] || [];
+                                const visibleItems = items.filter(i => showHidden || !hiddenItems.has(i.name));
+                                if (hasCategory && visibleItems.length === 0) return null;
+                                return (
+                                    <React.Fragment key={catKey}>
+                                        {hasCategory && (
+                                            <tr className={`${categories[catKey].bg} border-y border-slate-200/50`}>
+                                                <td className={`sticky-category p-3 text-left font-extrabold ${categories[catKey].text} ${categories[catKey].bg} backdrop-blur-md border-r border-slate-200/50 shadow-sm`}>{categories[catKey].label}</td>
+                                                {months.map(m => (<td key={m} className={`border-r border-slate-200/50 ${categories[catKey].bg}`}></td>))}
+                                            </tr>
+                                        )}
+                                        {visibleItems.map((item, idx) => (
+                                            <React.Fragment key={item.name}>
+                                                <SortableRow key={item.name} item={item} category={catKey === 'ALL' ? null : catKey} onDrop={handleReorder} isHidden={hiddenItems.has(item.name)} onToggleHide={() => toggleHide(item.name)} onDelete={() => handleDeleteRow(item.name)} onRename={handleRename}>
+                                                    {months.map(month => {
+                                                        const found = (safeData[month][listKey] || []).find(i => i.name === item.name);
+                                                        if (type === 'stockProfit') {
+                                                            const profit = found ? (found.profit || 0) : 0;
+                                                            return (
+                                                                <td key={month} className="p-0 border-r border-slate-100 relative group/cell">
+                                                                    <CurrencyInput value={profit} onChange={(v) => handleCellChange(month, item.name, 'profit', v, item.category)} className={`w-full h-full p-3 text-right bg-indigo-50/20 focus:bg-indigo-50 outline-none text-xs font-mono ${profit < 0 ? 'text-blue-500' : profit > 0 ? 'text-rose-500' : 'text-slate-600'}`} />
+                                                                </td>
+                                                            );
+                                                        } else {
+                                                            const val = found ? (found.value ?? found.amount ?? 0) : 0;
+                                                            const fieldName = type === 'assets' ? 'value' : 'amount';
+                                                            return (
+                                                                <td key={month} className="p-0 border-r border-slate-100">
+                                                                    <CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-50/50 focus:outline-none text-xs font-mono text-slate-600 hover:bg-white/40 transition-colors"/>
+                                                                </td>
+                                                            );
+                                                        }
+                                                    })}
+                                                </SortableRow>
+                                            </React.Fragment>
+                                        ))}
+                                        {/* Total Row - Summing ALL items (including hidden ones) */}
+                                        {hasCategory && (
+                                            <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-700">
+                                                <td className="sticky-sum-cell p-3 text-right border-r border-slate-200 text-xs">{categories[catKey].label} 합계</td>
+                                                {months.map(month => {
+                                                    const sum = items.reduce((acc, item) => {
+                                                        const found = (safeData[month][listKey] || []).find(i => i.name === item.name);
+                                                        const val = found ? (found.value ?? found.amount ?? 0) : 0;
+                                                        return acc + val;
+                                                    }, 0);
+                                                    return (
+                                                        <td key={month} className="p-3 text-right border-r border-slate-200 text-xs bg-slate-50">
+                                                            {formatCurrency(sum)}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                            </tbody>
+                        </table>
+                    </div>
+                </GlassCard>
+            );
+        };
+
+
+        // --- 11. Sync Modal Component ---
+        const SyncModal = ({ isOpen, onClose, currentId, onSyncIdChange }) => {
+            const [inputValue, setInputValue] = useState('');
+            if (!isOpen) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={onClose}>
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl m-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Icons.Cloud className="w-5 h-5"/></div>
+                                기기 연동 (Data Sync)
+                            </h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><Icons.X className="w-5 h-5"/></button>
+                        </div>
+                        
+                        <div className="space-y-6">
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">현재 기기 연동 키 (Current Sync ID)</label>
+                                <div className="flex gap-2">
+                                    <code className="flex-1 bg-white border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-600 break-all select-all">
+                                        {currentId}
+                                    </code>
+                                    <button 
+                                        onClick={() => { navigator.clipboard.writeText(currentId); alert('복사되었습니다!'); }}
+                                        className="p-3 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
+                                    >
+                                        <Icons.Copy className="w-4 h-4"/>
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 mt-2">
+                                    * 이 키를 복사하여 다른 기기의 "기존 데이터 불러오기"에 입력하면 데이터가 연동됩니다.
+                                </p>
+                            </div>
+
+                            <div className="border-t border-slate-100 pt-6">
+                                <label className="block text-sm font-bold text-slate-700 mb-2">다른 기기의 데이터 불러오기</label>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        placeholder="연동 키 입력 (UUID)" 
+                                        className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                    />
+                                    <button 
+                                        onClick={() => {
+                                            if(confirm('새로운 연동 키로 데이터를 불러오시겠습니까? 기존 데이터는 덮어씌워질 수 있습니다.')) {
+                                                onSyncIdChange(inputValue.trim());
+                                                onClose();
+                                            }
+                                        }}
+                                        disabled={!inputValue.trim()}
+                                        className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        불러오기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 12. Main App ---
+        function App() {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [user, setUser] = useState(null);
+            const [syncId, setSyncId] = useState(() => localStorage.getItem('fm_sync_id') || crypto.randomUUID());
+            
+            const [financialData, setFinancialData] = useState(() => {
+                const saved = localStorage.getItem('financialData');
+                const parsed = saved ? JSON.parse(saved) : generateInitialData();
+                
+                // Data Migration: Ensure new fields exist and cover 2014~2025
+                const startYear = 2014;
+                const endYear = 2025;
+                const targetYears = [];
+                for (let y = startYear; y <= endYear; y++) targetYears.push(String(y));
+
+                if (!parsed.salary) {
+                    parsed.salary = {
+                        years: targetYears,
+                        items: [
+                            { id: 1, name: '융기', values: {} },
+                            { id: 2, name: '수아', values: {} }
+                        ]
+                    };
+                      // Initialize values to 0
+                    parsed.salary.items.forEach(item => {
+                        targetYears.forEach(y => item.values[y] = 0);
+                    });
+                } else {
+                    // Update existing salary data to include 2014~2025 range if missing
+                    const existingYears = new Set(parsed.salary.years);
+                    let changed = false;
+                    targetYears.forEach(y => {
+                        if (!existingYears.has(y)) {
+                            parsed.salary.years.push(y);
+                            parsed.salary.items.forEach(item => {
+                                if (item.values[y] === undefined) item.values[y] = 0;
+                            });
+                            changed = true;
+                        }
+                    });
+                    if (changed) {
+                        parsed.salary.years.sort();
+                    }
+                }
+
+                if (!parsed.meta) parsed.meta = {};
+                if (!parsed.meta.goals) parsed.meta.goals = { loan: 30, invest: 30, netWorth: 1000000000 };
+                if (!parsed.meta.layout) parsed.meta.layout = {};
+                if (!parsed.meta.hiddenRows) parsed.meta.hiddenRows = {};
+
+                return parsed;
+            });
+
+
+            const [lastUpdated, setLastUpdated] = useState(Date.now());
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [showSyncModal, setShowSyncModal] = useState(false);
+
+            const updateFinancialData = (newData) => {
+                setFinancialData(newData);
+                setLastUpdated(Date.now());
+            };
+
+            useEffect(() => { localStorage.setItem('financialData', JSON.stringify(financialData)); }, [financialData]);
+            useEffect(() => { if (!auth) return; const initAuth = async () => { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); else await signInAnonymously(auth); }; initAuth(); const unsubscribe = onAuthStateChanged(auth, setUser); return () => unsubscribe(); }, []);
+            useEffect(() => { if (!user || !db) return; localStorage.setItem('fm_sync_id', syncId); const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'financial_sheets', syncId); const unsubscribe = onSnapshot(docRef, (docSnap) => { if (docSnap.exists()) { const cloudData = docSnap.data(); setFinancialData(prev => { if (JSON.stringify(prev) !== JSON.stringify(cloudData)) { return cloudData; } return prev; }); setLastUpdated(Date.now()); } }); return () => unsubscribe(); }, [user, syncId]);
+            useEffect(() => { if (!user || !db) return; setIsSyncing(true); const timeoutId = setTimeout(async () => { try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'financial_sheets', syncId), financialData); setIsSyncing(false); } catch (err) { console.error(err); } }, 1500); return () => clearTimeout(timeoutId); }, [financialData, user, syncId]);
+
+            const handleResetData = () => { if (confirm("모든 데이터를 삭제하고 초기화하시겠습니까?")) { const initial = generateInitialData(); setFinancialData(initial); localStorage.removeItem('financialData'); } };
+
+            const TABS = [
+                {id: 'dashboard',  label: '대시보드',      icon: Icons.LayoutDashboard},
+                {id: 'assets',     label: '자산 관리',     icon: Icons.Table2},
+                {id: 'budget',     label: '수입/지출',     icon: Icons.Banknote},
+                {id: 'loans',      label: '대출 관리',     icon: Icons.CreditCard},
+                {id: 'stocks',     label: '주식 실현 손익', icon: Icons.CandlestickChart},
+                {id: 'salary',     label: '연봉 관리',     icon: Icons.TrendingUp},
+            ];
+
+            const activeTabLabel = TABS.find(t => t.id === activeTab)?.label;
+
+            return (
+                <ErrorBoundary>
+                    <div className="h-screen bg-[#F8FAFC] font-sans text-slate-800 selection:bg-indigo-500/30 overflow-hidden flex flex-col">
+                        <div className="fixed top-[-20%] left-[-10%] w-[800px] h-[800px] bg-indigo-200/30 rounded-full blur-[150px] pointer-events-none mix-blend-multiply z-0" />
+                        <div className="fixed bottom-[-20%] right-[-10%] w-[800px] h-[800px] bg-fuchsia-200/30 rounded-full blur-[150px] pointer-events-none mix-blend-multiply z-0" />
+                        
+                        {/* Sync Modal (Inline for brevity) */}
+                        {showSyncModal && (
+                            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" onClick={() => setShowSyncModal(false)}>
+                                <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl m-4" onClick={e => e.stopPropagation()}>
+                                    <h3 className="text-xl font-bold mb-4">기기 연동</h3>
+                                    <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-200"><label className="text-xs font-bold text-slate-500 block mb-2">현재 ID</label><code className="block bg-white p-2 rounded border border-slate-200 text-xs">{syncId}</code></div>
+                                    <input type="text" placeholder="불러올 ID 입력" className="w-full p-3 border rounded-xl mb-4 text-sm" onKeyDown={(e) => { if(e.key === 'Enter') { if(confirm('데이터를 불러오시겠습니까?')) { setSyncId(e.target.value); setShowSyncModal(false); } } }} />
+                                    <button onClick={() => setShowSyncModal(false)} className="w-full bg-slate-100 py-3 rounded-xl font-bold text-slate-600">닫기</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* [MODIFIED] Top Navigation Bar (Replaced Sidebar) */}
+                        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm shrink-0">
+                            <div className="flex items-center justify-between px-6 lg:px-10 h-16 max-w-[1600px] mx-auto">
+                                <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-2 text-indigo-600 mr-4">
+                                        <Icons.LayoutDashboard className="w-8 h-8" />
+                                        <span className="text-xl font-black tracking-tighter text-slate-900 hidden sm:inline">FinMaster</span>
+                                    </div>
+                                    
+                                    {/* Navigation Tabs */}
+                                    <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar">
+                                        {TABS.map(tab => (
+                                            <button 
+                                                key={tab.id} 
+                                                onClick={() => setActiveTab(tab.id)} 
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                                                    activeTab === tab.id 
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                                                    : 'text-slate-500 hover:bg-slate-100 hover:text-indigo-600'
+                                                }`}
+                                            >
+                                                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`}/> 
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </nav>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => setShowSyncModal(true)} className="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg bg-white/50 hover:bg-white border border-transparent hover:border-indigo-100"><Icons.Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-pulse text-indigo-500' : ''}`}/><span className="hidden sm:inline">{isSyncing ? '저장 중...' : '연동'}</span></button>
+                                    <button onClick={handleResetData} className="text-xs text-slate-400 hover:text-rose-500 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg hover:bg-rose-50" title="초기화"><Icons.RefreshCw className="w-4 h-4"/></button>
+                                </div>
+                            </div>
+
+                            {/* Mobile Nav (Visible only on small screens) */}
+                            <div className="md:hidden overflow-x-auto no-scrollbar px-4 py-2 border-t border-slate-100 flex gap-2">
+                                {TABS.map(tab => (
+                                    <button 
+                                        key={tab.id} 
+                                        onClick={() => setActiveTab(tab.id)} 
+                                        className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                            activeTab === tab.id 
+                                            ? 'bg-indigo-600 text-white' 
+                                            : 'text-slate-500 bg-slate-50'
+                                        }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex-1 flex flex-col relative z-10 overflow-hidden">
+                            <main className="flex-1 overflow-auto p-4 lg:p-8 custom-scrollbar">
+                                <div className="max-w-[1600px] mx-auto space-y-6 pb-20">
+                                    {activeTab === 'dashboard'  && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} />}
+                                    {activeTab === 'assets' && <GenericSpreadsheet data={financialData} type="assets" onUpdate={updateFinancialData} categories={ASSET_CATEGORIES} hasCategory={true} />}
+                                    {activeTab === 'budget' && <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} />}
+                                    {activeTab === 'loans' && <GenericSpreadsheet data={financialData} type="loans" onUpdate={updateFinancialData} hasCategory={false} />}
+                                    {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} hasCategory={false} />}
+                                    {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} />}
+                                </div>
+                            </main>
+                        </div>
+                    </div>
+                </ErrorBoundary>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
