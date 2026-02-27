@@ -1107,11 +1107,6 @@
             const viewYear = viewDate.split('-')[0];
             const todayStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
             
-            // [수정] 아이템 순서 및 항목 추가 (invest 추가)
-            const [items, setItems] = useState([{ id: 'total' }, { id: 'net' }, { id: 'debt' }, { id: 'invest' }, { id: 'annual' }]);
-            const dragItem = useRef(null);
-            const dragOverItem = useRef(null);
-
             const [heights, setHeights] = useState(safeData.meta?.layout?.heights || {});
              useEffect(() => {
                 const timer = setTimeout(() => {
@@ -1201,34 +1196,6 @@
             
             const [activeItem, setActiveIndex] = useState(null); 
 
-            const handleDragStart = (e, index) => { dragItem.current = index; };
-            const handleDragEnter = (e, index) => {
-              dragOverItem.current = index;
-              const newItems = [...items];
-              const dragItemContent = newItems[dragItem.current];
-              newItems.splice(dragItem.current, 1);
-              newItems.splice(dragOverItem.current, 0, dragItemContent);
-              dragItem.current = index;
-              setItems(newItems);
-            };
-            const handleDragEnd = (e) => {
-              dragItem.current = null;
-              dragOverItem.current = null;
-              const newData = JSON.parse(JSON.stringify(safeData));
-              if (!newData.meta) newData.meta = {};
-              if (!newData.meta.layout) newData.meta.layout = {};
-              newData.meta.layout.scoreCardOrder = items.map(item => item.id);
-              onUpdate(newData);
-            };
-
-            useEffect(() => {
-                if (safeData.meta?.layout?.scoreCardOrder) {
-                    const savedOrder = safeData.meta.layout.scoreCardOrder;
-                    const newItems = savedOrder.map(id => items.find(i => i.id === id)).filter(Boolean);
-                    if (newItems.length === items.length) setItems(newItems);
-                }
-            }, []);
-
             const updateGoal = (type, value) => {
                 const newData = JSON.parse(JSON.stringify(safeData));
                 if (!newData.meta) newData.meta = {};
@@ -1303,17 +1270,9 @@
 
                     {/* Row 1: Scorecards (5개 배치) */}
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                        {items.map((item, index) => (
-                            <div 
-                                key={item.id} 
-                                draggable 
-                                onDragStart={(e) => handleDragStart(e, index)}
-                                onDragEnter={(e) => handleDragEnter(e, index)}
-                                onDragEnd={handleDragEnd}
-                                onDragOver={(e) => e.preventDefault()}
-                                className="cursor-move"
-                            >
-                                {renderScoreCard(item.id)}
+                        {['total', 'net', 'debt', 'invest', 'annual'].map((id) => (
+                            <div key={id}>
+                                {renderScoreCard(id)}
                             </div>
                         ))}
                     </div>
