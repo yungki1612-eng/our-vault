@@ -47,6 +47,7 @@
             left: 0; 
             z-index: 50 !important; 
             background-color: rgba(248, 250, 252, 0.98); 
+            -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px); 
             border-right: 2px solid #e2e8f0 !important;
         }
@@ -55,6 +56,7 @@
             left: 0; 
             z-index: 40 !important; 
             background-color: rgba(255, 255, 255, 0.98); 
+            -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px); 
             border-right: 2px solid #e2e8f0 !important;
         }
@@ -63,6 +65,7 @@
             left: 0; 
             z-index: 40 !important; 
             background-color: rgba(241, 245, 249, 0.98); 
+            -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px); 
             border-right: 2px solid #cbd5e1 !important;
             font-weight: 800;
@@ -107,8 +110,18 @@
             };
         }
 
+        // UUID Polyfill for Safari < 15.4
+        const generateUUID = () => {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                (c ^ (typeof crypto !== 'undefined' && crypto.getRandomValues ? crypto.getRandomValues(new Uint8Array(1))[0] : Math.floor(Math.random() * 256)) & 15 >> c / 4).toString(16)
+            );
+        };
+
         const { useState, useMemo, useEffect, useRef, useCallback } = React;
         const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area, Sector } = Recharts;
+
+        // ... (Firebase setup and Icons remain same) ...
 
         // --- Firebase Setup ---
         const firebaseConfig = {
