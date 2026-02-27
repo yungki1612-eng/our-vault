@@ -20,6 +20,14 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
     
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -27,13 +35,49 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
 
-        .sticky-col-header { position: sticky; left: 0; z-index: 50 !important; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
-        .sticky-col-cell { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); }
-        .sticky-sum-cell { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(248, 250, 252, 0.95); backdrop-filter: blur(8px); }
-        .sticky-category { position: sticky; left: 0; z-index: 45 !important; }
+        .sticky-col-header { 
+            position: sticky; 
+            left: 0; 
+            z-index: 50 !important; 
+            background-color: rgba(248, 250, 252, 0.98); 
+            backdrop-filter: blur(8px); 
+            border-right: 2px solid #e2e8f0 !important;
+        }
+        .sticky-col-cell { 
+            position: sticky; 
+            left: 0; 
+            z-index: 40 !important; 
+            background-color: rgba(255, 255, 255, 0.98); 
+            backdrop-filter: blur(8px); 
+            border-right: 2px solid #e2e8f0 !important;
+        }
+        .sticky-sum-cell { 
+            position: sticky; 
+            left: 0; 
+            z-index: 40 !important; 
+            background-color: rgba(241, 245, 249, 0.98); 
+            backdrop-filter: blur(8px); 
+            border-right: 2px solid #cbd5e1 !important;
+            font-weight: 800;
+        }
+        
+        .dark .sticky-col-header { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
+        .dark .sticky-col-cell { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
+        .dark .sticky-sum-cell { background-color: rgba(30, 41, 59, 0.95); border-right-color: #475569 !important; }
+
+        .sticky-category { 
+            position: sticky; 
+            left: 0; 
+            z-index: 45 !important; 
+            border-right: 2px solid rgba(0,0,0,0.05) !important;
+        }
         .cursor-move { cursor: move; }
         
         /* Hide scrollbar for Chrome, Safari and Opera */
@@ -447,19 +491,19 @@
             const handleDrop = (e) => { e.preventDefault(); try { const data = JSON.parse(e.dataTransfer.getData('app/json')); if (data.name !== item.name) onDrop(category, data.name, item.name, data.category); } catch (err) {} };
             const saveName = () => { if (newName && newName !== item.name) onRename(item.name, newName); setIsEditing(false); };
             return (
-                <tr draggable={!isEditing} onDragStart={handleDragStart} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} className={`group transition-colors border-b border-slate-100 last:border-0 hover:bg-white/60 ${isHidden ? 'opacity-40 bg-slate-100/50' : ''}`}>
-                    <td className="sticky-col-cell border-r border-slate-100 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)] align-middle">
+                <tr draggable={!isEditing} onDragStart={handleDragStart} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} className={`group transition-colors border-b border-slate-200 last:border-0 hover:bg-indigo-50/30 odd:bg-white/50 even:bg-slate-50/50 ${isHidden ? 'opacity-40 bg-slate-100/50' : ''}`}>
+                    <td className="sticky-col-cell border-r-2 border-slate-200 align-middle">
                         <div className="flex items-center gap-2 p-3 min-w-[220px]">
                             <div className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-white rounded-lg text-slate-400 transition-colors"><Icons.GripVertical className="w-4 h-4" /></div>
                             <button onClick={(e) => { e.stopPropagation(); onToggleHide(); }} className="p-1.5 text-slate-400 hover:text-indigo-500 rounded-lg hover:bg-white transition-colors">{isHidden ? <Icons.EyeOff className="w-3.5 h-3.5"/> : <Icons.Eye className="w-3.5 h-3.5"/>}</button>
                             {isEditing ? (
                                 <div className="flex items-center flex-1">
-                                    <input autoFocus type="text" value={newName} onChange={(e) => setNewName(e.target.value)} onBlur={saveName} onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) saveName(); }} className="bg-white/80 border border-indigo-200 rounded-lg px-2 py-1 text-sm w-full focus:outline-none shadow-sm text-left" onClick={(e) => e.stopPropagation()} />
+                                    <input autoFocus type="text" value={newName} onChange={(e) => setNewName(e.target.value)} onBlur={saveName} onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) saveName(); }} className="bg-white border border-indigo-300 rounded-lg px-2 py-1 text-sm w-full focus:outline-none shadow-sm text-left" onClick={(e) => e.stopPropagation()} />
                                     <button onClick={saveName} className="p-1.5 text-emerald-600 ml-1"><Icons.Check className="w-3.5 h-3.5" /></button>
                                 </div>
                             ) : (
                                 <div className="flex items-center flex-1 min-w-0 cursor-text group/edit" onClick={() => setIsEditing(true)}>
-                                    <span className="truncate text-sm font-semibold text-slate-700 flex-1 text-left" title={item.name}>{item.name}</span>
+                                    <span className="truncate text-sm font-bold text-slate-700 flex-1 text-left" title={item.name}>{item.name}</span>
                                     <button className="p-1.5 text-slate-300 hover:text-indigo-600 opacity-0 group-hover/edit:opacity-100 transition-opacity"><Icons.Edit2 className="w-3.5 h-3.5" /></button>
                                 </div>
                             )}
@@ -650,18 +694,18 @@
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {salaryData.items.map(item => (
-                                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="p-3 text-left font-bold text-slate-700 bg-white sticky left-0 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{item.name}</td>
-                                            {years.map(year => (
-                                                <td key={year} className="p-0 border-r border-slate-100 last:border-0">
-                                                    <CurrencyInput value={item.values[year] || 0} onChange={(val) => handleValueChange(item.id, year, val)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-50/30 outline-none"/>
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
+                                <tbody className="divide-y divide-slate-200">
+    {salaryData.items.map((item, idx) => (
+        <tr key={item.id} className={`hover:bg-indigo-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/50'}`}>
+            <td className="p-3 text-left font-extrabold text-slate-700 bg-white sticky left-0 border-r-2 border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{item.name}</td>
+            {years.map(year => (
+                <td key={year} className="p-0 border-r border-slate-300/50">
+                    <CurrencyInput value={item.values[year] || 0} onChange={(val) => handleValueChange(item.id, year, val)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-100/50 outline-none text-xs font-mono text-slate-700 hover:bg-white/40"/>
+                </td>
+            ))}
+        </tr>
+    ))}
+</tbody>
                             </table>
                         </div>
                     </GlassCard>
@@ -1470,11 +1514,11 @@
                     </div>
                     <div className="flex-1 overflow-auto custom-scrollbar bg-white/30 relative">
                         <table className="min-w-max text-sm text-right border-collapse">
-                            <thead className="bg-white/60 backdrop-blur-md text-slate-500 sticky top-0 z-40 shadow-sm">
+                            <thead className="bg-slate-50 text-slate-500 sticky top-0 z-40 shadow-sm">
                                 <tr>
-                                    <th className="sticky-col-header p-3 text-left border-r border-slate-200/60 w-56 pl-8 font-bold">항목명</th>
+                                    <th className="sticky-col-header p-3 text-left border-r-2 border-slate-200 w-56 pl-8 font-bold">항목명</th>
                                     {months.map(m => (
-                                        <th key={m} className="p-3 min-w-[120px] border-r border-slate-200/60 font-medium text-center text-slate-600 group/th relative">
+                                        <th key={m} className="p-3 min-w-[120px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative">
                                             <div className="flex items-center justify-center gap-1">
                                                 {m}
                                                 <button 
@@ -1489,7 +1533,7 @@
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100/50">
+                            <tbody className="divide-y divide-slate-200">
                             {(hasCategory ? Object.keys(categories) : ['ALL']).map(catKey => {
                                 const items = orderedItems[catKey] || [];
                                 const visibleItems = items.filter(i => showHidden || !hiddenItems.has(i.name));
@@ -1518,8 +1562,8 @@
                                                             const val = found ? (found.value ?? found.amount ?? 0) : 0;
                                                             const fieldName = type === 'assets' ? 'value' : 'amount';
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-slate-100">
-                                                                    <CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-50/50 focus:outline-none text-xs font-mono text-slate-600 hover:bg-white/40 transition-colors"/>
+                                                                <td key={month} className="p-0 border-r border-slate-300/50 bg-white/30">
+                                                                    <CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/>
                                                                 </td>
                                                             );
                                                         }
@@ -1626,6 +1670,18 @@
             const [activeTab, setActiveTab] = useState('dashboard');
             const [user, setUser] = useState(null);
             const [syncId, setSyncId] = useState(() => localStorage.getItem('fm_sync_id') || crypto.randomUUID());
+            const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+
+            useEffect(() => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+                localStorage.setItem('theme', theme);
+            }, [theme]);
+
+            const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
             
             const [financialData, setFinancialData] = useState(() => {
                 const saved = localStorage.getItem('financialData');
