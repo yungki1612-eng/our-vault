@@ -557,8 +557,27 @@
             const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: '융기', values: {} }, { id: 2, name: '수아', values: {} }] };
             const [years, setYears] = useState(salaryData.years);
             const fileInputRef = useRef(null);
+            const containerRef = useRef(null);
             
             useEffect(() => { if (data.salary) setYears(data.salary.years); }, [data.salary]);
+
+            // Auto-scroll to current year
+            useEffect(() => {
+                if (containerRef.current && years.length > 0) {
+                    const currentYear = new Date().getFullYear().toString();
+                    setTimeout(() => {
+                        const headerCell = containerRef.current.querySelector(`th[data-year="${currentYear}"]`);
+                        if (headerCell) {
+                            headerCell.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                        } else {
+                            const lastHeader = containerRef.current.querySelector('th:last-child');
+                            if (lastHeader) {
+                                lastHeader.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                            }
+                        }
+                    }, 150);
+                }
+            }, []);
 
             const handleValueChange = (itemId, year, val) => {
                 const newData = JSON.parse(JSON.stringify(data));
@@ -1354,6 +1373,7 @@
             const [targetCategory, setTargetCategory] = useState(hasCategory ? Object.keys(categories)[0] : '');
             const [isUploading, setIsUploading] = useState(false);
             const fileInputRef = useRef(null);
+            const containerRef = useRef(null);
             
             const [hiddenItems, setHiddenItems] = useState(() => {
                 const savedHidden = safeData.meta?.hiddenRows?.[type];
@@ -1362,6 +1382,26 @@
             
             const [showHidden, setShowHidden] = useState(false);
             const [orderedItems, setOrderedItems] = useState({});
+
+            // Auto-scroll to current month
+            useEffect(() => {
+                if (containerRef.current && months.length > 0) {
+                    const now = new Date();
+                    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                    
+                    setTimeout(() => {
+                        const headerCell = containerRef.current.querySelector(`th[data-month="${currentMonthStr}"]`);
+                        if (headerCell) {
+                            headerCell.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                        } else {
+                            const lastHeader = containerRef.current.querySelector('th:last-child');
+                            if (lastHeader) {
+                                lastHeader.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                            }
+                        }
+                    }, 150);
+                }
+            }, [type]); // Re-run when switching spreadsheet types
 
             useEffect(() => {
                 const savedHidden = safeData.meta?.hiddenRows?.[type];
