@@ -729,10 +729,10 @@
                             <table className="min-w-full text-sm text-right">
                                 <thead className="bg-slate-50 text-slate-500">
                                     <tr>
-                                        <th className="p-3 text-left w-32 font-bold border-r border-slate-200 sticky left-0 bg-slate-50 z-10">이름</th>
-                                        <th className="p-3 w-32 font-black text-indigo-600 border-r border-slate-200 sticky left-32 bg-slate-50 z-10">누계</th>
+                                        <th className="p-3 text-left w-24 font-bold border-r border-slate-200 sticky left-0 bg-slate-50 z-10">이름</th>
+                                        <th className="p-3 w-28 font-black text-indigo-600 border-r border-slate-200 sticky left-24 bg-slate-50 z-10">누계</th>
                                         {years.map(year => (
-                                            <th key={year} className="p-3 min-w-[120px] font-medium border-r border-slate-200 last:border-0 group/th relative">
+                                            <th key={year} className="p-3 min-w-[90px] font-medium border-r border-slate-200 last:border-0 group/th relative">
                                                 <div className="flex items-center justify-center gap-1">
                                                     {year}
                                                     <button 
@@ -753,7 +753,7 @@
         return (
             <tr key={item.id} className={`hover:bg-indigo-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/50'}`}>
                 <td className="p-3 text-left font-extrabold text-slate-700 bg-white sticky left-0 border-r-2 border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{item.name}</td>
-                <td className="p-3 text-right font-black text-indigo-600 bg-indigo-50 sticky left-32 border-r-2 border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{formatCurrency(itemTotal)}</td>
+                <td className="p-3 text-right font-black text-indigo-600 bg-indigo-50 sticky left-24 border-r-2 border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{formatCurrency(itemTotal)}</td>
                 {years.map(year => (
                     <td key={year} className="p-0 border-r border-slate-300/50">
                         <CurrencyInput value={item.values[year] || 0} onChange={(val) => handleValueChange(item.id, year, val)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-100/50 outline-none text-xs font-mono text-slate-700 hover:bg-white/40"/>
@@ -1549,9 +1549,9 @@
                         <table className="min-w-max text-sm text-right border-collapse">
                             <thead className="bg-slate-50 text-slate-500 sticky top-0 z-40 shadow-sm">
                                 <tr>
-                                    <th className="sticky-col-header p-3 text-left border-r-2 border-slate-200 w-56 pl-8 font-bold">항목명</th>
+                                    <th className="sticky-col-header p-3 text-left border-r-2 border-slate-200 w-48 pl-8 font-bold">항목명</th>
                                     {months.map(m => (
-                                        <th key={m} className="p-3 min-w-[120px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative">
+                                        <th key={m} className="p-3 min-w-[100px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative">
                                             <div className="flex items-center justify-center gap-1">
                                                 {m}
                                                 <button 
