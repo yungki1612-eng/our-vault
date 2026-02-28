@@ -689,8 +689,28 @@
                 return point;
             });
 
+            const itemTotals = salaryData.items.map(item => ({
+                id: item.id,
+                name: item.name,
+                total: Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0)
+            }));
+            const grandTotal = itemTotals.reduce((acc, curr) => acc + curr.total, 0);
+
             return (
                 <div className="space-y-6 animate-fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <GlassCard className="p-4 flex flex-col justify-center border-l-4 border-indigo-500">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">총 수령 연봉 (누적)</span>
+                            <span className="text-2xl font-black text-slate-800 tracking-tight">{formatCurrency(grandTotal)}</span>
+                        </GlassCard>
+                        {itemTotals.map(it => (
+                            <GlassCard key={it.id} className="p-4 flex flex-col justify-center border-l-4 border-slate-200">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{it.name} 누적 수령액</span>
+                                <span className="text-xl font-black text-indigo-600 tracking-tight">{formatCurrency(it.total)}</span>
+                            </GlassCard>
+                        ))}
+                    </div>
+
                     <GlassCard className="p-6">
                         <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.TrendingUp className="w-5 h-5 text-indigo-600"/> 연봉 추이 (원천징수 기준)</h3>
                         <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="year" fontSize={12} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={12} width={60} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{borderRadius: '12px'}} /><Legend /><Line type="monotone" dataKey="융기" stroke="#3b82f6" strokeWidth={3} activeDot={{r:6}} /><Line type="monotone" dataKey="수아" stroke="#ec4899" strokeWidth={3} activeDot={{r:6}} /></LineChart></ResponsiveContainer></div>
@@ -710,6 +730,7 @@
                                 <thead className="bg-slate-50 text-slate-500">
                                     <tr>
                                         <th className="p-3 text-left w-32 font-bold border-r border-slate-200 sticky left-0 bg-slate-50 z-10">이름</th>
+                                        <th className="p-3 w-32 font-black text-indigo-600 border-r border-slate-200 sticky left-32 bg-slate-50 z-10">누계</th>
                                         {years.map(year => (
                                             <th key={year} className="p-3 min-w-[120px] font-medium border-r border-slate-200 last:border-0 group/th relative">
                                                 <div className="flex items-center justify-center gap-1">
@@ -727,16 +748,20 @@
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
-    {salaryData.items.map((item, idx) => (
-        <tr key={item.id} className={`hover:bg-indigo-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/50'}`}>
-            <td className="p-3 text-left font-extrabold text-slate-700 bg-white sticky left-0 border-r-2 border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{item.name}</td>
-            {years.map(year => (
-                <td key={year} className="p-0 border-r border-slate-300/50">
-                    <CurrencyInput value={item.values[year] || 0} onChange={(val) => handleValueChange(item.id, year, val)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-100/50 outline-none text-xs font-mono text-slate-700 hover:bg-white/40"/>
-                </td>
-            ))}
-        </tr>
-    ))}
+    {salaryData.items.map((item, idx) => {
+        const itemTotal = Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0);
+        return (
+            <tr key={item.id} className={`hover:bg-indigo-50/30 transition-colors ${idx % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/50'}`}>
+                <td className="p-3 text-left font-extrabold text-slate-700 bg-white sticky left-0 border-r-2 border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{item.name}</td>
+                <td className="p-3 text-right font-black text-indigo-600 bg-indigo-50 sticky left-32 border-r-2 border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{formatCurrency(itemTotal)}</td>
+                {years.map(year => (
+                    <td key={year} className="p-0 border-r border-slate-300/50">
+                        <CurrencyInput value={item.values[year] || 0} onChange={(val) => handleValueChange(item.id, year, val)} className="w-full h-full p-3 text-right bg-transparent focus:bg-indigo-100/50 outline-none text-xs font-mono text-slate-700 hover:bg-white/40"/>
+                    </td>
+                ))}
+            </tr>
+        );
+    })}
 </tbody>
                             </table>
                         </div>
