@@ -1374,11 +1374,18 @@
             });
             
             const [showHidden, setShowHidden] = useState(false);
+            const [hiddenMonths, setHiddenMonths] = useState(() => {
+                const savedHidden = safeData.meta?.hiddenMonths?.[type];
+                return new Set(savedHidden || []);
+            });
+            const [showHiddenMonths, setShowHiddenMonths] = useState(false);
             const [orderedItems, setOrderedItems] = useState({});
+
+            const visibleMonths = useMemo(() => months.filter(m => showHiddenMonths || !hiddenMonths.has(m)), [months, showHiddenMonths, hiddenMonths]);
 
             // Auto-scroll to current month
             useEffect(() => {
-                if (containerRef.current && months.length > 0) {
+                if (containerRef.current && visibleMonths.length > 0) {
                     const now = new Date();
                     const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                     
@@ -1394,7 +1401,7 @@
                         }
                     }, 150);
                 }
-            }, [type]); // Re-run when switching spreadsheet types
+            }, [type, visibleMonths.length]); // Re-run when switching spreadsheet types or visibility changes
 
             useEffect(() => {
                 const savedHidden = safeData.meta?.hiddenRows?.[type];
@@ -1402,6 +1409,13 @@
                     setHiddenItems(new Set(savedHidden));
                 }
             }, [safeData.meta?.hiddenRows, type]);
+
+            useEffect(() => {
+                const savedHiddenMonths = safeData.meta?.hiddenMonths?.[type];
+                if (savedHiddenMonths) {
+                    setHiddenMonths(new Set(savedHiddenMonths));
+                }
+            }, [safeData.meta?.hiddenMonths, type]);
 
             const toggleHide = (name) => { 
                 const next = new Set(hiddenItems); 
@@ -1414,6 +1428,20 @@
                 if (!newData.meta) newData.meta = {};
                 if (!newData.meta.hiddenRows) newData.meta.hiddenRows = {};
                 newData.meta.hiddenRows[type] = Array.from(next);
+                onUpdate(newData);
+            };
+
+            const toggleHideMonth = (month) => {
+                const next = new Set(hiddenMonths);
+                if (next.has(month)) next.delete(month);
+                else next.add(month);
+                
+                setHiddenMonths(next);
+
+                const newData = JSON.parse(JSON.stringify(safeData));
+                if (!newData.meta) newData.meta = {};
+                if (!newData.meta.hiddenMonths) newData.meta.hiddenMonths = {};
+                newData.meta.hiddenMonths[type] = Array.from(next);
                 onUpdate(newData);
             };
 
@@ -1539,6 +1567,7 @@
                         </div>
                         <div className="flex gap-2 items-center">
                             <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none mr-2 px-2 py-1 rounded-lg hover:bg-white/40"><input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} className="rounded text-indigo-600"/> 숨김 항목</label>
+                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none mr-2 px-2 py-1 rounded-lg hover:bg-white/40"><input type="checkbox" checked={showHiddenMonths} onChange={e => setShowHiddenMonths(e.target.checked)} className="rounded text-indigo-600"/> 숨김 열</label>
                             <button onClick={handleAddMonth} className="bg-emerald-500 text-white px-3 py-2.5 rounded-xl hover:bg-emerald-600 flex gap-1 font-bold shadow-emerald-200 shadow-md transition-all hover:-translate-y-0.5"><Icons.CalendarPlus className="w-3.5 h-3.5"/> 월 추가</button>
                             <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={(e) => processFileUpload(e.target.files[0], safeData, type, onUpdate, setIsUploading)} />
                             <GlassButton onClick={() => fileInputRef.current.click()} disabled={isUploading}>{isUploading ? <Icons.Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Icons.Upload className="w-3.5 h-3.5"/>} CSV 업로드</GlassButton>
@@ -1550,17 +1579,26 @@
                             <thead className="bg-slate-50 text-slate-500 sticky top-0 z-40 shadow-sm">
                                 <tr>
                                     <th className="sticky-col-header p-3 text-left border-r-2 border-slate-200 w-48 pl-8 font-bold">항목명</th>
-                                    {months.map(m => (
-                                        <th key={m} className="p-3 min-w-[100px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative">
+                                    {visibleMonths.map(m => (
+                                        <th key={m} className={`p-3 min-w-[100px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative ${hiddenMonths.has(m) ? 'bg-slate-100/50' : ''}`}>
                                             <div className="flex items-center justify-center gap-1">
                                                 {m}
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }}
-                                                    className="opacity-0 group-hover/th:opacity-100 p-1 hover:bg-rose-100 rounded text-slate-300 hover:text-rose-500 transition-all absolute right-2 top-1/2 -translate-y-1/2"
-                                                    title="열 삭제"
-                                                >
-                                                    <Icons.X className="w-3 h-3"/>
-                                                </button>
+                                                <div className="opacity-0 group-hover/th:opacity-100 flex items-center gap-0.5 absolute right-1 top-1/2 -translate-y-1/2">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); toggleHideMonth(m); }}
+                                                        className={`p-1 rounded transition-all ${hiddenMonths.has(m) ? 'hover:bg-emerald-100 text-emerald-500' : 'hover:bg-indigo-100 text-slate-300 hover:text-indigo-500'}`}
+                                                        title={hiddenMonths.has(m) ? "열 보이기" : "열 숨기기"}
+                                                    >
+                                                        {hiddenMonths.has(m) ? <Icons.Eye className="w-3 h-3"/> : <Icons.EyeOff className="w-3 h-3"/>}
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }}
+                                                        className="p-1 hover:bg-rose-100 rounded text-slate-300 hover:text-rose-500 transition-all"
+                                                        title="열 삭제"
+                                                    >
+                                                        <Icons.X className="w-3 h-3"/>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </th>
                                     ))}
@@ -1576,13 +1614,13 @@
                                         {hasCategory && (
                                             <tr className={`${categories[catKey].bg} border-y border-slate-200/50`}>
                                                 <td className={`sticky-category p-3 text-left font-extrabold ${categories[catKey].text} ${categories[catKey].bg} backdrop-blur-md border-r border-slate-200/50 shadow-sm`}>{categories[catKey].label}</td>
-                                                {months.map(m => (<td key={m} className={`border-r border-slate-200/50 ${categories[catKey].bg}`}></td>))}
+                                                {visibleMonths.map(m => (<td key={m} className={`border-r border-slate-200/50 ${categories[catKey].bg}`}></td>))}
                                             </tr>
                                         )}
                                         {visibleItems.map((item, idx) => (
                                             <React.Fragment key={item.name}>
                                                 <SortableRow key={item.name} item={item} category={catKey === 'ALL' ? null : catKey} onDrop={handleReorder} isHidden={hiddenItems.has(item.name)} onToggleHide={() => toggleHide(item.name)} onDelete={() => handleDeleteRow(item.name)} onRename={handleRename}>
-                                                    {months.map(month => {
+                                                    {visibleMonths.map(month => {
                                                         const found = (safeData[month][listKey] || []).find(i => i.name === item.name);
                                                         if (type === 'stockProfit') {
                                                             const profit = found ? (found.profit || 0) : 0;
@@ -1618,7 +1656,7 @@
                                         {hasCategory && (
                                             <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-700">
                                                 <td className="sticky-sum-cell p-3 text-right border-r border-slate-200 text-xs">{categories[catKey].label} 합계</td>
-                                                {months.map(month => {
+                                                {visibleMonths.map(month => {
                                                     const sum = items.reduce((acc, item) => {
                                                         const found = (safeData[month][listKey] || []).find(i => i.name === item.name);
                                                         const val = found ? (found.value ?? found.amount ?? 0) : 0;
