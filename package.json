@@ -1,0 +1,14 @@
+{
+  "name": "our-vault",
+  "version": "1.0.0",
+  "description": "Asset Management Dashboard",
+  "main": "main.js",
+  "scripts": {
+    "start": "npx http-server .",
+    "dev": "npx http-server ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
