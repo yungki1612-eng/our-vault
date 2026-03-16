@@ -149,6 +149,8 @@
             CalendarPlus: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M10 16h4"/><path d="M12 14v4"/></svg>,
             ChevronRight: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
             ChevronLeft: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
+            ChevronDown: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+            ChevronUp: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>,
             Bot: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>,
             Target: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
             Bell: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
@@ -468,6 +470,31 @@
                 {children}
             </button>
         );
+
+        const CollapsibleCard = ({ title, icon: Icon, children, className = "", initialOpen = true, headerExtra, noPadding = false }) => {
+            const [isOpen, setIsOpen] = useState(initialOpen);
+            return (
+                <GlassCard className={`flex flex-col transition-all duration-300 ${isOpen ? '' : 'h-auto'} ${className}`}>
+                    <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50/30 rounded-t-2xl transition-colors select-none" onClick={() => setIsOpen(!isOpen)}>
+                        <div className="flex items-center gap-2">
+                            {Icon && <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600"><Icon className="w-4 h-4" /></div>}
+                            <h3 className="font-bold text-slate-800 text-sm sm:text-base tracking-tight">{title}</h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {headerExtra && <div onClick={e => e.stopPropagation()}>{headerExtra}</div>}
+                            <div className="text-slate-400">
+                                {isOpen ? <Icons.ChevronUp className="w-4 h-4" /> : <Icons.ChevronDown className="w-4 h-4" />}
+                            </div>
+                        </div>
+                    </div>
+                    {isOpen && (
+                        <div className={`${noPadding ? '' : 'px-6 pb-6'} flex-1 flex flex-col min-h-0 animate-fade-in`}>
+                            {children}
+                        </div>
+                    )}
+                </GlassCard>
+            );
+        };
 
         const CurrencyInput = ({ value, onChange, className }) => {
             const [localValue, setLocalValue] = useState(formatNumberWithCommas(value));
@@ -797,6 +824,12 @@
             const calcYoY = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / prev) * 100 : 0;
             const totalStockAssets = (currentData.assets || []).filter(a => a.category === 'INVESTMENT').reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
             const prevTotalStockAssets = prevYearData ? (prevYearData.assets || []).filter(a => a.category === 'INVESTMENT').reduce((acc, cur) => acc + (Number(cur.value) || 0), 0) : 0;
+            
+            // 신규 지표: 비상금 지수 (Months of coverage)
+            const liquidAssets = (currentData.assets || []).filter(a => a.category === 'SAVINGS').reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
+            const monthlyExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+            const emergencyIndex = monthlyExpense > 0 ? (liquidAssets / monthlyExpense).toFixed(1) : '∞';
+
             const annualData = useMemo(() => {
                 const months = allMonths.filter(m => m.startsWith(viewYear));
                 let profit = 0, dividend = 0;
@@ -826,12 +859,18 @@
             });
             const cashFlowData = recentMonths.map(month => {
                 const d = safeData[month];
+                const income = (d?.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
+                const expense = (d?.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
+                const saving = (d?.budget || []).filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
+                const invest = (d?.budget || []).filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
+                
                 return {
                     name: month,
-                    수입: (d?.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
-                    지출: (d?.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
-                    저축: (d?.budget || []).filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
-                    투자: (d?.budget || []).filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST')).reduce((a,b)=>a+(Number(b.amount) || 0), 0),
+                    수입: income,
+                    지출: expense,
+                    저축: saving,
+                    투자: invest,
+                    저축률: income > 0 ? parseFloat(((income - expense) / income * 100).toFixed(1)) : 0
                 };
             });
             const portfolioData = Object.keys(ASSET_CATEGORIES).map(catKey => {
@@ -858,11 +897,34 @@
             };
             const renderScoreCard = (id) => {
                  switch(id) {
-                    case 'total': return <CompactScoreCard title="총 자산" value={totalAssets} yoy={calcYoY(totalAssets, prevTotalAssets)} icon={Icons.Wallet} breakdown={assetBreakdown}/>;
+                    case 'total': return <CompactScoreCard title="총 자산" value={totalAssets} yoy={calcYoY(totalAssets, prevTotalAssets)} icon={Icons.Wallet} breakdown={assetBreakdown} />;
                     case 'net': return <CompactScoreCard title="순자산" value={netWorth} yoy={calcYoY(netWorth, prevNetWorth)} icon={Icons.Sparkles} colorClass="text-emerald-600" breakdown={[{label: '총자산', value: totalAssets}, {label: '부채', value: -liabilitiesExclJeonse}]} />;
                     case 'debt': return <CompactScoreCard title="부채 (전세제외)" value={liabilitiesExclJeonse} yoy={calcYoY(liabilitiesExclJeonse, prevLiabilities)} icon={Icons.CreditCard} tooltip="부채" colorClass="text-rose-600" />;
                     case 'invest': return <CompactScoreCard title="주식 평가액" value={totalStockAssets} yoy={calcYoY(totalStockAssets, prevTotalStockAssets)} icon={Icons.CandlestickChart} colorClass="text-violet-600" />;
+                    case 'emergency': return (
+                        <GlassCard className="p-3 group hover:-translate-y-1 transition-transform border-l-4 border-emerald-400 h-full">
+                            <div className="flex flex-col justify-between h-full min-h-[90px] relative">
+                                <div className="flex justify-between items-center mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="p-1 rounded bg-emerald-50 text-emerald-600"><Icons.ShieldCheck className="w-3.5 h-3.5" /></div>
+                                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">비상금 지수</span>
+                                    </div>
+                                    <Icons.Info className="w-3 h-3 text-slate-300 hover:text-indigo-500 cursor-help" title="현금성 자산으로 버틸 수 있는 개월 수" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-emerald-600">{emergencyIndex}<span className="text-xs ml-1 text-slate-400">개월</span></h3>
+                                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1 border-t border-slate-50 pt-1">
+                                        <div className="flex items-center gap-0.5">
+                                            <span className="text-[8px] font-medium text-slate-400">현금성 자산</span>
+                                            <span className="text-[8px] font-bold text-slate-500">{formatCurrency(liquidAssets)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    );
                     case 'annual': return <AnnualStockCard profit={annualData.profit} dividend={annualData.dividend} year={annualData.year} />;
+
                     default: return null;
                 }
             }
@@ -872,46 +934,72 @@
                         <div className="flex items-center gap-4"><h2 className="text-2xl font-black text-slate-800 tracking-tighter">Dashboard</h2><div className="h-6 w-px bg-slate-300 mx-2"></div><p className="text-slate-500 text-sm font-bold flex items-center gap-2">{todayStr}<span className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-400 font-mono">Today</span></p></div>
                         <div className="flex items-center gap-4 bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-200"><button onClick={() => handleMonthChange(-1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"><Icons.ChevronLeft className="w-4 h-4"/></button><span className="text-base font-extrabold text-indigo-600 min-w-[80px] text-center">{viewDate}</span><button onClick={() => handleMonthChange(1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"><Icons.ChevronRight className="w-4 h-4"/></button></div>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">{['total', 'net', 'debt', 'invest', 'annual'].map((id) => (<div key={id}>{renderScoreCard(id)}</div>))}</div>
+                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                        {['total', 'net', 'debt', 'invest', 'emergency', 'annual'].map((id) => (
+                            <div key={id}>{renderScoreCard(id)}</div>
+                        ))}
+                    </div>
                     <div className="grid grid-cols-1 gap-6">
-                        <div className="h-[500px]"><GlassCard className="p-6 h-full flex flex-col"><h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4"><Icons.Activity className="w-5 h-5 text-indigo-600"/> 전체 자산 흐름</h3><div className="flex-1"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={fullGrowthData}><defs><linearGradient id="colorTotal" x1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/><stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={10} axisLine={false} tickLine={false} /><YAxis yAxisId="left" fontSize={10} width={45} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#cbd5e1" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ borderRadius: '12px' }} /><Area yAxisId="left" type="monotone" dataKey="총자산" stroke="#4F46E5" strokeWidth={2} fill="url(#colorTotal)" /><Line yAxisId="left" type="monotone" dataKey="순자산" stroke="#10B981" strokeWidth={2} dot={false} /><Line yAxisId="right" type="monotone" dataKey="부채비율" stroke="#f43f5e" strokeWidth={1.5} strokeDasharray="4 4" dot={false} /></ComposedChart></ResponsiveContainer></div></GlassCard></div>
+                        <CollapsibleCard title="전체 자산 흐름" icon={Icons.Activity} className="h-[500px]">
+                            <div className="flex-1"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={fullGrowthData}><defs><linearGradient id="colorTotal" x1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/><stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={10} axisLine={false} tickLine={false} /><YAxis yAxisId="left" fontSize={10} width={45} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#cbd5e1" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ borderRadius: '12px' }} /><Area yAxisId="left" type="monotone" dataKey="총자산" stroke="#4F46E5" strokeWidth={2} fill="url(#colorTotal)" /><Line yAxisId="left" type="monotone" dataKey="순자산" stroke="#10B981" strokeWidth={2} dot={false} /><Line yAxisId="right" type="monotone" dataKey="부채비율" stroke="#f43f5e" strokeWidth={1.5} strokeDasharray="4 4" dot={false} /></ComposedChart></ResponsiveContainer></div>
+                        </CollapsibleCard>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="h-64"><GlassCard className="p-6 h-full"><h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4"><Icons.Activity className="w-5 h-5 text-indigo-600"/> 자산별 성장</h3><div className="h-5/6"><ResponsiveContainer width="100%" height="100%"><LineChart data={assetGrowthData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={5} axisLine={false} tickLine={false} /><YAxis fontSize={10} width={40} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ borderRadius: '8px', padding: '6px 10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />{Object.keys(ASSET_CATEGORIES).map((key) => (<Line key={key} type="monotone" dataKey={ASSET_CATEGORIES[key].label} stroke={ASSET_CATEGORIES[key].color} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />))}</LineChart></ResponsiveContainer></div></GlassCard></div>
-                        <div className="h-64"><GlassCard className="p-6 h-full"><h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 mb-4"><Icons.Banknote className="w-5 h-5 text-sky-500"/> 자금 흐름</h3><div className="h-5/6"><ResponsiveContainer width="100%" height="100%"><BarChart data={cashFlowData} barGap={4}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={40} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} /><RechartsTooltip cursor={{fill: '#f8fafc'}} formatter={(val) => formatCurrency(val)} contentStyle={{ borderRadius: '8px', padding: '6px 10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} /><Legend wrapperStyle={{fontSize:'11px'}} /><Bar dataKey="수입" fill="#38bdf8" radius={[4,4,0,0]} barSize={12} /><Bar dataKey="지출" stackId="out" fill="#fb7185" barSize={12} /><Bar dataKey="저축" stackId="out" fill="#34d399" barSize={12} /><Bar dataKey="투자" stackId="out" fill="#818cf8" radius={[4,4,0,0]} barSize={12} /></BarChart></ResponsiveContainer></div></GlassCard></div>
-                        <div className="h-64">
-                            <GlassCard className="p-4 flex flex-col h-full">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                                        <Icons.PieChart className="w-5 h-5 text-pink-500"/> 자산 포트폴리오
-                                    </h3>
-                                    <span className="text-[10px] text-slate-400 font-bold">{viewDate} 기준</span>
-                                </div>
-                                <div className="flex-1 flex items-center gap-2 min-h-0">
-<div className="w-2/5 h-full relative"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={portfolioData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem === null ? -1 : activeItem} activeShape={renderActiveShape}>{portfolioData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}</Pie></PieChart></ResponsiveContainer><div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span className="text-[10px] font-bold text-slate-400">Total</span></div></div><div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar"><div className="space-y-1">{portfolioData.map((entry, index) => (<div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === index ? 'bg-slate-50' : ''}`} onMouseEnter={() => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)}><div className="flex items-center gap-1.5 overflow-hidden"><div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div><span className="font-bold text-slate-600 truncate" title={entry.name}>{entry.name}</span></div><div className="flex items-center gap-2 flex-shrink-0"><span className="font-bold text-slate-700">{formatCurrency(entry.value)}</span><span className="text-slate-400 font-mono w-8 text-right">{((entry.value/totalAssets)*100).toFixed(0)}%</span></div></div>))}</div></div></div></GlassCard></div>
+                        <CollapsibleCard title="자산별 성장" icon={Icons.Activity} className="h-64">
+                            <div className="h-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={assetGrowthData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={5} axisLine={false} tickLine={false} /><YAxis fontSize={10} width={40} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ borderRadius: '8px', padding: '6px 10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />{Object.keys(ASSET_CATEGORIES).map((key) => (<Line key={key} type="monotone" dataKey={ASSET_CATEGORIES[key].label} stroke={ASSET_CATEGORIES[key].color} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />))}</LineChart></ResponsiveContainer></div>
+                        </CollapsibleCard>
+                        <CollapsibleCard title="자금 흐름" icon={Icons.Banknote} className="h-64">
+                            <div className="h-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={cashFlowData} barGap={4}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={40} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} /><RechartsTooltip cursor={{fill: '#f8fafc'}} formatter={(val) => formatCurrency(val)} contentStyle={{ borderRadius: '8px', padding: '6px 10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} /><Legend wrapperStyle={{fontSize:'11px'}} /><Bar dataKey="수입" fill="#38bdf8" radius={[4,4,0,0]} barSize={12} /><Bar dataKey="지출" stackId="out" fill="#fb7185" barSize={12} /><Bar dataKey="저축" stackId="out" fill="#34d399" barSize={12} /><Bar dataKey="투자" stackId="out" fill="#818cf8" radius={[4,4,0,0]} barSize={12} /></BarChart></ResponsiveContainer></div>
+                        </CollapsibleCard>
+                        <CollapsibleCard title="자산 포트폴리오" icon={Icons.PieChart} className="h-64" headerExtra={<span className="text-[10px] text-slate-400 font-bold">{viewDate} 기준</span>}>
+                            <div className="flex-1 flex items-center gap-2 min-h-0">
+                                <div className="w-2/5 h-full relative"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={portfolioData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem === null ? -1 : activeItem} activeShape={renderActiveShape}>{portfolioData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}</Pie></PieChart></ResponsiveContainer><div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"><span className="text-[10px] font-bold text-slate-400">Total</span></div></div>
+                                <div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar"><div className="space-y-1">{portfolioData.map((entry, index) => (<div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === index ? 'bg-slate-50' : ''}`} onMouseEnter={() => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)}><div className="flex items-center gap-1.5 overflow-hidden"><div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div><span className="font-bold text-slate-600 truncate" title={entry.name}>{entry.name}</span></div><div className="flex items-center gap-2 flex-shrink-0"><span className="font-bold text-slate-700">{formatCurrency(entry.value)}</span><span className="text-slate-400 font-mono w-8 text-right">{((entry.value/totalAssets)*100).toFixed(0)}%</span></div></div>))}</div></div>
+                            </div>
+                        </CollapsibleCard>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6"><div className="h-64"><MonthlyAssetRatioCard date={viewDate} data={safeData} /></div><div className="h-64"><YearlyRatioCard year={viewYear} data={safeData} /></div><div className="h-64"><AIAnalysisCard assets={totalAssets} liabilities={liabilitiesExclJeonse} netWorth={netWorth} income={totalIncome} expense={totalExpense} year={viewYear} data={safeData} /></div></div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <CollapsibleCard title="월별 자산 비율" icon={Icons.PieChart} className="h-64" headerExtra={<span className="text-[10px] text-slate-500 font-medium">{viewDate} 기준</span>}>
+                            <MonthlyAssetRatioCard date={viewDate} data={safeData} isWrapped />
+                        </CollapsibleCard>
+                        <CollapsibleCard title="연간 누적 비율" icon={Icons.PieChart} className="h-64">
+                            <YearlyRatioCard year={viewYear} data={safeData} isWrapped />
+                        </CollapsibleCard>
+                        <CollapsibleCard title="AI Asset Advisor" icon={Icons.Sparkles} className="h-64">
+                            <AIAnalysisCard assets={totalAssets} liabilities={liabilitiesExclJeonse} netWorth={netWorth} income={totalIncome} expense={totalExpense} year={viewYear} data={safeData} isWrapped />
+                        </CollapsibleCard>
+                    </div>
                     
                     {/* FIRE Goal Section */}
-                    <div className="bg-slate-900 rounded-3xl p-6 lg:p-8 shadow-xl flex flex-col lg:flex-row justify-between items-center gap-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-                        <div className="relative z-10 flex-1 w-full">
-                            <h3 className="text-indigo-400 font-bold text-xs mb-2 uppercase tracking-widest flex items-center gap-2"><Icons.Target className="w-4 h-4"/> FIRE (조기 은퇴) 목표</h3>
-                            <div className="flex items-end gap-3 mb-3"><span className="text-4xl font-black text-white tracking-tighter">{formatCurrency(netWorth)}</span><span className="text-slate-400 font-medium mb-1">/ {formatCurrency(netWorthGoal)} (원)</span></div>
-                            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden"><div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${Math.min((netWorth / netWorthGoal) * 100, 100)}%` }}></div></div>
-                            <div className="flex justify-between mt-3 text-sm font-bold"><span className="text-emerald-400">{((netWorth / netWorthGoal) * 100).toFixed(1)}% 달성</span><button onClick={() => { const val = prompt("새로운 목표 금액(원):", netWorthGoal); if(val && !isNaN(val)) updateGoal('netWorth', Number(val)); }} className="text-slate-500 hover:text-white transition-colors underline underline-offset-4 decoration-slate-700 hover:decoration-white">목표 금액 수정</button></div>
+                    <CollapsibleCard title="FIRE (조기 은퇴) 목표" icon={Icons.Target} className="bg-slate-900 rounded-3xl" initialOpen={true}>
+                        <div className="flex flex-col lg:flex-row justify-between items-center gap-8 relative">
+                            <div className="relative z-10 flex-1 w-full">
+                                <h3 className="text-indigo-400 font-bold text-xs mb-2 uppercase tracking-widest flex items-center gap-2"><Icons.Target className="w-4 h-4"/> 목표 달성 현황</h3>
+                                <div className="flex items-end gap-3 mb-3"><span className="text-4xl font-black text-white tracking-tighter">{formatCurrency(netWorth)}</span><span className="text-slate-400 font-medium mb-1">/ {formatCurrency(netWorthGoal)} (원)</span></div>
+                                <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden"><div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${Math.min((netWorth / netWorthGoal) * 100, 100)}%` }}></div></div>
+                                <div className="flex justify-between mt-3 text-sm font-bold"><span className="text-emerald-400">{((netWorth / netWorthGoal) * 100).toFixed(1)}% 달성</span><button onClick={() => { const val = prompt("새로운 목표 금액(원):", netWorthGoal); if(val && !isNaN(val)) updateGoal('netWorth', Number(val)); }} className="text-slate-500 hover:text-white transition-colors underline underline-offset-4 decoration-slate-700 hover:decoration-white">목표 금액 수정</button></div>
+                            </div>
+                            <div className="relative z-10 w-full lg:w-auto flex gap-4">
+                                 <div className="flex-1 bg-slate-800/50 backdrop-blur-md rounded-2xl p-5 border border-slate-700 min-w-[160px]"><p className="text-slate-400 text-[11px] font-bold uppercase mb-2 tracking-wider">전월 대비 순자산</p><div className="flex items-center gap-2"><span className={`text-2xl font-black ${calcYoY(netWorth, prevNetWorth) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{calcYoY(netWorth, prevNetWorth) > 0 ? '+' : ''}{calcYoY(netWorth, prevNetWorth).toFixed(1)}%</span></div></div>
+                                 <div className="flex-1 bg-slate-800/50 backdrop-blur-md rounded-2xl p-5 border border-slate-700 min-w-[160px]"><p className="text-slate-400 text-[11px] font-bold uppercase mb-2 tracking-wider">연간 패시브 인컴</p><div className="flex items-center gap-2"><span className="text-2xl font-black text-indigo-300">{formatCurrency(annualData.profit + annualData.dividend)}</span></div></div>
+                            </div>
                         </div>
-                        <div className="relative z-10 w-full lg:w-auto flex gap-4">
-                             <div className="flex-1 bg-slate-800/50 backdrop-blur-md rounded-2xl p-5 border border-slate-700 min-w-[160px]"><p className="text-slate-400 text-[11px] font-bold uppercase mb-2 tracking-wider">전월 대비 순자산</p><div className="flex items-center gap-2"><span className={`text-2xl font-black ${calcYoY(netWorth, prevNetWorth) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{calcYoY(netWorth, prevNetWorth) > 0 ? '+' : ''}{calcYoY(netWorth, prevNetWorth).toFixed(1)}%</span></div></div>
-                             <div className="flex-1 bg-slate-800/50 backdrop-blur-md rounded-2xl p-5 border border-slate-700 min-w-[160px]"><p className="text-slate-400 text-[11px] font-bold uppercase mb-2 tracking-wider">연간 패시브 인컴</p><div className="flex items-center gap-2"><span className="text-2xl font-black text-indigo-300">{formatCurrency(annualData.profit + annualData.dividend)}</span></div></div>
-                        </div>
-                    </div>
+                    </CollapsibleCard>
 
                     <div className="grid grid-cols-1 gap-6">
-                        <FinancialGoalCombinedCard year={viewYear} data={safeData} loanGoal={loanGoal} investGoal={investGoal} onGoalChange={updateGoal} />
+                        <CollapsibleCard title="연간 재무 목표" icon={Icons.Target}>
+                            <FinancialGoalCombinedCard year={viewYear} data={safeData} loanGoal={loanGoal} investGoal={investGoal} onGoalChange={updateGoal} isWrapped />
+                        </CollapsibleCard>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6"><div className="h-48"><MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} /></div></div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <CollapsibleCard title="저축률 및 투자 비중 추이" icon={Icons.TrendingUp} className="h-64">
+                            <div className="h-full"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={30} stroke="#94a3b8" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => `${val}%`} contentStyle={{ borderRadius: '12px' }} /><Bar dataKey="저축률" fill="#10B981" radius={[4,4,0,0]} barSize={20} /><Line type="monotone" dataKey="저축률" stroke="#059669" strokeWidth={2} dot={{r:3}} /></ComposedChart></ResponsiveContainer></div>
+                        </CollapsibleCard>
+                        <CollapsibleCard title="메모" icon={Icons.Edit2} className="h-64">
+                            <MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} isWrapped />
+                        </CollapsibleCard>
+                    </div>
                 </div>
             );
         };
@@ -1233,11 +1321,30 @@
                     <div className="h-screen bg-[#F8FAFC] font-sans text-slate-800 selection:bg-slate-800 selection:text-white overflow-hidden flex flex-col">
                         <SyncModal isOpen={showSyncModal} onClose={() => setShowSyncModal(false)} currentId={syncId} onSyncIdChange={setSyncId} />
                         <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm shrink-0">
-                            <div className="flex items-center justify-between px-6 lg:px-10 h-16 max-w-[1600px] mx-auto">
-                                <div className="flex items-center gap-6"><div className="flex items-center gap-2 text-indigo-600 mr-4"><Icons.LayoutDashboard className="w-8 h-8" /><span className="text-xl font-black tracking-tighter text-slate-900 hidden sm:inline">FinMaster</span></div>
-                                    <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar">{TABS.map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 hover:text-indigo-600'}`}><tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`}/> {tab.label}</button>))}</nav>
+                            <div className="flex items-center h-16 max-w-[1600px] mx-auto px-6 lg:px-10">
+                                <div className="flex items-center gap-8 flex-1">
+                                    <div className="flex items-center gap-2 text-indigo-600 shrink-0">
+                                        <Icons.LayoutDashboard className="w-8 h-8" />
+                                        <span className="text-xl font-black tracking-tighter text-slate-900 hidden sm:inline">FinMaster</span>
+                                    </div>
+                                    <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar">
+                                        {TABS.map(tab => (
+                                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 hover:text-indigo-600'}`}>
+                                                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`}/> 
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </nav>
                                 </div>
-                                <div className="flex items-center gap-3"><button onClick={() => setShowSyncModal(true)} className="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg bg-white/50 border border-transparent hover:border-indigo-100"><Icons.Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-pulse text-indigo-500' : ''}`}/><span className="hidden sm:inline">{isSyncing ? '저장 중...' : '연동'}</span></button><button onClick={handleResetData} className="text-xs text-slate-400 hover:text-rose-500 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg" title="초기화"><Icons.RefreshCw className="w-4 h-4"/></button></div>
+                                <div className="flex items-center gap-3 shrink-0 ml-4">
+                                    <button onClick={() => setShowSyncModal(true)} className="text-xs font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-lg bg-white/50 border border-transparent hover:border-indigo-100">
+                                        <Icons.Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-pulse text-indigo-500' : ''}`}/>
+                                        <span className="hidden sm:inline">{isSyncing ? '저장 중...' : '연동'}</span>
+                                    </button>
+                                    <button onClick={handleResetData} className="text-xs text-slate-400 hover:text-rose-500 flex items-center gap-1 transition-colors px-2 py-1 rounded-lg" title="초기화">
+                                        <Icons.RefreshCw className="w-4 h-4"/>
+                                    </button>
+                                </div>
                             </div>
                             <div className="md:hidden overflow-x-auto no-scrollbar px-4 py-2 border-t border-slate-100 flex gap-2">{TABS.map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white' : 'text-slate-500 bg-slate-50'}`}>{tab.label}</button>)) }</div>
                         </div>
