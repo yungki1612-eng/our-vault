@@ -551,7 +551,7 @@
             return (
                 <tr draggable={!isEditing} onDragStart={handleDragStart} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop} className={`group transition-colors border-b border-slate-200 last:border-0 hover:bg-indigo-50/30 odd:bg-white/50 even:bg-slate-50/50 ${isHidden ? 'opacity-40 bg-slate-100/50' : ''}`}>
                     <td className="sticky-col-cell border-r-2 border-slate-200 align-middle">
-                        <div className="flex items-center gap-2 p-3 min-w-[220px]">
+                        <div className="flex items-center gap-2 p-3 min-w-[176px]">
                             <div className="cursor-grab active:cursor-grabbing p-1.5 hover:bg-white rounded-lg text-slate-400 transition-colors"><Icons.GripVertical className="w-4 h-4" /></div>
                             <button onClick={(e) => { e.stopPropagation(); onToggleHide(); }} className="p-1.5 text-slate-400 hover:text-indigo-500 rounded-lg hover:bg-white transition-colors">{isHidden ? <Icons.EyeOff className="w-3.5 h-3.5"/> : <Icons.Eye className="w-3.5 h-3.5"/>}</button>
                             {isEditing ? (
@@ -1173,9 +1173,9 @@
                         <table className="min-w-max text-sm text-right border-collapse">
                             <thead className="bg-slate-50 text-slate-500 sticky top-0 z-40 shadow-sm">
                                 <tr>
-                                    <th className="sticky-col-header p-2 text-left border-r-2 border-slate-200 w-36 pl-6 font-bold text-xs">항목명</th>
+                                    <th className="sticky-col-header p-2 text-left border-r-2 border-slate-200 w-28 pl-6 font-bold text-xs">항목명</th>
                                     {visibleMonths.map(m => (
-                                        <th key={m} className={`p-2 min-w-[90px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative ${hiddenMonths.has(m) ? 'bg-slate-100/50' : ''}`}>
+                                        <th key={m} className={`p-2 min-w-[72px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative ${hiddenMonths.has(m) ? 'bg-slate-100/50' : ''}`}>
                                             <div className="flex flex-col items-center justify-center gap-1">
                                                 <span className="text-[10px] text-slate-400 font-medium tracking-tighter uppercase">{m.split('-')[0]}</span>
                                                 <div className="flex items-center gap-1">
@@ -1200,12 +1200,12 @@
                                         {hasCategory && (
                                             <tr className={`${categories[catKey].bg} border-y border-slate-200/50`}>
                                                 <td className={`sticky-category p-2 text-left font-extrabold ${categories[catKey].text} ${categories[catKey].bg} backdrop-blur-md border-r border-slate-200/50 shadow-sm text-xs`}>{categories[catKey].label}</td>
-                                                {visibleMonths.map(m => (<td key={m} className={`border-r border-slate-200/50 ${categories[catKey].bg} min-w-[90px]`}></td>))}
+                                                {visibleMonths.map(m => (<td key={m} className={`border-r border-slate-200/50 ${categories[catKey].bg} min-w-[72px]`}></td>))}
                                             </tr>
                                         )}
                                         {visibleItems.map((item, idx) => (
                                             <tr key={item.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors group/row`}>
-                                                <td className="sticky left-0 z-20 bg-inherit p-2 min-w-[140px] border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                                <td className="sticky left-0 z-20 bg-inherit p-2 min-w-[112px] border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                                                     <div className="flex items-center justify-between group">
                                                         <div className="flex items-center gap-2 overflow-hidden">
                                                             <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
@@ -1222,7 +1222,7 @@
                                                         const profit = found ? (found.profit || 0) : 0;
                                                         const dividend = found ? (found.dividend || 0) : 0;
                                                         return (
-                                                            <td key={month} className="p-1 border-r border-slate-100 relative group/cell min-w-[90px]">
+                                                            <td key={month} className="p-1 border-r border-slate-100 relative group/cell min-w-[72px]">
                                                                 <div className="flex flex-col gap-1">
                                                                     <div className="flex items-center gap-1 bg-white/40 rounded px-1"><span className="text-[9px] font-bold text-slate-400 w-3">P</span><CurrencyInput value={profit} onChange={(v) => handleCellChange(month, item.name, 'profit', v, item.category)} className={`flex-1 text-right bg-transparent outline-none text-[11px] font-mono ${profit < 0 ? 'text-blue-500' : profit > 0 ? 'text-rose-500' : 'text-slate-600'}`} /></div>
                                                                     <div className="flex items-center gap-1 bg-indigo-50/30 rounded px-1 border-t border-indigo-100/50"><span className="text-[9px] font-bold text-indigo-400 w-3">D</span><CurrencyInput value={dividend} onChange={(v) => handleCellChange(month, item.name, 'dividend', v, item.category)} className="flex-1 text-right bg-transparent outline-none text-[11px] font-mono text-emerald-600" /></div>
@@ -1233,7 +1233,7 @@
                                                         const val = found ? (found.value ?? found.amount ?? 0) : 0;
                                                         const fieldName = type === 'assets' ? 'value' : 'amount';
                                                         return (
-                                                            <td key={month} className="p-0 border-r border-slate-300/50 bg-white/30 min-w-[90px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
+                                                            <td key={month} className="p-0 border-r border-slate-300/50 bg-white/30 min-w-[72px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
                                                         );
                                                     }
                                                 })}
@@ -1244,7 +1244,7 @@
                                                 <td className="sticky-sum-cell p-2 text-right border-r border-slate-200 text-xs">{categories[catKey].label} 합계</td>
                                                 {visibleMonths.map(month => {
                                                     const sum = items.reduce((acc, item) => { const found = (safeData[month][listKey] || []).find(i => i.name === item.name); const val = found ? (found.value ?? found.amount ?? 0) : 0; return acc + val; }, 0);
-                                                    return (<td key={month} className="p-2 text-right border-r border-slate-200 text-xs bg-slate-50 min-w-[90px]">{formatCurrency(sum)}</td>);
+                                                    return (<td key={month} className="p-2 text-right border-r border-slate-200 text-xs bg-slate-50 min-w-[72px]">{formatCurrency(sum)}</td>);
                                                 })}
                                             </tr>
                                         )}
@@ -1332,7 +1332,7 @@
                         <div className="overflow-auto custom-scrollbar" ref={containerRef}>
                             <table className="min-w-full text-sm text-right">
                                 <thead className="bg-slate-50/80 text-slate-500"><tr><th className="p-4 text-left w-28 font-bold border-r border-slate-100 sticky left-0 bg-slate-50/95 backdrop-blur-sm z-20 shadow-sm">이름</th><th className="p-4 w-32 font-black text-indigo-600 border-r border-slate-100 sticky left-28 bg-indigo-50/95 backdrop-blur-sm z-20 shadow-sm">합계</th>
-                                    {years.map(year => (<th key={year} data-year={year} className="p-4 min-w-[110px] font-bold border-r border-slate-100 last:border-0 group/th relative"><div className="flex items-center justify-center gap-1">{year}<button onClick={(e) => { e.stopPropagation(); handleDeleteYear(year); }} className="opacity-0 group-hover/th:opacity-100 p-1.5 hover:bg-rose-100 rounded-lg text-rose-400 transition-all absolute right-1 top-1/2 -translate-y-1/2" title="연도 삭제"><Icons.X className="w-3 h-3"/></button></div></th>))}
+                                    {years.map(year => (<th key={year} data-year={year} className="p-4 min-w-[88px] font-bold border-r border-slate-100 last:border-0 group/th relative"><div className="flex items-center justify-center gap-1">{year}<button onClick={(e) => { e.stopPropagation(); handleDeleteYear(year); }} className="opacity-0 group-hover/th:opacity-100 p-1.5 hover:bg-rose-100 rounded-lg text-rose-400 transition-all absolute right-1 top-1/2 -translate-y-1/2" title="연도 삭제"><Icons.X className="w-3 h-3"/></button></div></th>))}
                                 </tr></thead>
                                 <tbody className="divide-y divide-slate-100">{salaryData.items.map((item, idx) => {
                                     const itemTotal = Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0);
