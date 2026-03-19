@@ -1580,7 +1580,15 @@
             useEffect(() => { if (!user || !db) return; localStorage.setItem('fm_sync_id', syncId); const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'financial_sheets', syncId); const unsubscribe = onSnapshot(docRef, (docSnap) => { if (docSnap.exists()) { const cloudData = docSnap.data(); setFinancialData(prev => { if (JSON.stringify(prev) !== JSON.stringify(cloudData)) return cloudData; return prev; }); setLastUpdated(Date.now()); } }); return () => unsubscribe(); }, [user, syncId]);
             useEffect(() => { if (!user || !db) return; setIsSyncing(true); const timeoutId = setTimeout(async () => { try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'financial_sheets', syncId), financialData); setIsSyncing(false); } catch (err) { console.error(err); } }, 1500); return () => clearTimeout(timeoutId); }, [financialData, user, syncId]);
             const handleResetData = () => { if (confirm("모든 데이터를 초기화하시겠습니까?")) { const initial = generateInitialData(); setFinancialData(initial); localStorage.removeItem('financialData'); } };
-            const TABS = [{id: 'dashboard', label: '대시보드', icon: Icons.LayoutDashboard}, {id: 'assets', label: '자산 관리', icon: Icons.Table2}, {id: 'realestate', label: '부동산 관리', icon: Icons.Home}, {id: 'budget', label: '수입/지출', icon: Icons.Banknote}, {id: 'loans', label: '대출 관리', icon: Icons.CreditCard}, {id: 'stocks', label: '주식 실현 손익', icon: Icons.CandlestickChart}, {id: 'salary', label: '연봉 관리', icon: Icons.TrendingUp}];
+            const TABS = [
+                {id: 'dashboard', label: '대시보드', icon: Icons.LayoutDashboard}, 
+                {id: 'assets', label: '자산 관리', icon: Icons.Table2}, 
+                {id: 'budget', label: '수입/지출', icon: Icons.Banknote}, 
+                {id: 'loans', label: '대출 관리', icon: Icons.CreditCard}, 
+                {id: 'realestate', label: '부동산 관리', icon: Icons.Home}, 
+                {id: 'stocks', label: '주식 실현 손익', icon: Icons.CandlestickChart}, 
+                {id: 'salary', label: '연봉 관리', icon: Icons.TrendingUp}
+            ];
             const [activeTab, setActiveTab] = useState('dashboard');
 
             return (
