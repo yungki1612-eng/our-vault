@@ -1647,36 +1647,59 @@
 
         const LoanTrendGraph = ({ data }) => {
             const months = useMemo(() => Object.keys(data).filter(isMonthKey).sort(), [data]);
+            
+            const uniqueLoanNames = useMemo(() => {
+                const names = new Set();
+                months.forEach(m => {
+                    (data[m]?.loans || []).forEach(loan => names.add(loan.name));
+                });
+                return Array.from(names);
+            }, [data, months]);
+
             const graphData = useMemo(() => months.map(m => {
-                const totalLoan = (data[m]?.loans || []).reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0);
-                return { name: m, amount: totalLoan };
+                const point = { name: m };
+                (data[m]?.loans || []).forEach(loan => {
+                    point[loan.name] = Number(loan.amount) || 0;
+                });
+                return point;
             }), [data, months]);
+
+            const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
 
             return (
                 <GlassCard className="p-6 h-full">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="p-2 bg-rose-100 rounded-lg text-rose-600">
-                            <Icons.TrendingDown className="w-5 h-5" />
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 bg-rose-100 rounded-lg text-rose-600">
+                                <Icons.TrendingDown className="w-5 h-5" />
+                            </div>
+                            <h4 className="text-lg font-bold text-slate-800">대출별 잔액 추이</h4>
                         </div>
-                        <h4 className="text-lg font-bold text-slate-800">대출 잔액 추이</h4>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Loan Analytics</div>
                     </div>
                     <div className="h-64 sm:h-72">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={graphData}>
-                                <defs>
-                                    <linearGradient id="loanGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1}/>
-                                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={10} axisLine={false} tickLine={false} />
                                 <YAxis fontSize={10} width={60} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} />
                                 <RechartsTooltip 
-                                    formatter={(val) => formatCurrency(val)} 
+                                    formatter={(val, name) => [formatCurrency(val), name]} 
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '12px' }} 
                                 />
-                                <Line type="monotone" dataKey="amount" name="대출잔액" stroke="#f43f5e" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#fff'}} activeDot={{r: 8, strokeWidth: 0}} />
+                                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                                {uniqueLoanNames.map((loanName, index) => (
+                                    <Line 
+                                        key={loanName}
+                                        type="monotone" 
+                                        dataKey={loanName} 
+                                        name={loanName}
+                                        stroke={colors[index % colors.length]} 
+                                        strokeWidth={3} 
+                                        dot={{r: 3, strokeWidth: 2, fill: '#fff'}} 
+                                        activeDot={{r: 6, strokeWidth: 0}} 
+                                    />
+                                ))}
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
