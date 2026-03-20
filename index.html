@@ -1561,6 +1561,141 @@
             );
         };
 
+        const LoanCalculator = () => {
+            const [amount, setAmount] = useState(100000000);
+            const [rate, setRate] = useState(3.5);
+            const [term, setTerm] = useState(24);
+            const [type, setType] = useState('level'); // level: 원리금균등, principal: 원금균등
+
+            const results = useMemo(() => {
+                const r = rate / 100 / 12;
+                const n = term;
+                const L = amount;
+
+                if (r === 0) {
+                    return { monthlyPayment: L / n, totalInterest: 0, totalPayment: L };
+                }
+
+                if (type === 'level') {
+                    const monthlyPayment = L * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+                    const totalPayment = monthlyPayment * n;
+                    const totalInterest = totalPayment - L;
+                    return { monthlyPayment, totalInterest, totalPayment };
+                } else {
+                    const monthlyPrincipal = L / n;
+                    let totalInterest = 0;
+                    for (let i = 0; i < n; i++) {
+                        totalInterest += (L - (monthlyPrincipal * i)) * r;
+                    }
+                    const totalPayment = L + totalInterest;
+                    const avgMonthlyPayment = totalPayment / n;
+                    return { monthlyPayment: avgMonthlyPayment, totalInterest, totalPayment, isAvg: true };
+                }
+            }, [amount, rate, term, type]);
+
+            return (
+                <GlassCard className="p-6 h-full">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                            <Icons.Calculator className="w-5 h-5" />
+                        </div>
+                        <h4 className="text-lg font-bold text-slate-800">대출 계산기</h4>
+                    </div>
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">대출 금액 (원)</label>
+                                <CurrencyInput value={amount} onChange={setAmount} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">연 이자율 (%)</label>
+                                <input type="number" step="0.1" value={rate} onChange={e => setRate(Number(e.target.value))} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">대출 기간 (개월)</label>
+                                <input type="number" value={term} onChange={e => setTerm(Number(e.target.value))} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">상환 방식</label>
+                                <select value={type} onChange={e => setType(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none bg-no-repeat bg-[right_0.5rem_center] bg-[length:1em_1em]">
+                                    <option value="level">원리금균등</option>
+                                    <option value="principal">원금균등</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="mt-8 p-5 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl border border-indigo-100/50 space-y-3 shadow-inner">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-500">월 상환액{results.isAvg ? '(평균)' : ''}</span>
+                                <span className="text-2xl font-black text-indigo-600">{formatCurrency(results.monthlyPayment)}</span>
+                            </div>
+                            <div className="h-px bg-indigo-200/30 my-2"></div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-500">총 이자</span>
+                                <span className="text-sm font-bold text-slate-700">{formatCurrency(results.totalInterest)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-500">총 상환액</span>
+                                <span className="text-sm font-bold text-slate-700">{formatCurrency(results.totalPayment)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </GlassCard>
+            );
+        };
+
+        const LoanTrendGraph = ({ data }) => {
+            const months = useMemo(() => Object.keys(data).filter(isMonthKey).sort(), [data]);
+            const graphData = useMemo(() => months.map(m => {
+                const totalLoan = (data[m]?.loans || []).reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0);
+                return { name: m, amount: totalLoan };
+            }), [data, months]);
+
+            return (
+                <GlassCard className="p-6 h-full">
+                    <div className="flex items-center gap-2 mb-6">
+                        <div className="p-2 bg-rose-100 rounded-lg text-rose-600">
+                            <Icons.TrendingDown className="w-5 h-5" />
+                        </div>
+                        <h4 className="text-lg font-bold text-slate-800">대출 잔액 추이</h4>
+                    </div>
+                    <div className="h-64 sm:h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={graphData}>
+                                <defs>
+                                    <linearGradient id="loanGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1}/>
+                                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={10} axisLine={false} tickLine={false} />
+                                <YAxis fontSize={10} width={60} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} />
+                                <RechartsTooltip 
+                                    formatter={(val) => formatCurrency(val)} 
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '12px' }} 
+                                />
+                                <Line type="monotone" dataKey="amount" name="대출잔액" stroke="#f43f5e" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#fff'}} activeDot={{r: 8, strokeWidth: 0}} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </GlassCard>
+            );
+        };
+
+        const LoanManagement = ({ data, onUpdate }) => {
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <LoanCalculator />
+                        <LoanTrendGraph data={data} />
+                    </div>
+                    <GenericSpreadsheet data={data} type="loans" onUpdate={onUpdate} hasCategory={false} />
+                </div>
+            );
+        };
+
         function App() {
             const [user, setUser] = useState(null);
             const [syncId, setSyncId] = useState(() => localStorage.getItem('fm_sync_id') || generateUUID());
@@ -1628,7 +1763,7 @@
                             {activeTab === 'assets' && <GenericSpreadsheet data={financialData} type="assets" onUpdate={updateFinancialData} categories={ASSET_CATEGORIES} hasCategory={true} />}
                             {activeTab === 'realestate' && <RealEstateSheet data={financialData} onUpdate={updateFinancialData} />}
                             {activeTab === 'budget' && <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} />}
-                            {activeTab === 'loans' && <GenericSpreadsheet data={financialData} type="loans" onUpdate={updateFinancialData} hasCategory={false} />}
+                            {activeTab === 'loans' && <LoanManagement data={financialData} onUpdate={updateFinancialData} />}
                             {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} hasCategory={false} />}
                             {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} />}
                         </div></main></div>
