@@ -1296,9 +1296,15 @@
             );
         };
 
+        const OWNERSHIP_TYPES = {
+            OWN: { label: '자가', color: 'bg-indigo-500', text: 'text-indigo-500', light: 'bg-indigo-50' },
+            JEONSE: { label: '전세', color: 'bg-emerald-500', text: 'text-emerald-500', light: 'bg-emerald-50' },
+            RENT: { label: '월세', color: 'bg-amber-500', text: 'text-amber-500', light: 'bg-amber-50' }
+        };
+
         const RealEstateSheet = ({ data, onUpdate }) => {
             const realEstate = data.realEstate || [];
-            const [newItem, setNewItem] = useState({ name: '', category: 'APARTMENT', purchaseDate: '', purchasePrice: 0, currentValue: 0, loan: 0, deposit: 0, monthlyRent: 0 });
+            const [newItem, setNewItem] = useState({ name: '', category: 'APARTMENT', ownershipType: 'OWN', purchaseDate: '', purchasePrice: 0, currentValue: 0, loan: 0, deposit: 0, monthlyRent: 0 });
 
             const stats = useMemo(() => {
                 const totalValue = realEstate.reduce((acc, item) => acc + (Number(item.currentValue) || 0), 0);
@@ -1313,7 +1319,7 @@
                 if (!newData.realEstate) newData.realEstate = [];
                 newData.realEstate.push({ ...newItem, id: Date.now() });
                 onUpdate(newData);
-                setNewItem({ name: '', category: 'APARTMENT', purchaseDate: '', purchasePrice: 0, currentValue: 0, loan: 0, deposit: 0, monthlyRent: 0 });
+                setNewItem({ name: '', category: 'APARTMENT', ownershipType: 'OWN', purchaseDate: '', purchasePrice: 0, currentValue: 0, loan: 0, deposit: 0, monthlyRent: 0 });
             };
 
             const handleUpdateItem = (id, field, value) => {
@@ -1362,21 +1368,35 @@
                                 <input type="text" placeholder="예: 래미안 84A" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 ml-1">카테고리</label>
+                                <label className="text-[10px] font-bold text-slate-400 ml-1">부동산 형태</label>
                                 <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})}>
                                     {Object.entries(REAL_ESTATE_CATEGORIES).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                                 </select>
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 ml-1">취득일</label>
+                                <label className="text-[10px] font-bold text-slate-400 ml-1">거주 형태</label>
+                                <div className="flex bg-slate-50 p-1 rounded-xl gap-1 border border-slate-200">
+                                    {Object.entries(OWNERSHIP_TYPES).map(([k, v]) => (
+                                        <button 
+                                            key={k}
+                                            onClick={() => setNewItem({...newItem, ownershipType: k})}
+                                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${newItem.ownershipType === k ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            {v.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 ml-1">취득일 (또는 계약일)</label>
                                 <input type="text" placeholder="YYYY-MM-DD" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" value={newItem.purchaseDate} onChange={e => setNewItem({...newItem, purchaseDate: e.target.value})} />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 ml-1">취득가액</label>
+                                <label className="text-[10px] font-bold text-slate-400 ml-1">{newItem.ownershipType === 'OWN' ? '취득가액' : '계약금액'}</label>
                                 <CurrencyInput value={newItem.purchasePrice} onChange={v => setNewItem({...newItem, purchasePrice: v})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 ml-1">현재가액</label>
+                                <label className="text-[10px] font-bold text-slate-400 ml-1">현재가액 (시세)</label>
                                 <CurrencyInput value={newItem.currentValue} onChange={v => setNewItem({...newItem, currentValue: v})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
                             </div>
                             <div className="space-y-1">
@@ -1384,7 +1404,7 @@
                                 <CurrencyInput value={newItem.loan} onChange={v => setNewItem({...newItem, loan: v})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 ml-1">임대보증금</label>
+                                <label className="text-[10px] font-bold text-slate-400 ml-1">보증금 (받은/준)</label>
                                 <CurrencyInput value={newItem.deposit} onChange={v => setNewItem({...newItem, deposit: v})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" />
                             </div>
                             <div className="space-y-1">
@@ -1401,6 +1421,7 @@
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {realEstate.map(item => {
                             const cat = REAL_ESTATE_CATEGORIES[item.category] || REAL_ESTATE_CATEGORIES.OTHER;
+                            const own = OWNERSHIP_TYPES[item.ownershipType] || OWNERSHIP_TYPES.OWN;
                             const investment = (Number(item.purchasePrice) || 0) - (Number(item.deposit) || 0);
                             const yieldRate = investment > 0 ? ((Number(item.monthlyRent) || 0) * 12 / investment * 100).toFixed(2) : 0;
                             const profit = (Number(item.currentValue) || 0) - (Number(item.purchasePrice) || 0);
@@ -1413,10 +1434,11 @@
                                             <div className="p-2 bg-white rounded-lg shadow-sm"><Icons.Home className={`w-5 h-5 ${cat.text}`} /></div>
                                             <div>
                                                 <div className="flex items-center gap-2">
+                                                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded uppercase ${own.light} ${own.text} border border-current`}>{own.label}</span>
                                                     <span className={`text-[10px] font-black px-1.5 py-0.5 rounded uppercase ${cat.bg} ${cat.text} border border-current opacity-70`}>{cat.label}</span>
                                                     <h4 className="font-bold text-slate-800">{item.name}</h4>
                                                 </div>
-                                                <p className="text-[10px] text-slate-400 font-medium">취득일: {item.purchaseDate || '-'}</p>
+                                                <p className="text-[10px] text-slate-400 font-medium">계약일: {item.purchaseDate || '-'}</p>
                                             </div>
                                         </div>
                                         <button onClick={() => handleDeleteItem(item.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><Icons.Trash2 className="w-4 h-4" /></button>
@@ -1445,7 +1467,7 @@
                                         </div>
                                     </div>
                                     <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center">
-                                        <span className="text-[10px] font-bold text-slate-400">취득가액: {formatCurrency(item.purchasePrice)}</span>
+                                        <span className="text-[10px] font-bold text-slate-400">{item.ownershipType === 'OWN' ? '취득가액' : '계약금액'}: {formatCurrency(item.purchasePrice)}</span>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[10px] font-bold text-slate-400">실투자금: {formatCurrency(investment)}</span>
                                             <div className="h-3 w-px bg-slate-200"></div>
