@@ -97,10 +97,12 @@
 <body class="bg-slate-100 text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+    <script type="text/babel">
 
         // ResizeObserver Polyfill
         if (typeof ResizeObserver === 'undefined') {
@@ -131,9 +133,9 @@
           appId: "1:154724593376:web:7d3876ff45ddd4e02faa85"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
         const appId = 'financial-app-v1';
 
         const Icons = {
@@ -1876,9 +1878,9 @@
             const [showSyncModal, setShowSyncModal] = useState(false);
             const updateFinancialData = (newData) => { setFinancialData(newData); setLastUpdated(Date.now()); };
             useEffect(() => { localStorage.setItem('financialData', JSON.stringify(financialData)); }, [financialData]);
-            useEffect(() => { if (!auth) return; const initAuth = async () => { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); else await signInAnonymously(auth); }; initAuth(); const unsubscribe = onAuthStateChanged(auth, setUser); return () => unsubscribe(); }, []);
-            useEffect(() => { if (!user || !db) return; localStorage.setItem('fm_sync_id', syncId); const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'financial_sheets', syncId); const unsubscribe = onSnapshot(docRef, (docSnap) => { if (docSnap.exists()) { const cloudData = docSnap.data(); setFinancialData(prev => { if (JSON.stringify(prev) !== JSON.stringify(cloudData)) return cloudData; return prev; }); setLastUpdated(Date.now()); } }); return () => unsubscribe(); }, [user, syncId]);
-            useEffect(() => { if (!user || !db) return; setIsSyncing(true); const timeoutId = setTimeout(async () => { try { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'financial_sheets', syncId), financialData); setIsSyncing(false); } catch (err) { console.error(err); } }, 1500); return () => clearTimeout(timeoutId); }, [financialData, user, syncId]);
+            useEffect(() => { if (!auth) return; const initAuth = async () => { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await auth.signInWithCustomToken(__initial_auth_token); else await auth.signInAnonymously(); }; initAuth(); const unsubscribe = auth.onAuthStateChanged(setUser); return () => unsubscribe(); }, []);
+            useEffect(() => { if (!user || !db) return; localStorage.setItem('fm_sync_id', syncId); const docRef = db.doc(`artifacts/${appId}/public/data/financial_sheets/${syncId}`); const unsubscribe = docRef.onSnapshot((docSnap) => { if (docSnap.exists) { const cloudData = docSnap.data(); setFinancialData(prev => { if (JSON.stringify(prev) !== JSON.stringify(cloudData)) return cloudData; return prev; }); setLastUpdated(Date.now()); } }); return () => unsubscribe(); }, [user, syncId]);
+            useEffect(() => { if (!user || !db) return; setIsSyncing(true); const timeoutId = setTimeout(async () => { try { await db.doc(`artifacts/${appId}/public/data/financial_sheets/${syncId}`).set(financialData); setIsSyncing(false); } catch (err) { console.error(err); } }, 1500); return () => clearTimeout(timeoutId); }, [financialData, user, syncId]);
             const handleResetData = () => { if (confirm("모든 데이터를 초기화하시겠습니까?")) { const initial = generateInitialData(); setFinancialData(initial); localStorage.removeItem('financialData'); } };
             const TABS = [
                 {id: 'dashboard', label: '대시보드', icon: Icons.LayoutDashboard}, 
