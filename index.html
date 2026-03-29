@@ -131,7 +131,7 @@
         };
 
         const { useState, useMemo, useEffect, useRef, useCallback } = React;
-        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area, Sector } = Recharts;
+        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area, Sector, Sankey, Layer, Rectangle } = Recharts;
 
         // --- Firebase Setup ---
         const firebaseConfig = {
@@ -1146,6 +1146,140 @@
             );
         };
 
+        const CashFlowSankeyChart = ({ data }) => {
+            const [viewMode, setViewMode] = useState('year');
+            const months = useMemo(() => Object.keys(data).filter(isMonthKey).sort(), [data]);
+            const years = useMemo(() => [...new Set(months.map(m => m.substring(0, 4)))], [months]);
+            const [selectedYear, setSelectedYear] = useState(years[years.length - 1] || new Date().getFullYear().toString());
+            const [selectedMonth, setSelectedMonth] = useState(months[months.length - 1] || '');
+
+            useEffect(() => {
+                if (!years.includes(selectedYear) && years.length > 0) setSelectedYear(years[years.length - 1]);
+                if (!months.includes(selectedMonth) && months.length > 0) setSelectedMonth(months[months.length - 1]);
+            }, [years, months, selectedYear, selectedMonth]);
+
+            const sankeyData = useMemo(() => {
+                let targetMonths = viewMode === 'year' ? months.filter(m => m.startsWith(selectedYear)) : [selectedMonth].filter(Boolean);
+                let totalIncome = 0, totalExpense = 0, totalSaving = 0, totalInvest = 0;
+                const incomeBySrc = {}, expenseByDst = {}, savingByDst = {}, investByDst = {};
+
+                targetMonths.forEach(m => {
+                    (data[m]?.budget || []).forEach(b => {
+                        const val = evaluateFormula(b.amount) || 0;
+                        if (val <= 0) return;
+                        const cat1 = normalizeCategory(b.category || b.name, 'budget');
+                        const cat2 = b.category2 || '기타';
+                        
+                        if (cat1 === 'INCOME') { totalIncome += val; incomeBySrc[cat2] = (incomeBySrc[cat2] || 0) + val; } 
+                        else if (cat1 === 'EXPENSE') { totalExpense += val; expenseByDst[cat2] = (expenseByDst[cat2] || 0) + val; } 
+                        else if (cat1 === 'SAVING') { totalSaving += val; savingByDst[cat2] = (savingByDst[cat2] || 0) + val; } 
+                        else if (cat1 === 'INVEST') { totalInvest += val; investByDst[cat2] = (investByDst[cat2] || 0) + val; }
+                    });
+                });
+
+                const totalOutflow = totalExpense + totalSaving + totalInvest;
+                const balance = totalIncome - totalOutflow;
+
+                const nodeNames = [], links = [];
+                const addNode = (name) => { let idx = nodeNames.indexOf(name); if (idx === -1) { nodeNames.push({name}); idx = nodeNames.length - 1; } return idx; };
+                const addLink = (srcName, targetName, value) => { if (value > 0) links.push({ source: addNode(srcName), target: addNode(targetName), value }); };
+
+                const hubNode = "총 수입 (Hub)";
+                Object.entries(incomeBySrc).forEach(([src, val]) => addLink(`${src} (수입)`, hubNode, val));
+                if (balance < 0) addLink("🔥 초과 지출 (기존 자산/부채)", hubNode, Math.abs(balance));
+
+                if (totalExpense > 0) addLink(hubNode, "📝 총 지출", totalExpense);
+                if (totalSaving > 0) addLink(hubNode, "💰 총 저축", totalSaving);
+                if (totalInvest > 0) addLink(hubNode, "📈 총 투자", totalInvest);
+                if (balance > 0) addLink(hubNode, "⏳ 미분류 (남은 예산)", balance);
+
+                Object.entries(expenseByDst).forEach(([dst, val]) => addLink("📝 총 지출", `${dst} (지출)`, val));
+                Object.entries(savingByDst).forEach(([dst, val]) => addLink("💰 총 저축", `${dst} (저축)`, val));
+                Object.entries(investByDst).forEach(([dst, val]) => addLink("📈 총 투자", `${dst} (투자)`, val));
+
+                return { nodes: nodeNames, links };
+            }, [data, viewMode, selectedYear, selectedMonth, months]);
+
+            const CustomNode = ({ x, y, width, height, index, payload }) => {
+                const name = payload.name;
+                const isHub = name === "총 수입 (Hub)";
+                const isFirstLvl = name.includes('(수입)') || name.includes('초과 지출');
+                const isMidLvl = name.includes('총 지출') || name.includes('총 저축') || name.includes('총 투자') || name.includes('미분류');
+                
+                let fill = '#94a3b8'; // default slate-400
+                if (isHub) fill = '#4f46e5'; // indigo-600
+                else if (name.includes('지출')) fill = '#f43f5e'; // rose-500
+                else if (name.includes('저축')) fill = '#10b981'; // emerald-500
+                else if (name.includes('투자')) fill = '#8b5cf6'; // violet-500
+                else if (name.includes('수입')) fill = '#38bdf8'; // sky-400
+
+                return (
+                    <Layer key={`CustomNode${index}`}>
+                        <Rectangle x={x} y={y} width={width} height={height} fill={fill} rx={3} />
+                        <text textAnchor={isFirstLvl ? "end" : "start"} x={isFirstLvl ? x - 8 : x + width + 8} y={y + height / 2 + 4} fontSize="11" fill="#475569" fontWeight="bold">{name}</text>
+                    </Layer>
+                );
+            };
+
+            const CustomTooltip = ({ active, payload }) => {
+                if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                        <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl shadow-lg border border-slate-100 text-xs">
+                            <p className="font-bold text-slate-700 mb-1">{data.source?.name || data.name} → {data.target?.name || ''}</p>
+                            <p className="text-indigo-600 font-mono font-bold text-sm tracking-tighter">{formatCurrency(data.value)}원</p>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            return (
+                <GlassCard className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600"><Icons.TrendingUp className="w-5 h-5"/></div>
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">자금 흐름 파이프라인</h3>
+                                <p className="text-xs text-slate-500 font-medium tracking-tight">Income & Expense Path Exploration</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <select className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 outline-none hover:bg-slate-100 transition-colors cursor-pointer" value={viewMode} onChange={e => setViewMode(e.target.value)}>
+                                <option value="year">연도별</option>
+                                <option value="month">월별</option>
+                            </select>
+                            {viewMode === 'year' ? (
+                                <select className="px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-bold text-indigo-700 outline-none hover:bg-indigo-100 transition-colors cursor-pointer" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
+                                    {years.map(y => <option key={y} value={y}>{y}년</option>)}
+                                </select>
+                            ) : (
+                                <select className="px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-bold text-indigo-700 outline-none hover:bg-indigo-100 transition-colors cursor-pointer" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}>
+                                    {months.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="w-full h-[380px]">
+                        {sankeyData.nodes.length > 0 && sankeyData.links.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <Sankey data={sankeyData} nodeWidth={12} nodePadding={30} margin={{ left: 160, right: 160, top: 10, bottom: 10 }} 
+                                    link={{ stroke: '#94a3b8', strokeOpacity: 0.15 }} node={<CustomNode />}>
+                                    <RechartsTooltip content={<CustomTooltip />} />
+                                </Sankey>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold text-sm bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                <Icons.PieChart className="w-8 h-8 mb-2 opacity-50"/>
+                                표시할 자금 흐름 데이터가 없습니다.
+                            </div>
+                        )}
+                    </div>
+                </GlassCard>
+            );
+        };
+
         const GenericSpreadsheet = ({ data = {}, type, onUpdate, categories, hasCategory }) => {
             const safeData = data || {};
             const months = Object.keys(safeData).filter(isMonthKey).sort();
@@ -2078,7 +2212,12 @@
                             {activeTab === 'dashboard' && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} />}
                             {activeTab === 'assets' && <GenericSpreadsheet data={financialData} type="assets" onUpdate={updateFinancialData} categories={ASSET_CATEGORIES} hasCategory={true} />}
                             {activeTab === 'realestate' && <RealEstateSheet data={financialData} onUpdate={updateFinancialData} />}
-                            {activeTab === 'budget' && <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} />}
+                            {activeTab === 'budget' && (
+                                <div className="space-y-6">
+                                    <CashFlowSankeyChart data={financialData} />
+                                    <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} />
+                                </div>
+                            )}
                             {activeTab === 'loans' && <LoanManagement data={financialData} onUpdate={updateFinancialData} />}
                             {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} hasCategory={false} />}
                             {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} />}
