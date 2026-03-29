@@ -1184,9 +1184,7 @@
                 const addNode = (name) => { let idx = nodeNames.indexOf(name); if (idx === -1) { nodeNames.push({name}); idx = nodeNames.length - 1; } return idx; };
                 const addLink = (srcName, targetName, value) => { if (value > 0) links.push({ source: addNode(srcName), target: addNode(targetName), value }); };
 
-                const hubNode = "총 수입 (Hub)";
-                Object.entries(incomeBySrc).forEach(([src, val]) => addLink(`${src} (수입)`, hubNode, val));
-                if (balance < 0) addLink("🔥 초과 지출 (기존 자산/부채)", hubNode, Math.abs(balance));
+                const hubNode = "총 수입";
 
                 if (totalExpense > 0) addLink(hubNode, "📝 총 지출", totalExpense);
                 if (totalSaving > 0) addLink(hubNode, "💰 총 저축", totalSaving);
@@ -1202,8 +1200,8 @@
 
             const CustomNode = ({ x, y, width, height, index, payload }) => {
                 const name = payload.name;
-                const isHub = name === "총 수입 (Hub)";
-                const isFirstLvl = name.includes('(수입)') || name.includes('초과 지출');
+                const isHub = name === "총 수입";
+                const isFirstLvl = isHub;
                 const isMidLvl = name.includes('총 지출') || name.includes('총 저축') || name.includes('총 투자') || name.includes('미분류');
                 
                 let fill = '#94a3b8'; // default slate-400
@@ -1211,7 +1209,6 @@
                 else if (name.includes('지출')) fill = '#f43f5e'; // rose-500
                 else if (name.includes('저축')) fill = '#10b981'; // emerald-500
                 else if (name.includes('투자')) fill = '#8b5cf6'; // violet-500
-                else if (name.includes('수입')) fill = '#38bdf8'; // sky-400
 
                 return (
                     <Layer key={`CustomNode${index}`}>
