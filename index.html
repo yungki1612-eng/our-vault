@@ -1083,37 +1083,12 @@
                         </CollapsibleCard>
                     </div>
                     
-                    {/* FIRE Goal Section */}
-                    <CollapsibleCard title="FIRE (조기 은퇴) 목표" icon={Icons.Target} className="bg-slate-900 rounded-3xl" initialOpen={true}>
-                        <div className="flex flex-col lg:flex-row justify-between items-center gap-8 relative">
-                            <div className="relative z-10 flex-1 w-full">
-                                <h3 className="text-indigo-400 font-bold text-xs mb-2 uppercase tracking-widest flex items-center gap-2"><Icons.Target className="w-4 h-4"/> 목표 달성 현황</h3>
-                                <div className="flex items-end gap-3 mb-3"><span className="text-4xl font-black text-white tracking-tighter">{formatCurrency(netWorth)}</span><span className="text-slate-400 font-medium mb-1">/ {formatCurrency(netWorthGoal)} (원)</span></div>
-                                <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden"><div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${Math.min((netWorth / netWorthGoal) * 100, 100)}%` }}></div></div>
-                                <div className="flex justify-between mt-3 text-sm font-bold"><span className="text-emerald-400">{((netWorth / netWorthGoal) * 100).toFixed(1)}% 달성</span><button onClick={() => { const val = prompt("새로운 목표 금액(원):", netWorthGoal); if(val && !isNaN(val)) updateGoal('netWorth', Number(val)); }} className="text-slate-500 hover:text-white transition-colors underline underline-offset-4 decoration-slate-700 hover:decoration-white">목표 금액 수정</button></div>
-                            </div>
-                            <div className="relative z-10 w-full lg:w-auto flex flex-col sm:flex-row gap-4">
-                                 <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-white/20 shadow-sm min-w-[200px]">
-                                     <p className="text-slate-500 text-[11px] font-bold uppercase mb-2 tracking-wider">전월 대비 순자산</p>
-                                     <div className="flex items-center gap-2">
-                                         <span className={`text-2xl font-black ${calcYoY(netWorth, prevNetWorth) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                             {calcYoY(netWorth, prevNetWorth) > 0 ? '+' : ''}{calcYoY(netWorth, prevNetWorth).toFixed(1)}%
-                                         </span>
-                                     </div>
-                                 </div>
-                                 <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-white/20 shadow-sm min-w-[200px]">
-                                     <p className="text-slate-500 text-[11px] font-bold uppercase mb-2 tracking-wider">연간 패시브 인컴</p>
-                                     <div className="flex items-center gap-2">
-                                         <span className="text-2xl font-black text-indigo-600">{formatCurrency(annualData.profit + annualData.dividend)}</span>
-                                     </div>
-                                 </div>
-                            </div>
-                        </div>
-                    </CollapsibleCard>
-
-                    <div className="grid grid-cols-1 gap-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                         <CollapsibleCard title="연간 재무 목표" icon={Icons.Target}>
                             <FinancialGoalCombinedCard year={viewYear} data={safeData} loanGoal={loanGoal} investGoal={investGoal} onGoalChange={updateGoal} isWrapped />
+                        </CollapsibleCard>
+                        <CollapsibleCard title="자금 흐름 파이프라인 (Sankey)" icon={Icons.TrendingUp}>
+                            <CashFlowSankeyChart data={safeData} isWrapped={true} />
                         </CollapsibleCard>
                     </div>
 
@@ -1142,11 +1117,39 @@
                             <MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} isWrapped />
                         </CollapsibleCard>
                     </div>
+
+                    {/* FIRE Goal Section */}
+                    <CollapsibleCard title="FIRE (조기 은퇴) 목표" icon={Icons.Target} className="bg-slate-900 rounded-3xl" initialOpen={true}>
+                        <div className="flex flex-col lg:flex-row justify-between items-center gap-8 relative">
+                            <div className="relative z-10 flex-1 w-full">
+                                <h3 className="text-indigo-400 font-bold text-xs mb-2 uppercase tracking-widest flex items-center gap-2"><Icons.Target className="w-4 h-4"/> 목표 달성 현황</h3>
+                                <div className="flex items-end gap-3 mb-3"><span className="text-4xl font-black text-white tracking-tighter">{formatCurrency(netWorth)}</span><span className="text-slate-400 font-medium mb-1">/ {formatCurrency(netWorthGoal)} (원)</span></div>
+                                <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden"><div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${Math.min((netWorth / netWorthGoal) * 100, 100)}%` }}></div></div>
+                                <div className="flex justify-between mt-3 text-sm font-bold"><span className="text-emerald-400">{((netWorth / netWorthGoal) * 100).toFixed(1)}% 달성</span><button onClick={() => { const val = prompt("새로운 목표 금액(원):", netWorthGoal); if(val && !isNaN(val)) updateGoal('netWorth', Number(val)); }} className="text-slate-500 hover:text-white transition-colors underline underline-offset-4 decoration-slate-700 hover:decoration-white">목표 금액 수정</button></div>
+                            </div>
+                            <div className="relative z-10 w-full lg:w-auto flex flex-col sm:flex-row gap-4">
+                                 <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-white/20 shadow-sm min-w-[200px]">
+                                     <p className="text-slate-500 text-[11px] font-bold uppercase mb-2 tracking-wider">전월 대비 순자산</p>
+                                     <div className="flex items-center gap-2">
+                                         <span className={`text-2xl font-black ${calcYoY(netWorth, prevNetWorth) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                             {calcYoY(netWorth, prevNetWorth) > 0 ? '+' : ''}{calcYoY(netWorth, prevNetWorth).toFixed(1)}%
+                                         </span>
+                                     </div>
+                                 </div>
+                                 <div className="flex-1 bg-white/90 backdrop-blur-md rounded-2xl p-5 border border-white/20 shadow-sm min-w-[200px]">
+                                     <p className="text-slate-500 text-[11px] font-bold uppercase mb-2 tracking-wider">연간 패시브 인컴</p>
+                                     <div className="flex items-center gap-2">
+                                         <span className="text-2xl font-black text-indigo-600">{formatCurrency(annualData.profit + annualData.dividend)}</span>
+                                     </div>
+                                 </div>
+                            </div>
+                        </div>
+                    </CollapsibleCard>
                 </div>
             );
         };
 
-        const CashFlowSankeyChart = ({ data }) => {
+        const CashFlowSankeyChart = ({ data, isWrapped }) => {
             const [viewMode, setViewMode] = useState('year');
             const months = useMemo(() => Object.keys(data).filter(isMonthKey).sort(), [data]);
             const years = useMemo(() => [...new Set(months.map(m => m.substring(0, 4)))], [months]);
@@ -1228,9 +1231,14 @@
             const CustomTooltip = ({ active, payload }) => {
                 if (active && payload && payload.length) {
                     const data = payload[0].payload;
+                    const isNode = data.source === undefined;
                     return (
                         <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl shadow-lg border border-slate-100 text-xs">
-                            <p className="font-bold text-slate-700 mb-1">{data.source?.name || data.name} → {data.target?.name || ''}</p>
+                            {isNode ? (
+                                <p className="font-bold text-slate-700 mb-1 pointer-events-none">{data.name}</p>
+                            ) : (
+                                <p className="font-bold text-slate-700 mb-1 pointer-events-none">{data.source?.name} → {data.target?.name}</p>
+                            )}
                             <p className="text-indigo-600 font-mono font-bold text-sm tracking-tighter">{formatCurrency(data.value)}원</p>
                         </div>
                     );
@@ -1238,48 +1246,66 @@
                 return null;
             };
 
+            const controls = (
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full md:w-auto">
+                    <div className="flex p-1 bg-slate-100 rounded-xl shrink-0">
+                        <button onClick={() => setViewMode('year')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'year' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>연도별</button>
+                        <button onClick={() => setViewMode('month')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>월별</button>
+                    </div>
+                    <div className="flex overflow-x-auto no-scrollbar gap-2 w-full md:max-w-md pb-2 md:pb-0 items-center">
+                        {viewMode === 'year' ? (
+                            years.map(y => (
+                                <button key={y} onClick={() => setSelectedYear(y)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedYear === y ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>{y}년</button>
+                            ))
+                        ) : (
+                            months.map(m => (
+                                <button key={m} onClick={() => setSelectedMonth(m)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedMonth === m ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>{m}</button>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+
+            const chartContent = (
+                <div className="w-full h-[380px] mt-4">
+                    {sankeyData.nodes.length > 0 && sankeyData.links.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <Sankey data={sankeyData} nodeWidth={12} nodePadding={30} margin={{ left: 120, right: 120, top: 10, bottom: 10 }} 
+                                link={{ stroke: '#94a3b8', strokeOpacity: 0.15 }} node={<CustomNode />}>
+                                <RechartsTooltip content={<CustomTooltip />} />
+                            </Sankey>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold text-sm bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                            <Icons.PieChart className="w-8 h-8 mb-2 opacity-50"/>
+                            표시할 자금 흐름 데이터가 없습니다.
+                        </div>
+                    )}
+                </div>
+            );
+
+            if (isWrapped) {
+                return (
+                    <div className="flex flex-col w-full h-full">
+                        <div className="flex w-full overflow-hidden">{controls}</div>
+                        {chartContent}
+                    </div>
+                );
+            }
+
             return (
                 <GlassCard className="p-6">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-4">
+                        <div className="flex items-center gap-3 shrink-0">
                             <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600"><Icons.TrendingUp className="w-5 h-5"/></div>
                             <div>
                                 <h3 className="text-lg font-bold text-slate-800">자금 흐름 파이프라인</h3>
-                                <p className="text-xs text-slate-500 font-medium tracking-tight">Income & Expense Path Exploration</p>
+                                <p className="text-xs text-slate-500 font-medium tracking-tight">Income & Expense Path</p>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <select className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 outline-none hover:bg-slate-100 transition-colors cursor-pointer" value={viewMode} onChange={e => setViewMode(e.target.value)}>
-                                <option value="year">연도별</option>
-                                <option value="month">월별</option>
-                            </select>
-                            {viewMode === 'year' ? (
-                                <select className="px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-bold text-indigo-700 outline-none hover:bg-indigo-100 transition-colors cursor-pointer" value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>
-                                    {years.map(y => <option key={y} value={y}>{y}년</option>)}
-                                </select>
-                            ) : (
-                                <select className="px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-xs font-bold text-indigo-700 outline-none hover:bg-indigo-100 transition-colors cursor-pointer" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}>
-                                    {months.map(m => <option key={m} value={m}>{m}</option>)}
-                                </select>
-                            )}
-                        </div>
+                        {controls}
                     </div>
-
-                    <div className="w-full h-[380px]">
-                        {sankeyData.nodes.length > 0 && sankeyData.links.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <Sankey data={sankeyData} nodeWidth={12} nodePadding={30} margin={{ left: 160, right: 160, top: 10, bottom: 10 }} 
-                                    link={{ stroke: '#94a3b8', strokeOpacity: 0.15 }} node={<CustomNode />}>
-                                    <RechartsTooltip content={<CustomTooltip />} />
-                                </Sankey>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold text-sm bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                                <Icons.PieChart className="w-8 h-8 mb-2 opacity-50"/>
-                                표시할 자금 흐름 데이터가 없습니다.
-                            </div>
-                        )}
-                    </div>
+                    {chartContent}
                 </GlassCard>
             );
         };
@@ -2216,12 +2242,7 @@
                             {activeTab === 'dashboard' && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} />}
                             {activeTab === 'assets' && <GenericSpreadsheet data={financialData} type="assets" onUpdate={updateFinancialData} categories={ASSET_CATEGORIES} hasCategory={true} />}
                             {activeTab === 'realestate' && <RealEstateSheet data={financialData} onUpdate={updateFinancialData} />}
-                            {activeTab === 'budget' && (
-                                <div className="space-y-6">
-                                    <CashFlowSankeyChart data={financialData} />
-                                    <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} />
-                                </div>
-                            )}
+                            {activeTab === 'budget' && <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} />}
                             {activeTab === 'loans' && <LoanManagement data={financialData} onUpdate={updateFinancialData} />}
                             {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} hasCategory={false} />}
                             {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} />}
