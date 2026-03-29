@@ -70,10 +70,20 @@
             border-right: 2px solid #cbd5e1 !important;
             font-weight: 800;
         }
+        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #f1f5f9; }
+        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #f1f5f9; }
+        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 2px solid #e2e8f0 !important; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05); }
+        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #e2e8f0; }
+        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #e2e8f0; }
+        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #e2e8f0 !important; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05); }
+        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #cbd5e1 !important; font-weight: 800; }
         
         .dark .sticky-col-header { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
         .dark .sticky-col-cell { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
         .dark .sticky-sum-cell { background-color: rgba(30, 41, 59, 0.95); border-right-color: #475569 !important; }
+        .dark .sticky-c1, .dark .sticky-c2, .dark .sticky-c3 { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155; }
+        .dark .sticky-c1-hdr, .dark .sticky-c2-hdr, .dark .sticky-c3-hdr { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
+        .dark .sticky-c-sum { background-color: rgba(30, 41, 59, 0.95); border-right-color: #475569 !important; }
 
         .sticky-category { 
             position: sticky; 
@@ -244,6 +254,17 @@
         const formatNumberWithCommas = (value) => {
             if (!value && value !== 0) return '';
             return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        };
+
+        const evaluateFormula = (val) => {
+            if (typeof val === 'number') return val;
+            if (typeof val !== 'string' || !val) return 0;
+            try {
+                const cleanExpr = val.replace(/,/g, '').replace(/^=/, '');
+                if (!isNaN(cleanExpr) && cleanExpr.trim() !== '') return parseFloat(cleanExpr) || 0;
+                const result = Function(`'use strict'; return (${cleanExpr})`)();
+                return typeof result === 'number' ? result : 0;
+            } catch (e) { return 0; }
         };
 
         const getPreviousMonth = (ym) => {
@@ -658,7 +679,7 @@
         );
 
         const AIAnalysisCard = ({ assets, liabilities, netWorth, income, expense, year, data, isWrapped }) => {
-            const debtRatio = assets > 0 ? (liabilities / assets) * 100 : 0;
+            const debtRatio = netWorth !== 0 ? (liabilities / netWorth) * 100 : 0;
             const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
             let assetStatus = "안정", assetColor = "text-emerald-500", assetBg = "bg-emerald-500";
             if (debtRatio > 40) { assetStatus = "위험"; assetColor = "text-rose-500"; assetBg = "bg-rose-500"; } else if (debtRatio > 20) { assetStatus = "주의"; assetColor = "text-amber-500"; assetBg = "bg-amber-500"; }
@@ -869,32 +890,32 @@
             const reStats = useMemo(() => {
                 const list = safeData.realEstate || [];
                 return {
-                    totalValue: list.reduce((acc, item) => acc + (Number(item.currentValue) || 0), 0),
-                    totalDebt: list.reduce((acc, item) => acc + (Number(item.loan) || 0) + (Number(item.deposit) || 0), 0),
-                    ownedDebt: list.filter(item => item.ownershipType === 'OWN' || !item.ownershipType).reduce((acc, item) => acc + (Number(item.loan) || 0) + (Number(item.deposit) || 0), 0)
+                    totalValue: list.reduce((acc, item) => acc + (evaluateFormula(item.currentValue) || 0), 0),
+                    totalDebt: list.reduce((acc, item) => acc + (evaluateFormula(item.loan) || 0) + (evaluateFormula(item.deposit) || 0), 0),
+                    ownedDebt: list.filter(item => item.ownershipType === 'OWN' || !item.ownershipType).reduce((acc, item) => acc + (evaluateFormula(item.loan) || 0) + (evaluateFormula(item.deposit) || 0), 0)
                 };
             }, [safeData.realEstate]);
 
             const assetBreakdown = Object.keys(ASSET_CATEGORIES).map(catKey => {
-                let sum = (currentData.assets || []).filter(a => a.category === catKey).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
+                let sum = (currentData.assets || []).filter(a => a.category === catKey).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
                 if (catKey === 'REAL_ESTATE') sum += reStats.totalValue;
                 return { label: ASSET_CATEGORIES[catKey].label, value: sum };
             }).filter(i => i.value > 0);
 
-            const totalAssets = (currentData.assets || []).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0) + reStats.totalValue;
-            const prevTotalAssets = prevYearData ? (prevYearData.assets || []).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0) + reStats.totalValue : totalAssets;
+            const totalAssets = (currentData.assets || []).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue;
+            const prevTotalAssets = prevYearData ? (prevYearData.assets || []).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue : totalAssets;
             
-            const liabilitiesExclJeonse = (currentData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0) + reStats.ownedDebt;
-            const prevLiabilities = prevYearData ? (prevYearData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0) + reStats.ownedDebt : liabilitiesExclJeonse;
+            const liabilitiesExclJeonse = (currentData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt;
+            const prevLiabilities = prevYearData ? (prevYearData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt : liabilitiesExclJeonse;
             const netWorth = totalAssets - liabilitiesExclJeonse;
             const prevNetWorth = prevTotalAssets - prevLiabilities;
             const calcYoY = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / prev) * 100 : 0;
-            const totalStockAssets = (currentData.assets || []).filter(a => a.category === 'INVESTMENT').reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
-            const prevTotalStockAssets = prevYearData ? (prevYearData.assets || []).filter(a => a.category === 'INVESTMENT').reduce((acc, cur) => acc + (Number(cur.value) || 0), 0) : 0;
+            const totalStockAssets = (currentData.assets || []).filter(a => a.category === 'INVESTMENT').reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+            const prevTotalStockAssets = prevYearData ? (prevYearData.assets || []).filter(a => a.category === 'INVESTMENT').reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) : 0;
             
             // 신규 지표: 비상금 지수 (Months of coverage)
-            const liquidAssets = (currentData.assets || []).filter(a => a.category === 'SAVINGS').reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
-            const monthlyExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+            const liquidAssets = (currentData.assets || []).filter(a => a.category === 'SAVINGS').reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+            const monthlyExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
             const emergencyIndex = monthlyExpense > 0 ? (liquidAssets / monthlyExpense).toFixed(1) : '∞';
 
             const annualData = useMemo(() => {
@@ -902,34 +923,35 @@
                 let profit = 0, dividend = 0;
                 months.forEach(m => {
                     const d = safeData[m]?.stockProfit || [];
-                    profit += d.reduce((sum, i) => sum + (Number(i.profit) || 0), 0);
-                    dividend += d.reduce((sum, i) => sum + (Number(i.dividend) || 0), 0);
+                    profit += d.reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
+                    dividend += d.reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
                 });
                 return { profit, dividend, year: viewYear };
             }, [safeData, viewYear, allMonths]);
-            const totalIncome = (currentData.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
-            const totalExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+            const totalIncome = (currentData.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+            const totalExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
             const fullGrowthData = allMonths.map(month => {
                 const d = safeData[month];
-                const assets = (d?.assets || []).reduce((a,b)=>a+(Number(b.value) || 0), 0);
-                const loans = (d?.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
-                return { name: month, 총자산: assets, 순자산: assets - loans, 부채비율: assets > 0 ? parseFloat(((loans / assets) * 100).toFixed(1)) : 0 };
+                const assets = (d?.assets || []).reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
+                const loans = (d?.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세')).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const netAssets = assets - loans;
+                return { name: month, 총자산: assets, 순자산: netAssets, 부채비율: netAssets !== 0 ? parseFloat(((loans / netAssets) * 100).toFixed(1)) : 0 };
             });
             const recentMonths = allMonths.slice(Math.max(0, allMonths.indexOf(viewDate) - 11), allMonths.indexOf(viewDate) + 1);
             const assetGrowthData = recentMonths.map(month => {
                 const d = safeData[month];
                 const result = { name: month };
                 Object.keys(ASSET_CATEGORIES).forEach(key => {
-                    result[ASSET_CATEGORIES[key].label] = (d?.assets || []).filter(a => a.category === key).reduce((acc, cur) => acc + (Number(cur.value) || 0), 0);
+                    result[ASSET_CATEGORIES[key].label] = (d?.assets || []).filter(a => a.category === key).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
                 });
                 return result;
             });
             const cashFlowData = recentMonths.map(month => {
                 const d = safeData[month];
-                const income = (d?.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
-                const expense = (d?.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
-                const saving = (d?.budget || []).filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
-                const invest = (d?.budget || []).filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST')).reduce((a,b)=>a+(Number(b.amount) || 0), 0);
+                const income = (d?.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME')).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const expense = (d?.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE')).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const saving = (d?.budget || []).filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING')).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const invest = (d?.budget || []).filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST')).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
                 
                 return {
                     name: month,
@@ -943,7 +965,7 @@
             });
             const portfolioData = Object.keys(ASSET_CATEGORIES).map(catKey => {
                 const categoryItems = (currentData.assets || []).filter(a => a.category === catKey);
-                let val = categoryItems.reduce((a,b)=>a+(Number(b.value) || 0), 0);
+                let val = categoryItems.reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
                 if (catKey === 'REAL_ESTATE') val += reStats.totalValue;
                 return { name: ASSET_CATEGORIES[catKey].label, value: val, color: ASSET_CATEGORIES[catKey].color };
             }).filter(i => i.value > 0);
@@ -1118,6 +1140,7 @@
             const listKey = (type === 'stockProfit') ? 'stockProfit' : type;
             const [newItemName, setNewItemName] = useState('');
             const [targetCategory, setTargetCategory] = useState(hasCategory ? Object.keys(categories)[0] : '');
+            const [targetCategory2, setTargetCategory2] = useState('');
             const [isUploading, setIsUploading] = useState(false);
             const fileInputRef = useRef(null);
             const containerRef = useRef(null);
@@ -1146,7 +1169,7 @@
                         currentUnique.add(i.name);
                         const cat = hasCategory ? i.category : 'ALL';
                         const validCat = (hasCategory && categories[cat]) ? cat : (hasCategory ? Object.keys(categories)[0] : 'ALL');
-                        if(tempGroups[validCat]) tempGroups[validCat].push({ name: i.name, category: validCat });
+                        if(tempGroups[validCat]) tempGroups[validCat].push({ name: i.name, category: validCat, category2: i.category2 || '' });
                     }
                 }); });
                 setOrderedItems(prev => {
@@ -1154,7 +1177,14 @@
                     const keys = hasCategory ? Object.keys(categories) : ['ALL'];
                     keys.forEach(cat => {
                         const itemsInGroup = tempGroups[cat] || [];
-                        itemsInGroup.sort((a, b) => a.name.localeCompare(b.name));
+                        itemsInGroup.sort((a, b) => {
+                            if (hasCategory) {
+                                const c2A = a.category2 || '';
+                                const c2B = b.category2 || '';
+                                if (c2A !== c2B) return c2A.localeCompare(c2B);
+                            }
+                            return a.name.localeCompare(b.name);
+                        });
                         if (JSON.stringify(itemsInGroup) !== JSON.stringify(next[cat])) { next[cat] = itemsInGroup; changed = true; }
                     });
                     return changed ? next : prev;
@@ -1172,7 +1202,7 @@
             };
             const handleDeleteRow = (name) => { if (!confirm(`'${name}' 항목을 정말 삭제하시겠습니까?`)) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) newData[m][listKey] = newData[m][listKey].filter(i => i.name !== name); }); onUpdate(newData); };
             const handleRename = (oldN, newN) => { if (!newN || oldN === newN) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) { const item = newData[m][listKey].find(i => i.name === oldN); if (item) item.name = newN; } }); onUpdate(newData); };
-            const handleCellChange = (month, itemName, field, val, itemCategory) => {
+            const handleCellChange = (month, itemName, field, val, itemCategory, itemCategory2) => {
                 const newData = JSON.parse(JSON.stringify(safeData));
                 if (!newData[month][listKey]) newData[month][listKey] = [];
                 const list = newData[month][listKey];
@@ -1180,7 +1210,10 @@
                 if (idx >= 0) { list[idx][field] = val; } 
                 else {
                     const newItem = { id: Date.now(), name: itemName };
-                    if (hasCategory) newItem.category = itemCategory || targetCategory || Object.keys(categories)[0];
+                    if (hasCategory) {
+                        newItem.category = itemCategory || targetCategory || Object.keys(categories)[0];
+                        newItem.category2 = itemCategory2 !== undefined ? itemCategory2 : targetCategory2;
+                    }
                     if(type === 'assets') newItem.value = 0; else if(type === 'stockProfit') { newItem.profit = 0; newItem.dividend = 0; } else newItem.amount = 0;
                     newItem[field] = val; list.push(newItem);
                 }
@@ -1198,7 +1231,12 @@
                 <GlassCard className="flex flex-col h-[calc(100vh-180px)] overflow-hidden">
                     <div className="p-4 bg-white/50 border-b border-white/50 flex flex-wrap gap-3 justify-between items-center text-xs backdrop-blur-md z-40 relative">
                         <div className="flex gap-2 items-center">
-                            {hasCategory && (<select className="p-2 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm outline-none focus:ring-2 ring-indigo-500/20" value={targetCategory} onChange={(e) => setTargetCategory(e.target.value)}>{Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}</select>)}
+                            {hasCategory && (
+                                <>
+                                    <select className="p-2 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm outline-none focus:ring-2 ring-indigo-500/20" value={targetCategory} onChange={(e) => setTargetCategory(e.target.value)}>{Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}</select>
+                                    <input type="text" placeholder="항목2 입력" className="p-2 border border-white/60 rounded-xl bg-white/60 w-24 outline-none focus:ring-2 ring-indigo-500/20" value={targetCategory2} onChange={(e) => setTargetCategory2(e.target.value)} />
+                                </>
+                            )}
                             <input type="text" placeholder="항목명 입력" className="p-2 border border-white/60 rounded-xl bg-white/60 w-32 outline-none focus:ring-2 ring-indigo-500/20" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
                             <GlassButton onClick={handleAddRow} active><Icons.Plus className="w-3.5 h-3.5"/> 추가</GlassButton>
                         </div>
@@ -1215,7 +1253,15 @@
                         <table className="min-w-max text-sm text-right border-collapse">
                             <thead className="bg-slate-50 text-slate-500 sticky top-0 z-40 shadow-sm">
                                 <tr>
-                                    <th className="sticky-col-header p-2 text-left border-r-2 border-slate-200 w-28 pl-6 font-bold text-xs">항목명</th>
+                                    {hasCategory ? (
+                                        <>
+                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs" style={{ minWidth: 70, maxWidth: 70, width: 70 }}>항목1</th>
+                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs" style={{ minWidth: 60, maxWidth: 60, width: 60 }}>항목2</th>
+                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs" style={{ minWidth: 100, maxWidth: 100, width: 100 }}>항목3</th>
+                                        </>
+                                    ) : (
+                                        <th className="sticky-col-header p-2 text-left border-r-2 border-slate-200 w-28 pl-6 font-bold text-xs">항목명</th>
+                                    )}
                                     {visibleMonths.map(m => (
                                         <th key={m} className={`p-2 min-w-[72px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative ${hiddenMonths.has(m) ? 'bg-slate-100/50' : ''}`}>
                                             <div className="flex flex-col items-center justify-center gap-1">
@@ -1239,53 +1285,73 @@
                                 if (hasCategory && visibleItems.length === 0) return null;
                                 return (
                                     <React.Fragment key={catKey}>
-                                        {hasCategory && (
-                                            <tr className={`${categories[catKey].bg} border-y border-slate-200/50`}>
-                                                <td className={`sticky-category p-2 text-left font-extrabold ${categories[catKey].text} ${categories[catKey].bg} backdrop-blur-md border-r border-slate-200/50 shadow-sm text-xs`}>{categories[catKey].label}</td>
-                                                {visibleMonths.map(m => (<td key={m} className={`border-r border-slate-200/50 ${categories[catKey].bg} min-w-[72px]`}></td>))}
-                                            </tr>
-                                        )}
-                                        {visibleItems.map((item, idx) => (
-                                            <tr key={item.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors group/row`}>
-                                                <td className="sticky left-0 z-20 bg-inherit p-2 min-w-[112px] border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                                    <div className="flex items-center justify-between group">
-                                                        <div className="flex items-center gap-2 overflow-hidden">
-                                                            <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
-                                                                {hiddenItems.has(item.name) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
-                                                            </button>
-                                                            <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
-                                                        </div>
-                                                        <button onClick={() => handleDeleteRow(item.name)} className="opacity-0 group-hover:opacity-100 text-rose-300 hover:text-rose-500 transition-all p-1 shrink-0"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
-                                                    </div>
-                                                </td>
-                                                {visibleMonths.map(month => {
-                                                    const found = (safeData[month][listKey] || []).find(i => i.name === item.name);
-                                                    if (type === 'stockProfit') {
-                                                        const profit = found ? (found.profit || 0) : 0;
-                                                        const dividend = found ? (found.dividend || 0) : 0;
-                                                        return (
-                                                            <td key={month} className="p-1 border-r border-slate-100 relative group/cell min-w-[72px]">
-                                                                <div className="flex flex-col gap-1">
-                                                                    <div className="flex items-center gap-1 bg-white/40 rounded px-1"><span className="text-[9px] font-bold text-slate-400 w-3">P</span><CurrencyInput value={profit} onChange={(v) => handleCellChange(month, item.name, 'profit', v, item.category)} className={`flex-1 text-right bg-transparent outline-none text-[11px] font-mono ${profit < 0 ? 'text-blue-500' : profit > 0 ? 'text-rose-500' : 'text-slate-600'}`} /></div>
-                                                                    <div className="flex items-center gap-1 bg-indigo-50/30 rounded px-1 border-t border-indigo-100/50"><span className="text-[9px] font-bold text-indigo-400 w-3">D</span><CurrencyInput value={dividend} onChange={(v) => handleCellChange(month, item.name, 'dividend', v, item.category)} className="flex-1 text-right bg-transparent outline-none text-[11px] font-mono text-emerald-600" /></div>
+                                        {visibleItems.map((item, idx) => {
+                                            const isFirstCat1 = idx === 0;
+                                            const isFirstCat2 = idx === 0 || visibleItems[idx - 1].category2 !== item.category2;
+                                            return (
+                                                <tr key={item.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors group/row`}>
+                                                    {hasCategory ? (
+                                                        <>
+                                                            <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700" style={{ minWidth: 70, maxWidth: 70, width: 70 }}>
+                                                                {isFirstCat1 ? categories[catKey].label : ''}
+                                                            </td>
+                                                            <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600" style={{ minWidth: 60, maxWidth: 60, width: 60 }}>
+                                                                {isFirstCat2 ? (item.category2 || '') : ''}
+                                                            </td>
+                                                            <td className="sticky-c3 bg-inherit p-2" style={{ minWidth: 100, maxWidth: 100, width: 100 }}>
+                                                                <div className="flex items-center justify-between group">
+                                                                    <div className="flex items-center gap-2 overflow-hidden">
+                                                                        <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
+                                                                            {hiddenItems.has(item.name) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
+                                                                        </button>
+                                                                        <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
+                                                                    </div>
+                                                                    <button onClick={() => handleDeleteRow(item.name)} className="opacity-0 group-hover:opacity-100 text-rose-300 hover:text-rose-500 transition-all p-1 shrink-0"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
                                                                 </div>
                                                             </td>
-                                                        );
-                                                    } else {
-                                                        const val = found ? (found.value ?? found.amount ?? 0) : 0;
-                                                        const fieldName = type === 'assets' ? 'value' : 'amount';
-                                                        return (
-                                                            <td key={month} className="p-0 border-r border-slate-300/50 bg-white/30 min-w-[72px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
-                                                        );
-                                                    }
-                                                })}
-                                            </tr>
-                                        ))}
+                                                        </>
+                                                    ) : (
+                                                        <td className="sticky left-0 z-20 bg-inherit p-2 min-w-[112px] border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                                            <div className="flex items-center justify-between group">
+                                                                <div className="flex items-center gap-2 overflow-hidden">
+                                                                    <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
+                                                                        {hiddenItems.has(item.name) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
+                                                                    </button>
+                                                                    <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
+                                                                </div>
+                                                                <button onClick={() => handleDeleteRow(item.name)} className="opacity-0 group-hover:opacity-100 text-rose-300 hover:text-rose-500 transition-all p-1 shrink-0"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
+                                                            </div>
+                                                        </td>
+                                                    )}
+                                                    {visibleMonths.map(month => {
+                                                        const found = (safeData[month][listKey] || []).find(i => i.name === item.name);
+                                                        if (type === 'stockProfit') {
+                                                            const profit = found ? (found.profit || 0) : 0;
+                                                            const dividend = found ? (found.dividend || 0) : 0;
+                                                            return (
+                                                                <td key={month} className="p-1 border-r border-slate-100 relative group/cell min-w-[72px]">
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <div className="flex items-center gap-1 bg-white/40 rounded px-1"><span className="text-[9px] font-bold text-slate-400 w-3">P</span><CurrencyInput value={profit} onChange={(v) => handleCellChange(month, item.name, 'profit', v, item.category)} className={`flex-1 text-right bg-transparent outline-none text-[11px] font-mono ${profit < 0 ? 'text-blue-500' : profit > 0 ? 'text-rose-500' : 'text-slate-600'}`} /></div>
+                                                                        <div className="flex items-center gap-1 bg-indigo-50/30 rounded px-1 border-t border-indigo-100/50"><span className="text-[9px] font-bold text-indigo-400 w-3">D</span><CurrencyInput value={dividend} onChange={(v) => handleCellChange(month, item.name, 'dividend', v, item.category)} className="flex-1 text-right bg-transparent outline-none text-[11px] font-mono text-emerald-600" /></div>
+                                                                    </div>
+                                                                </td>
+                                                            );
+                                                        } else {
+                                                            const val = found ? (found.value ?? found.amount ?? 0) : 0;
+                                                            const fieldName = type === 'assets' ? 'value' : 'amount';
+                                                            return (
+                                                                <td key={month} className="p-0 border-r border-slate-300/50 bg-white/30 min-w-[72px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
+                                                            );
+                                                        }
+                                                    })}
+                                                </tr>
+                                            );
+                                        })}
                                         {hasCategory && (
                                             <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-700">
-                                                <td className="sticky-sum-cell p-2 text-right border-r border-slate-200 text-xs">{categories[catKey].label} 합계</td>
+                                                <td className="sticky-c-sum p-2 text-right text-xs" colSpan={3} style={{ paddingRight: '0.75rem' }}>{categories[catKey].label} 합계</td>
                                                 {visibleMonths.map(month => {
-                                                    const sum = items.reduce((acc, item) => { const found = (safeData[month][listKey] || []).find(i => i.name === item.name); const val = found ? (found.value ?? found.amount ?? 0) : 0; return acc + val; }, 0);
+                                                    const sum = items.reduce((acc, item) => { const found = (safeData[month][listKey] || []).find(i => i.name === item.name); const val = found ? (found.value ?? found.amount ?? 0) : 0; return acc + evaluateFormula(val); }, 0);
                                                     return (<td key={month} className="p-2 text-right border-r border-slate-200 text-xs bg-slate-50 min-w-[72px]">{formatCurrency(sum)}</td>);
                                                 })}
                                             </tr>
@@ -1940,6 +2006,10 @@
         }
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+    </script>
+</body>
+</html>
+ />);
     </script>
 </body>
 </html>
