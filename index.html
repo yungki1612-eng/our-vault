@@ -1142,7 +1142,22 @@
             const [targetCategory, setTargetCategory] = useState(hasCategory ? Object.keys(categories)[0] : '');
             const [targetCategory2, setTargetCategory2] = useState('');
             const [editingItemOption, setEditingItemOption] = useState(null);
+            const [colWidths, setColWidths] = useState({ c1: 70, c2: 60, c3: 100 });
+            const [resizing, setResizing] = useState(null);
             const [isUploading, setIsUploading] = useState(false);
+            
+            useEffect(() => {
+                if (!resizing) return;
+                const handleMouseMove = (e) => {
+                    const diff = e.clientX - resizing.startX;
+                    let newWidth = Math.max(40, resizing.startW + diff);
+                    setColWidths(prev => ({ ...prev, [resizing.col]: newWidth }));
+                };
+                const handleMouseUp = () => setResizing(null);
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+                return () => { document.removeEventListener('mousemove', handleMouseMove); document.removeEventListener('mouseup', handleMouseUp); };
+            }, [resizing]);
             const fileInputRef = useRef(null);
             const containerRef = useRef(null);
             const [hiddenItems, setHiddenItems] = useState(() => { const savedHidden = safeData.meta?.hiddenRows?.[type]; return new Set(savedHidden || []); });
@@ -1154,8 +1169,8 @@
             
             useEffect(() => { const savedHidden = safeData.meta?.hiddenRows?.[type]; if (savedHidden) setHiddenItems(new Set(savedHidden)); }, [safeData.meta?.hiddenRows, type]);
             useEffect(() => { const savedHiddenMonths = safeData.meta?.hiddenMonths?.[type]; if (savedHiddenMonths) setHiddenMonths(new Set(savedHiddenMonths)); }, [safeData.meta?.hiddenMonths, type]);
-            const toggleHide = (name) => { 
-                const next = new Set(hiddenItems); if (next.has(name)) next.delete(name); else next.add(name);
+            const toggleHide = (itemKey) => { 
+                const next = new Set(hiddenItems); if (next.has(itemKey)) next.delete(itemKey); else next.add(itemKey);
                 setHiddenItems(next); const newData = JSON.parse(JSON.stringify(safeData)); if (!newData.meta) newData.meta = {}; if (!newData.meta.hiddenRows) newData.meta.hiddenRows = {}; newData.meta.hiddenRows[type] = Array.from(next); onUpdate(newData);
             };
             const toggleHideMonth = (month) => {
@@ -1166,11 +1181,12 @@
                 const currentUnique = new Set();
                 const tempGroups = hasCategory ? Object.fromEntries(Object.keys(categories).map(k => [k, []])) : { ALL: [] };
                 Object.values(safeData).forEach(m => { (m[listKey] || []).forEach(i => {
-                    if (!currentUnique.has(i.name)) {
-                        currentUnique.add(i.name);
+                    const itemKey = `${i.category||'ALL'}|${i.category2||''}|${i.name}`;
+                    if (!currentUnique.has(itemKey)) {
+                        currentUnique.add(itemKey);
                         const cat = hasCategory ? i.category : 'ALL';
                         const validCat = (hasCategory && categories[cat]) ? cat : (hasCategory ? Object.keys(categories)[0] : 'ALL');
-                        if(tempGroups[validCat]) tempGroups[validCat].push({ name: i.name, category: validCat, category2: i.category2 || '' });
+                        if(tempGroups[validCat]) tempGroups[validCat].push({ name: i.name, category: validCat, category2: i.category2 || '', itemKey });
                     }
                 }); });
                 setOrderedItems(prev => {
@@ -1201,20 +1217,19 @@
                     }
                 }
             };
-            const handleDeleteRow = (name) => { if (!confirm(`'${name}' 항목을 정말 삭제하시겠습니까?`)) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) newData[m][listKey] = newData[m][listKey].filter(i => i.name !== name); }); onUpdate(newData); };
+            const handleDeleteRow = (itemKey, label) => { if (!confirm(`'${label}' 항목을 정말 삭제하시겠습니까?`)) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) newData[m][listKey] = newData[m][listKey].filter(i => `${i.category||'ALL'}|${i.category2||''}|${i.name}` !== itemKey); }); onUpdate(newData); };
             const handleRename = (oldN, newN) => { if (!newN || oldN === newN) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) { const item = newData[m][listKey].find(i => i.name === oldN); if (item) item.name = newN; } }); onUpdate(newData); };
             const handleCellChange = (month, itemName, field, val, itemCategory, itemCategory2) => {
                 const newData = JSON.parse(JSON.stringify(safeData));
                 if (!newData[month][listKey]) newData[month][listKey] = [];
                 const list = newData[month][listKey];
-                const idx = list.findIndex(i => i.name === itemName);
+                const searchCat1 = hasCategory ? (itemCategory || targetCategory || Object.keys(categories)[0]) : 'ALL';
+                const searchCat2 = hasCategory ? (itemCategory2 !== undefined ? itemCategory2 : targetCategory2) : '';
+                const idx = list.findIndex(i => i.name === itemName && (i.category||'ALL') === searchCat1 && (i.category2||'') === searchCat2);
                 if (idx >= 0) { list[idx][field] = val; } 
                 else {
                     const newItem = { id: Date.now(), name: itemName };
-                    if (hasCategory) {
-                        newItem.category = itemCategory || targetCategory || Object.keys(categories)[0];
-                        newItem.category2 = itemCategory2 !== undefined ? itemCategory2 : targetCategory2;
-                    }
+                    if (hasCategory) { newItem.category = searchCat1; newItem.category2 = searchCat2; }
                     if(type === 'assets') newItem.value = 0; else if(type === 'stockProfit') { newItem.profit = 0; newItem.dividend = 0; } else newItem.amount = 0;
                     newItem[field] = val; list.push(newItem);
                 }
@@ -1223,16 +1238,16 @@
             const handleAddRow = () => { if(!newItemName) return; const lastMonth = months[months.length-1]; if (lastMonth) { const defaultField = type === 'assets' ? 'value' : type === 'stockProfit' ? 'profit' : 'amount'; handleCellChange(lastMonth, newItemName, defaultField, 0); } setNewItemName(''); };
             const handleSaveRowEdit = () => {
                 if (!editingItemOption || !editingItemOption.newName) { setEditingItemOption(null); return; }
-                const { oldName, newName, cat1, cat2 } = editingItemOption;
+                const { oldName, newName, cat1, cat2, oldCat1, oldCat2 } = editingItemOption;
                 const newData = JSON.parse(JSON.stringify(safeData));
                 let conflict = false;
-                if (oldName !== newName) {
-                    Object.values(newData).forEach(m => { if (m[listKey] && m[listKey].some(i => i.name === newName)) conflict = true; });
+                if (oldName !== newName || oldCat1 !== cat1 || oldCat2 !== cat2) {
+                    Object.values(newData).forEach(m => { if (m[listKey] && m[listKey].some(i => i.name === newName && (i.category||'ALL') === cat1 && (i.category2||'') === cat2)) conflict = true; });
                 }
-                if (conflict) { alert('이미 존재하는 항목명입니다.'); return; }
+                if (conflict) { alert('이미 존재하는 항목입니다.'); return; }
                 Object.keys(newData).forEach(m => {
                     if (isMonthKey(m) && newData[m][listKey]) {
-                        const item = newData[m][listKey].find(i => i.name === oldName);
+                        const item = newData[m][listKey].find(i => i.name === oldName && (i.category||'ALL') === oldCat1 && (i.category2||'') === oldCat2);
                         if (item) {
                             item.name = newName;
                             if (hasCategory) { item.category = cat1; item.category2 = cat2; }
@@ -1277,9 +1292,9 @@
                                 <tr>
                                     {hasCategory ? (
                                         <>
-                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs" style={{ minWidth: 70, maxWidth: 70, width: 70 }}>항목1</th>
-                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs" style={{ minWidth: 60, maxWidth: 60, width: 60 }}>항목2</th>
-                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs" style={{ minWidth: 100, maxWidth: 100, width: 100 }}>항목3</th>
+                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs relative" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-2 h-full cursor-col-resize hover:bg-slate-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
+                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs relative" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-2 h-full cursor-col-resize hover:bg-slate-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
+                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs relative" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-2 h-full cursor-col-resize hover:bg-slate-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
                                         </>
                                     ) : (
                                         <th className="sticky-col-header p-2 text-left border-r-2 border-slate-200 w-28 pl-6 font-bold text-xs">항목명</th>
@@ -1308,26 +1323,27 @@
                                 return (
                                     <React.Fragment key={catKey}>
                                         {visibleItems.map((item, idx) => {
-                                            const isEditing = editingItemOption?.oldName === item.name;
+                                            const iKey = item.itemKey || item.name;
+                                            const isEditing = editingItemOption?.oldName === item.name && editingItemOption?.oldCat1 === (item.category || catKey) && editingItemOption?.oldCat2 === (item.category2 || '');
                                             const isFirstCat1 = isEditing || idx === 0;
                                             const isFirstCat2 = isEditing || idx === 0 || visibleItems[idx - 1].category2 !== item.category2;
                                             return (
-                                                <tr key={item.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors group/row`}>
+                                                <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors group/row`}>
                                                     {hasCategory ? (
                                                         <>
-                                                            <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700" style={{ minWidth: 70, maxWidth: 70, width: 70 }}>
+                                                            <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>
                                                                 {isEditing ? (
                                                                     <select className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5" value={editingItemOption.cat1} onChange={(e) => setEditingItemOption({...editingItemOption, cat1: e.target.value})}>
                                                                         {Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
                                                                     </select>
-                                                                ) : isFirstCat1 ? categories[catKey].label : ''}
+                                                                ) : isFirstCat1 ? <span className="block truncate w-full">{categories[catKey].label}</span> : ''}
                                                             </td>
-                                                            <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600" style={{ minWidth: 60, maxWidth: 60, width: 60 }}>
+                                                            <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600 overflow-hidden" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>
                                                                 {isEditing ? (
                                                                     <input type="text" className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-center" value={editingItemOption.cat2} onChange={(e) => setEditingItemOption({...editingItemOption, cat2: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
-                                                                ) : isFirstCat2 ? (item.category2 || '') : ''}
+                                                                ) : isFirstCat2 ? <span className="block truncate w-full">{item.category2 || ''}</span> : ''}
                                                             </td>
-                                                            <td className="sticky-c3 bg-inherit p-2" style={{ minWidth: 100, maxWidth: 100, width: 100 }}>
+                                                            <td className="sticky-c3 bg-inherit p-2" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>
                                                                 {isEditing ? (
                                                                     <div className="flex items-center justify-between">
                                                                         <input type="text" autoFocus className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-xs" value={editingItemOption.newName} onChange={(e) => setEditingItemOption({...editingItemOption, newName: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
@@ -1338,22 +1354,22 @@
                                                                     </div>
                                                                 ) : (
                                                                     <div className="flex items-center justify-between group">
-                                                                        <div className="flex items-center gap-2 overflow-hidden">
-                                                                            <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
-                                                                                {hiddenItems.has(item.name) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
+                                                                        <div className="flex items-center gap-2 overflow-hidden w-full">
+                                                                            <button onClick={() => toggleHide(iKey)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
+                                                                                {hiddenItems.has(iKey) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
                                                                             </button>
-                                                                            <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
+                                                                            <span className={`text-xs font-bold truncate ${hiddenItems.has(iKey) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
                                                                         </div>
                                                                         <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                                                                            <button onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || catKey, cat2: item.category2 || '' })} className="p-1 text-slate-300 hover:text-indigo-500"><Icons.Edit2 className="w-3.5 h-3.5"/></button>
-                                                                            <button onClick={() => handleDeleteRow(item.name)} className="p-1 text-slate-300 hover:text-rose-500"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
+                                                                            <button onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || catKey, cat2: item.category2 || '', oldCat1: item.category || catKey, oldCat2: item.category2 || '' })} className="p-1 text-slate-300 hover:text-indigo-500"><Icons.Edit2 className="w-3.5 h-3.5"/></button>
+                                                                            <button onClick={() => handleDeleteRow(iKey, item.name)} className="p-1 text-slate-300 hover:text-rose-500"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                             </td>
                                                         </>
                                                     ) : (
-                                                        <td className="sticky left-0 z-20 bg-inherit p-2 min-w-[112px] border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                                        <td className="sticky left-0 z-20 bg-inherit p-2 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]" style={{ minWidth: colWidths.c1+colWidths.c2+colWidths.c3, maxWidth: colWidths.c1+colWidths.c2+colWidths.c3, width: colWidths.c1+colWidths.c2+colWidths.c3 }}>
                                                             {isEditing ? (
                                                                 <div className="flex items-center justify-between">
                                                                     <input type="text" autoFocus className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-xs" value={editingItemOption.newName} onChange={(e) => setEditingItemOption({...editingItemOption, newName: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
@@ -1364,15 +1380,15 @@
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex items-center justify-between group">
-                                                                    <div className="flex items-center gap-2 overflow-hidden">
-                                                                        <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
-                                                                            {hiddenItems.has(item.name) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
+                                                                    <div className="flex items-center gap-2 overflow-hidden w-full">
+                                                                        <button onClick={() => toggleHide(iKey)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
+                                                                            {hiddenItems.has(iKey) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
                                                                         </button>
-                                                                        <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
+                                                                        <span className={`text-xs font-bold truncate ${hiddenItems.has(iKey) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
                                                                     </div>
                                                                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all shrink-0">
-                                                                        <button onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || 'ALL', cat2: '' })} className="p-1 text-slate-300 hover:text-indigo-500"><Icons.Edit2 className="w-3.5 h-3.5"/></button>
-                                                                        <button onClick={() => handleDeleteRow(item.name)} className="p-1 text-slate-300 hover:text-rose-500"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
+                                                                        <button onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || 'ALL', cat2: '', oldCat1: item.category || 'ALL', oldCat2: '' })} className="p-1 text-slate-300 hover:text-indigo-500"><Icons.Edit2 className="w-3.5 h-3.5"/></button>
+                                                                        <button onClick={() => handleDeleteRow(iKey, item.name)} className="p-1 text-slate-300 hover:text-rose-500"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -1404,7 +1420,7 @@
                                         })}
                                         {hasCategory && (
                                             <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-700">
-                                                <td className="sticky-c-sum p-2 text-right text-xs" colSpan={3} style={{ paddingRight: '0.75rem' }}>{categories[catKey].label} 합계</td>
+                                                <td className="sticky-c-sum p-2 text-right text-xs" colSpan={3} style={{ left: 0, paddingRight: '0.75rem', minWidth: colWidths.c1+colWidths.c2+colWidths.c3, width: colWidths.c1+colWidths.c2+colWidths.c3, maxWidth: colWidths.c1+colWidths.c2+colWidths.c3 }}>{categories[catKey].label} 합계</td>
                                                 {visibleMonths.map(month => {
                                                     const sum = items.reduce((acc, item) => { const found = (safeData[month][listKey] || []).find(i => i.name === item.name); const val = found ? (found.value ?? found.amount ?? 0) : 0; return acc + evaluateFormula(val); }, 0);
                                                     return (<td key={month} className="p-2 text-right border-r border-slate-200 text-xs bg-slate-50 min-w-[72px]">{formatCurrency(sum)}</td>);
