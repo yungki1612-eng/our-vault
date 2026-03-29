@@ -1181,7 +1181,14 @@
                 const balance = totalIncome - totalOutflow;
 
                 const nodeNames = [], links = [];
-                const addNode = (name) => { let idx = nodeNames.indexOf(name); if (idx === -1) { nodeNames.push({name}); idx = nodeNames.length - 1; } return idx; };
+                const addNode = (name) => { 
+                    let idx = nodeNames.indexOf(name); 
+                    if (idx === -1) { 
+                        nodeNames.push(name); 
+                        idx = nodeNames.length - 1; 
+                    } 
+                    return idx; 
+                };
                 const addLink = (srcName, targetName, value) => { if (value > 0) links.push({ source: addNode(srcName), target: addNode(targetName), value }); };
 
                 const hubNode = "총 수입";
@@ -1195,7 +1202,7 @@
                 Object.entries(savingByDst).forEach(([dst, val]) => addLink("💰 총 저축", `${dst} (저축)`, val));
                 Object.entries(investByDst).forEach(([dst, val]) => addLink("📈 총 투자", `${dst} (투자)`, val));
 
-                return { nodes: nodeNames, links };
+                return { nodes: nodeNames.map(name => ({name})), links };
             }, [data, viewMode, selectedYear, selectedMonth, months]);
 
             const CustomNode = ({ x, y, width, height, index, payload }) => {
