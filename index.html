@@ -1141,6 +1141,7 @@
             const [newItemName, setNewItemName] = useState('');
             const [targetCategory, setTargetCategory] = useState(hasCategory ? Object.keys(categories)[0] : '');
             const [targetCategory2, setTargetCategory2] = useState('');
+            const [editingItemOption, setEditingItemOption] = useState(null);
             const [isUploading, setIsUploading] = useState(false);
             const fileInputRef = useRef(null);
             const containerRef = useRef(null);
@@ -1220,6 +1221,27 @@
                 onUpdate(newData);
             };
             const handleAddRow = () => { if(!newItemName) return; const lastMonth = months[months.length-1]; if (lastMonth) { const defaultField = type === 'assets' ? 'value' : type === 'stockProfit' ? 'profit' : 'amount'; handleCellChange(lastMonth, newItemName, defaultField, 0); } setNewItemName(''); };
+            const handleSaveRowEdit = () => {
+                if (!editingItemOption || !editingItemOption.newName) { setEditingItemOption(null); return; }
+                const { oldName, newName, cat1, cat2 } = editingItemOption;
+                const newData = JSON.parse(JSON.stringify(safeData));
+                let conflict = false;
+                if (oldName !== newName) {
+                    Object.values(newData).forEach(m => { if (m[listKey] && m[listKey].some(i => i.name === newName)) conflict = true; });
+                }
+                if (conflict) { alert('이미 존재하는 항목명입니다.'); return; }
+                Object.keys(newData).forEach(m => {
+                    if (isMonthKey(m) && newData[m][listKey]) {
+                        const item = newData[m][listKey].find(i => i.name === oldName);
+                        if (item) {
+                            item.name = newName;
+                            if (hasCategory) { item.category = cat1; item.category2 = cat2; }
+                        }
+                    }
+                });
+                onUpdate(newData);
+                setEditingItemOption(null);
+            };
             const handleAddMonth = () => { 
                 const last = months[months.length - 1]; let newKey;
                 if (!last) { const now = new Date(); newKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; } 
@@ -1286,19 +1308,61 @@
                                 return (
                                     <React.Fragment key={catKey}>
                                         {visibleItems.map((item, idx) => {
-                                            const isFirstCat1 = idx === 0;
-                                            const isFirstCat2 = idx === 0 || visibleItems[idx - 1].category2 !== item.category2;
+                                            const isEditing = editingItemOption?.oldName === item.name;
+                                            const isFirstCat1 = isEditing || idx === 0;
+                                            const isFirstCat2 = isEditing || idx === 0 || visibleItems[idx - 1].category2 !== item.category2;
                                             return (
                                                 <tr key={item.name} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors group/row`}>
                                                     {hasCategory ? (
                                                         <>
                                                             <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700" style={{ minWidth: 70, maxWidth: 70, width: 70 }}>
-                                                                {isFirstCat1 ? categories[catKey].label : ''}
+                                                                {isEditing ? (
+                                                                    <select className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5" value={editingItemOption.cat1} onChange={(e) => setEditingItemOption({...editingItemOption, cat1: e.target.value})}>
+                                                                        {Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
+                                                                    </select>
+                                                                ) : isFirstCat1 ? categories[catKey].label : ''}
                                                             </td>
                                                             <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600" style={{ minWidth: 60, maxWidth: 60, width: 60 }}>
-                                                                {isFirstCat2 ? (item.category2 || '') : ''}
+                                                                {isEditing ? (
+                                                                    <input type="text" className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-center" value={editingItemOption.cat2} onChange={(e) => setEditingItemOption({...editingItemOption, cat2: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
+                                                                ) : isFirstCat2 ? (item.category2 || '') : ''}
                                                             </td>
                                                             <td className="sticky-c3 bg-inherit p-2" style={{ minWidth: 100, maxWidth: 100, width: 100 }}>
+                                                                {isEditing ? (
+                                                                    <div className="flex items-center justify-between">
+                                                                        <input type="text" autoFocus className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-xs" value={editingItemOption.newName} onChange={(e) => setEditingItemOption({...editingItemOption, newName: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
+                                                                        <div className="flex items-center gap-0.5 ml-1">
+                                                                            <button onClick={handleSaveRowEdit} className="p-1 text-emerald-500 hover:bg-emerald-50 rounded"><Icons.Check className="w-3 h-3"/></button>
+                                                                            <button onClick={() => setEditingItemOption(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded"><Icons.X className="w-3 h-3"/></button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center justify-between group">
+                                                                        <div className="flex items-center gap-2 overflow-hidden">
+                                                                            <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
+                                                                                {hiddenItems.has(item.name) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
+                                                                            </button>
+                                                                            <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                                                                            <button onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || catKey, cat2: item.category2 || '' })} className="p-1 text-slate-300 hover:text-indigo-500"><Icons.Edit2 className="w-3.5 h-3.5"/></button>
+                                                                            <button onClick={() => handleDeleteRow(item.name)} className="p-1 text-slate-300 hover:text-rose-500"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </>
+                                                    ) : (
+                                                        <td className="sticky left-0 z-20 bg-inherit p-2 min-w-[112px] border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                                            {isEditing ? (
+                                                                <div className="flex items-center justify-between">
+                                                                    <input type="text" autoFocus className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-xs" value={editingItemOption.newName} onChange={(e) => setEditingItemOption({...editingItemOption, newName: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
+                                                                    <div className="flex items-center gap-0.5 ml-1">
+                                                                        <button onClick={handleSaveRowEdit} className="p-1 text-emerald-500 hover:bg-emerald-50 rounded"><Icons.Check className="w-3 h-3"/></button>
+                                                                        <button onClick={() => setEditingItemOption(null)} className="p-1 text-slate-400 hover:bg-slate-100 rounded"><Icons.X className="w-3 h-3"/></button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
                                                                 <div className="flex items-center justify-between group">
                                                                     <div className="flex items-center gap-2 overflow-hidden">
                                                                         <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
@@ -1306,21 +1370,12 @@
                                                                         </button>
                                                                         <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
                                                                     </div>
-                                                                    <button onClick={() => handleDeleteRow(item.name)} className="opacity-0 group-hover:opacity-100 text-rose-300 hover:text-rose-500 transition-all p-1 shrink-0"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
+                                                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all shrink-0">
+                                                                        <button onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || 'ALL', cat2: '' })} className="p-1 text-slate-300 hover:text-indigo-500"><Icons.Edit2 className="w-3.5 h-3.5"/></button>
+                                                                        <button onClick={() => handleDeleteRow(item.name)} className="p-1 text-slate-300 hover:text-rose-500"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
+                                                                    </div>
                                                                 </div>
-                                                            </td>
-                                                        </>
-                                                    ) : (
-                                                        <td className="sticky left-0 z-20 bg-inherit p-2 min-w-[112px] border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                                                            <div className="flex items-center justify-between group">
-                                                                <div className="flex items-center gap-2 overflow-hidden">
-                                                                    <button onClick={() => toggleHide(item.name)} className="text-slate-300 hover:text-indigo-500 transition-colors shrink-0">
-                                                                        {hiddenItems.has(item.name) ? <Icons.EyeOff className="w-3.5 h-3.5" /> : <Icons.Eye className="w-3.5 h-3.5" />}
-                                                                    </button>
-                                                                    <span className={`text-xs font-bold truncate ${hiddenItems.has(item.name) ? 'text-slate-300 line-through' : 'text-slate-700'}`} title={item.name}>{item.name}</span>
-                                                                </div>
-                                                                <button onClick={() => handleDeleteRow(item.name)} className="opacity-0 group-hover:opacity-100 text-rose-300 hover:text-rose-500 transition-all p-1 shrink-0"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
-                                                            </div>
+                                                            )}
                                                         </td>
                                                     )}
                                                     {visibleMonths.map(month => {
