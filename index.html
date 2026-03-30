@@ -49,7 +49,7 @@
             background-color: rgba(248, 250, 252, 0.98); 
             -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px); 
-            border-right: 2px solid #e2e8f0 !important;
+            border-right: 2px solid #cbd5e1 !important;
         }
         .sticky-col-cell { 
             position: sticky; 
@@ -58,7 +58,7 @@
             background-color: rgba(255, 255, 255, 0.98); 
             -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px); 
-            border-right: 2px solid #e2e8f0 !important;
+            border-right: 2px solid #cbd5e1 !important;
         }
         .sticky-sum-cell { 
             position: sticky; 
@@ -67,16 +67,16 @@
             background-color: rgba(241, 245, 249, 0.98); 
             -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px); 
-            border-right: 2px solid #cbd5e1 !important;
+            border-right: 2px solid #94a3b8 !important;
             font-weight: 800;
         }
-        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #f1f5f9; }
-        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #f1f5f9; }
-        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 2px solid #e2e8f0 !important; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05); }
-        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #e2e8f0; }
-        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #e2e8f0; }
-        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #e2e8f0 !important; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05); }
-        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #cbd5e1 !important; font-weight: 800; }
+        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #e2e8f0; }
+        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #e2e8f0; }
+        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
+        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #cbd5e1; }
+        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #cbd5e1; }
+        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
+        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #94a3b8 !important; font-weight: 800; }
         
         .dark .sticky-col-header { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
         .dark .sticky-col-cell { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
@@ -104,7 +104,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
+<body class="bg-slate-200/60 text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
     <div id="root"></div>
 
     <!-- Firebase Compat SDK -->
@@ -515,7 +515,7 @@
 
         // --- Base UI Components ---
         const GlassCard = ({ children, className = "", onClick }) => (
-            <div onClick={onClick} className={`bg-white/90 backdrop-blur-xl border border-slate-100 shadow-sm rounded-2xl transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${className}`}>
+            <div onClick={onClick} className={`bg-white/95 backdrop-blur-xl border border-slate-200 shadow-md rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${className}`}>
                 {children}
             </div>
         );
@@ -1117,9 +1117,9 @@
                             className="h-64"
                             headerExtra={
                                 <div className="group/tip relative flex items-center">
-                                    <Icons.Info className="w-3.5 h-3.5 text-slate-300 hover:text-indigo-500 cursor-help" />
-                                    <div className="absolute right-0 top-full mt-2 w-56 bg-slate-800/95 backdrop-blur-sm text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl border border-slate-700/50 leading-relaxed">
-                                        <p className="font-bold text-indigo-300 border-b border-slate-600 pb-1 mb-1.5">지표 계산 기준</p>
+                                    <Icons.Info className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-600 cursor-help" />
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl border border-slate-700 leading-relaxed">
+                                        <p className="font-bold text-indigo-400 border-b border-slate-700 pb-1 mb-1.5">지표 계산 기준</p>
                                         <div className="space-y-1">
                                             <p><span className="text-slate-400">저축률:</span> (수입 - 지출) / 수입 * 100</p>
                                             <p><span className="text-slate-400">투자비중:</span> 투자 / 수입 * 100</p>
@@ -1303,9 +1303,9 @@
                             <button onClick={() => setViewMode('month')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>월별</button>
                         </div>
                         <div className="group/info relative flex items-center">
-                            <Icons.Info className="w-4 h-4 text-slate-300 hover:text-indigo-500 cursor-help transition-colors" />
-                            <div className="absolute left-0 top-full mt-2 w-48 bg-slate-800/95 backdrop-blur-sm text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/info:opacity-100 pointer-events-none transition-all z-50 shadow-xl border border-slate-700/50 leading-relaxed">
-                                <p className="font-bold text-indigo-300 mb-1">시각화 기준</p>
+                            <Icons.Info className="w-4 h-4 text-slate-400 hover:text-indigo-600 cursor-help transition-colors" />
+                            <div className="absolute left-0 top-full mt-2 w-48 bg-slate-900 text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/info:opacity-100 pointer-events-none transition-all z-50 shadow-2xl border border-slate-700 leading-relaxed">
+                                <p className="font-bold text-indigo-400 mb-1">시각화 기준</p>
                                 <p className="text-slate-300">항목2 기준 <span className="text-white font-bold">100만원 미만</span>의 소액 흐름은 차트의 가독성을 위해 표시되지 않습니다.</p>
                             </div>
                         </div>
