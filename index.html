@@ -1184,10 +1184,10 @@
                        if (val <= 0) return;
                         const cat1 = normalizeCategory(b.category || b.name, 'budget');
                         const cat2 = b.category2 || '기타';
-                        
-                        if (cat1 === 'INCOME') { totalIncome += val; incomeBySrc[cat2] = (incomeBySrc[cat2] || 0) + val; } 
-                        else if (cat1 === 'EXPENSE') { totalExpense += val; expenseByDst[cat2] = (expenseByDst[cat2] || 0) + val; } 
-                        else if (cat1 === 'SAVING') { totalSaving += val; savingByDst[cat2] = (savingByDst[cat2] || 0) + val; } 
+
+                        if (cat1 === 'INCOME') { totalIncome += val; incomeBySrc[cat2] = (incomeBySrc[cat2] || 0) + val; }
+                        else if (cat1 === 'EXPENSE') { totalExpense += val; expenseByDst[cat2] = (expenseByDst[cat2] || 0) + val; }
+                        else if (cat1 === 'SAVING') { totalSaving += val; savingByDst[cat2] = (savingByDst[cat2] || 0) + val; }
                         else if (cat1 === 'INVEST') { totalInvest += val; investByDst[cat2] = (investByDst[cat2] || 0) + val; }
                     });
                 });
@@ -1196,13 +1196,13 @@
                 const balance = totalIncome - totalOutflow;
 
                 const nodeNames = [], links = [];
-                const addNode = (name) => { 
-                    let idx = nodeNames.indexOf(name); 
-                    if (idx === -1) { 
-                        nodeNames.push(name); 
-                        idx = nodeNames.length - 1; 
-                    } 
-                    return idx; 
+                const addNode = (name) => {
+                    let idx = nodeNames.indexOf(name);
+                    if (idx === -1) {
+                        nodeNames.push(name);
+                        idx = nodeNames.length - 1;
+                    }
+                    return idx;
                 };
                 const addLink = (srcName, targetName, value) => { if (value > 0) links.push({ source: addNode(srcName), target: addNode(targetName), value }); };
 
@@ -1213,14 +1213,15 @@
                 if (totalInvest > 0) addLink(hubNode, "총 투자", totalInvest);
                 if (balance > 0) addLink(hubNode, "미분류", balance);
 
-                Object.entries(expenseByDst).forEach(([dst, val]) => addLink("총 지출", dst, val));
-                Object.entries(savingByDst).forEach(([dst, val]) => addLink("총 저축", dst, val));
-                Object.entries(investByDst).forEach(([dst, val]) => addLink("총 투자", dst, val));
+                const THRESHOLD = 1000000; // 100만원 미만 필터링
+                Object.entries(expenseByDst).forEach(([dst, val]) => { if (val >= THRESHOLD) addLink("총 지출", dst, val); });
+                Object.entries(savingByDst).forEach(([dst, val]) => { if (val >= THRESHOLD) addLink("총 저축", dst, val); });
+                Object.entries(investByDst).forEach(([dst, val]) => { if (val >= THRESHOLD) addLink("총 투자", dst, val); });
 
                 return { nodes: nodeNames.map(name => ({name})), links };
-                }, [data, viewMode, selectedYear, selectedMonth, months]);
+            }, [data, viewMode, selectedYear, selectedMonth, months]);
 
-                const CustomNode = ({ x, y, width, height, index, payload }) => {
+            const CustomNode = ({ x, y, width, height, index, payload }) => {
                 const name = payload.name;
                 const isHub = name === "총 수입";
                 const isFirstLvl = isHub;
@@ -1231,10 +1232,20 @@
                 else if (name.includes('지출')) fill = '#f43f5e'; // rose-500
                 else if (name.includes('저축')) fill = '#10b981'; // emerald-500
                 else if (name.includes('투자')) fill = '#8b5cf6'; // violet-500
+
                 return (
                     <Layer key={`CustomNode${index}`}>
-                        <Rectangle x={x} y={y} width={width} height={height} fill={fill} rx={3} />
-                        <text textAnchor={isFirstLvl ? "end" : "start"} x={isFirstLvl ? x - 8 : x + width + 8} y={y + height / 2 + 4} fontSize="11" fill="#475569" fontWeight="bold">{name}</text>
+                        <Rectangle x={x} y={y} width={width} height={height} fill={fill} rx={2} />
+                        <text 
+                            textAnchor={isFirstLvl ? "end" : "start"} 
+                            x={isFirstLvl ? x - 10 : x + width + 10} 
+                            y={y + height / 2 + 4} 
+                            fontSize="10" 
+                            fill="#64748b" 
+                            fontWeight={isMidLvl || isHub ? "800" : "600"}
+                        >
+                            {name}
+                        </text>
                     </Layer>
                 );
             };
@@ -1247,14 +1258,19 @@
                     const value = p.value || data.value || 0;
                     const name = isNode ? data.name : `${data.source?.name || data.source} → ${data.target?.name || data.target}`;
                     return (
-                        <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl shadow-lg border border-slate-100 text-xs z-[1000]">
-                            <p className="font-bold text-slate-700 mb-1">{name}</p>
-                            <p className="text-indigo-600 font-mono font-bold text-sm tracking-tighter">{formatCurrency(value)}원</p>
+                        <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl shadow-lg border border-slate-100 text-[11px] z-[1000] min-w-[140px]">
+                            <p className="font-bold text-slate-500 mb-1 uppercase tracking-wider">{isNode ? '항목' : '자금 흐름'}</p>
+                            <p className="font-black text-slate-800 mb-2">{name}</p>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-indigo-600 font-black text-sm tracking-tighter">{formatCurrency(value)}</span>
+                                <span className="text-slate-400 font-bold text-[9px]">원</span>
+                            </div>
                         </div>
                     );
                 }
                 return null;
             };
+
             const handleSlicerChange = (direction) => {
                 if (viewMode === 'year') {
                     const idx = years.indexOf(selectedYear);
@@ -1272,19 +1288,28 @@
             };
 
             const controls = (
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
-                    <div className="flex p-1 bg-slate-100 rounded-xl shrink-0">
-                        <button onClick={() => setViewMode('year')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'year' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>연도별</button>
-                        <button onClick={() => setViewMode('month')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>월별</button>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="flex p-1 bg-slate-100/80 rounded-xl shrink-0 border border-slate-200/50">
+                            <button onClick={() => setViewMode('year')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'year' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>연도별</button>
+                            <button onClick={() => setViewMode('month')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>월별</button>
+                        </div>
+                        <div className="group/info relative flex items-center">
+                            <Icons.Info className="w-4 h-4 text-slate-300 hover:text-indigo-500 cursor-help transition-colors" />
+                            <div className="absolute left-0 top-full mt-2 w-48 bg-slate-800/95 backdrop-blur-sm text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/info:opacity-100 pointer-events-none transition-all z-50 shadow-xl border border-slate-700/50 leading-relaxed">
+                                <p className="font-bold text-indigo-300 mb-1">시각화 기준</p>
+                                <p className="text-slate-300">항목2 기준 <span className="text-white font-bold">100만원 미만</span>의 소액 흐름은 차트의 가독성을 위해 표시되지 않습니다.</p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3 bg-white px-3 py-1 rounded-full shadow-sm border border-slate-200">
-                        <button onClick={() => handleSlicerChange(-1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                    <div className="flex items-center gap-3 bg-white px-4 py-1.5 rounded-full shadow-sm border border-slate-200 transition-all hover:border-indigo-200">
+                        <button onClick={() => handleSlicerChange(-1)} className="p-1.5 hover:bg-slate-50 rounded-full text-slate-400 hover:text-indigo-600 transition-all">
                             <Icons.ChevronLeft className="w-4 h-4"/>
                         </button>
-                        <span className="text-xs font-extrabold text-indigo-600 min-w-[70px] text-center">
-                            {viewMode === 'year' ? `${selectedYear}년` : selectedMonth}
+                        <span className="text-xs font-black text-slate-700 min-w-[80px] text-center tracking-tight">
+                            {viewMode === 'year' ? `${selectedYear}년 누적` : selectedMonth}
                         </span>
-                        <button onClick={() => handleSlicerChange(1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                        <button onClick={() => handleSlicerChange(1)} className="p-1.5 hover:bg-slate-50 rounded-full text-slate-400 hover:text-indigo-600 transition-all">
                             <Icons.ChevronRight className="w-4 h-4"/>
                         </button>
                     </div>
@@ -1292,15 +1317,15 @@
             );
 
             const chartContent = (
-                <div className="w-full h-[380px] mt-4 relative">
+                <div className="w-full h-[360px] relative">
                     {sankeyData.nodes.length > 0 && sankeyData.links.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <Sankey 
                                 data={sankeyData} 
-                                nodeWidth={12} 
-                                nodePadding={30} 
-                                margin={{ left: 120, right: 120, top: 10, bottom: 10 }} 
-                                link={{ stroke: '#94a3b8', strokeOpacity: 0.15 }} 
+                                nodeWidth={10} 
+                                nodePadding={20} 
+                                margin={{ left: 100, right: 100, top: 10, bottom: 10 }} 
+                                link={{ stroke: '#e2e8f0', strokeOpacity: 0.4 }} 
                                 node={<CustomNode />}
                                 iterations={64}
                                 style={{ cursor: 'pointer' }}
