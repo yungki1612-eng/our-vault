@@ -1058,11 +1058,19 @@
                             <div key={id}>{renderScoreCard(id)}</div>
                         ))}
                     </div>
-                    <div className="grid grid-cols-1 gap-6">
-                        <CollapsibleCard title="전체 자산 흐름" icon={Icons.Activity} className="h-[500px]">
-                            <div className="flex-1"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={fullGrowthData}><defs><linearGradient id="colorTotal" x1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/><stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={10} axisLine={false} tickLine={false} /><YAxis yAxisId="left" fontSize={10} width={45} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#cbd5e1" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ borderRadius: '12px' }} /><Area yAxisId="left" type="monotone" dataKey="총자산" stroke="#4F46E5" strokeWidth={2} fill="url(#colorTotal)" /><Line yAxisId="left" type="monotone" dataKey="순자산" stroke="#10B981" strokeWidth={2} dot={false} /><Line yAxisId="right" type="monotone" dataKey="부채비율" stroke="#f43f5e" strokeWidth={1.5} strokeDasharray="4 4" dot={false} /></ComposedChart></ResponsiveContainer></div>
-                        </CollapsibleCard>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <CollapsibleCard title="전체 자산 흐름" icon={Icons.Activity} className="h-[500px]">
+                                <div className="flex-1"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={fullGrowthData}><defs><linearGradient id="colorTotal" x1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.1}/><stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={10} axisLine={false} tickLine={false} /><YAxis yAxisId="left" fontSize={10} width={45} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#cbd5e1" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ borderRadius: '12px' }} /><Area yAxisId="left" type="monotone" dataKey="총자산" stroke="#4F46E5" strokeWidth={2} fill="url(#colorTotal)" /><Line yAxisId="left" type="monotone" dataKey="순자산" stroke="#10B981" strokeWidth={2} dot={false} /><Line yAxisId="right" type="monotone" dataKey="부채비율" stroke="#f43f5e" strokeWidth={1.5} strokeDasharray="4 4" dot={false} /></ComposedChart></ResponsiveContainer></div>
+                            </CollapsibleCard>
+                        </div>
+                        <div className="lg:col-span-1">
+                            <CollapsibleCard title="자금 흐름 파이프라인" icon={Icons.TrendingUp} className="h-[500px]">
+                                <CashFlowSankeyChart data={safeData} isWrapped={true} />
+                            </CollapsibleCard>
+                        </div>
                     </div>
+                    
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <CollapsibleCard title="자산별 성장" icon={Icons.Activity} className="h-64">
                             <div className="h-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={assetGrowthData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" tickMargin={5} axisLine={false} tickLine={false} /><YAxis fontSize={10} width={40} stroke="#94a3b8" tickFormatter={(val) => `${(val/100000000).toFixed(1)}억`} axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ borderRadius: '8px', padding: '6px 10px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />{Object.keys(ASSET_CATEGORIES).map((key) => (<Line key={key} type="monotone" dataKey={ASSET_CATEGORIES[key].label} stroke={ASSET_CATEGORIES[key].color} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />))}</LineChart></ResponsiveContainer></div>
@@ -1089,12 +1097,9 @@
                         </CollapsibleCard>
                     </div>
                     
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6">
                         <CollapsibleCard title="연간 재무 목표" icon={Icons.Target}>
                             <FinancialGoalCombinedCard year={viewYear} data={safeData} loanGoal={loanGoal} investGoal={investGoal} onGoalChange={updateGoal} isWrapped />
-                        </CollapsibleCard>
-                        <CollapsibleCard title="자금 흐름 파이프라인" icon={Icons.TrendingUp}>
-                            <CashFlowSankeyChart data={safeData} isWrapped={true} />
                         </CollapsibleCard>
                     </div>
 
@@ -1117,7 +1122,7 @@
                                 </div>
                             }
                         >
-                            <div className="h-full"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={30} stroke="#94a3b8" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ borderRadius: '12px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} /><Bar dataKey="저축률" name="저축률" fill="#10B981" radius={[4,4,0,0]} barSize={16} /><Line type="monotone" dataKey="저축률" name="저축률" stroke="#059669" strokeWidth={2} dot={{r:3}} /><Line type="monotone" dataKey="투자비중" name="투자비중" stroke="#6366f1" strokeWidth={2} dot={{r:3}} /></ComposedChart></ResponsiveContainer></div>
+                            <div className="h-full"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={30} stroke="#94a3b8" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ borderRadius: '12px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} /><Bar dataKey="저축률" name="저축률" fill="#10B981" radius={[4,4,0,0]} barSize={16} /><Line type="monotone" dataKey="저축률" name="저축률" stroke="#059669" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} /><Line type="monotone" dataKey="투자비중" name="투자비중" stroke="#6366f1" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} /></ComposedChart></ResponsiveContainer></div>
                         </CollapsibleCard>
                         <CollapsibleCard title="메모" icon={Icons.Edit2} className="h-64">
                             <MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} isWrapped />
@@ -1253,32 +1258,56 @@
                 return null;
             };
 
+            const handleSlicerChange = (direction) => {
+                if (viewMode === 'year') {
+                    const idx = years.indexOf(selectedYear);
+                    if (idx !== -1) {
+                        const newIdx = idx + direction;
+                        if (newIdx >= 0 && newIdx < years.length) setSelectedYear(years[newIdx]);
+                    }
+                } else {
+                    const idx = months.indexOf(selectedMonth);
+                    if (idx !== -1) {
+                        const newIdx = idx + direction;
+                        if (newIdx >= 0 && newIdx < months.length) setSelectedMonth(months[newIdx]);
+                    }
+                }
+            };
+
             const controls = (
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
                     <div className="flex p-1 bg-slate-100 rounded-xl shrink-0">
                         <button onClick={() => setViewMode('year')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'year' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>연도별</button>
                         <button onClick={() => setViewMode('month')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>월별</button>
                     </div>
-                    <div className="flex overflow-x-auto no-scrollbar gap-2 w-full md:max-w-md pb-2 md:pb-0 items-center">
-                        {viewMode === 'year' ? (
-                            years.map(y => (
-                                <button key={y} onClick={() => setSelectedYear(y)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedYear === y ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>{y}년</button>
-                            ))
-                        ) : (
-                            months.map(m => (
-                                <button key={m} onClick={() => setSelectedMonth(m)} className={`flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedMonth === m ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}>{m}</button>
-                            ))
-                        )}
+                    <div className="flex items-center gap-3 bg-white px-3 py-1 rounded-full shadow-sm border border-slate-200">
+                        <button onClick={() => handleSlicerChange(-1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                            <Icons.ChevronLeft className="w-4 h-4"/>
+                        </button>
+                        <span className="text-xs font-extrabold text-indigo-600 min-w-[70px] text-center">
+                            {viewMode === 'year' ? `${selectedYear}년` : selectedMonth}
+                        </span>
+                        <button onClick={() => handleSlicerChange(1)} className="p-1 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                            <Icons.ChevronRight className="w-4 h-4"/>
+                        </button>
                     </div>
                 </div>
             );
 
             const chartContent = (
-                <div className="w-full h-[380px] mt-4">
+                <div className="w-full h-[380px] mt-4 relative">
                     {sankeyData.nodes.length > 0 && sankeyData.links.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
-                            <Sankey data={sankeyData} nodeWidth={12} nodePadding={30} margin={{ left: 120, right: 120, top: 10, bottom: 10 }} 
-                                link={{ stroke: '#94a3b8', strokeOpacity: 0.15 }} node={<CustomNode />}>
+                            <Sankey 
+                                data={sankeyData} 
+                                nodeWidth={12} 
+                                nodePadding={30} 
+                                margin={{ left: 120, right: 120, top: 10, bottom: 10 }} 
+                                link={{ stroke: '#94a3b8', strokeOpacity: 0.15 }} 
+                                node={<CustomNode />}
+                                iterations={64}
+                                style={{ cursor: 'pointer' }}
+                            >
                                 <RechartsTooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 1000 }} />
                             </Sankey>
                         </ResponsiveContainer>
@@ -1324,7 +1353,13 @@
             const [targetCategory, setTargetCategory] = useState(hasCategory ? Object.keys(categories)[0] : '');
             const [targetCategory2, setTargetCategory2] = useState('');
             const [editingItemOption, setEditingItemOption] = useState(null);
-            const [colWidths, setColWidths] = useState({ c1: 70, c2: 60, c3: 100 });
+            const [colWidths, setColWidths] = useState(() => {
+                const saved = localStorage.getItem(`colWidths_${type}`);
+                return saved ? JSON.parse(saved) : { c1: 70, c2: 60, c3: 100 };
+            });
+            useEffect(() => {
+                localStorage.setItem(`colWidths_${type}`, JSON.stringify(colWidths));
+            }, [colWidths, type]);
             const [resizing, setResizing] = useState(null);
             const [isUploading, setIsUploading] = useState(false);
             
