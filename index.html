@@ -718,13 +718,23 @@
             );
             return content;
         };
-        const MemoCard = ({ memo, onUpdate }) => {
+        const MemoCard = ({ memo, onUpdate, isWrapped }) => {
             const [text, setText] = useState(memo || '');
             useEffect(() => { setText(memo || ''); }, [memo]);
             const handleBlur = () => { if (text !== memo) onUpdate(text); };
-            return (
-                <GlassCard className="p-5 flex flex-col h-full"><div className="flex items-center gap-2 mb-3 text-slate-500 font-bold text-sm"><Icons.Edit2 className="w-4 h-4"/> 메모</div><textarea className="flex-1 w-full bg-slate-50/50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 outline-none resize-none transition-all custom-scrollbar placeholder:text-slate-400 text-slate-700" placeholder="자유롭게 메모를 남기세요..." value={text} onChange={(e) => setText(e.target.value)} onBlur={handleBlur}></textarea></GlassCard>
+            const content = (
+                <div className="flex flex-col h-full">
+                    {!isWrapped && <div className="flex items-center gap-2 mb-3 text-slate-500 font-bold text-sm"><Icons.Edit2 className="w-4 h-4"/> 메모</div>}
+                    <textarea 
+                        className="flex-1 w-full bg-slate-50/50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 outline-none resize-none transition-all custom-scrollbar placeholder:text-slate-400 text-slate-700" 
+                        placeholder="자유롭게 메모를 남기세요..." 
+                        value={text} 
+                        onChange={(e) => setText(e.target.value)} 
+                        onBlur={handleBlur}
+                    ></textarea>
+                </div>
             );
+            return isWrapped ? content : <GlassCard className="p-5 h-full">{content}</GlassCard>;
         };
 
         const MonthlyAssetRatioCard = ({ date, data, isWrapped }) => {
@@ -753,7 +763,7 @@
             );
         };
 
-        const FinancialGoalCombinedCard = ({ year, data, loanGoal, investGoal, onGoalChange }) => {
+        const FinancialGoalCombinedCard = ({ year, data, loanGoal, investGoal, onGoalChange, isWrapped }) => {
             const loanStats = useMemo(() => {
                 let totalIncome = 0, actualRepayment = 0;
                 for (let m = 1; m <= 12; m++) {
@@ -792,13 +802,15 @@
             const loanProgress = loanStats.required > 0 ? Math.min((loanStats.actual / loanStats.required) * 100, 100) : 0;
             const investProgress = investStats.target > 0 ? Math.min((investStats.actual / investStats.target) * 100, 100) : 0;
 
-            return (
-                <GlassCard className="p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Icons.Target className="w-5 h-5" /></div>
-                        <h4 className="text-lg font-bold text-slate-800">{year}년 주요 재무 목표 달성 현황</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            const content = (
+                <div className="flex flex-col gap-6">
+                    {!isWrapped && (
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><Icons.Target className="w-5 h-5" /></div>
+                            <h4 className="text-lg font-bold text-slate-800">{year}년 주요 재무 목표 달성 현황</h4>
+                        </div>
+                    )}
+                    <div className={`grid grid-cols-1 ${isWrapped ? '' : 'md:grid-cols-2'} gap-10`}>
                         {/* Loan Repayment Section */}
                         <div className="space-y-4">
                             <div className="flex justify-between items-end">
@@ -845,8 +857,9 @@
                             </div>
                         </div>
                     </div>
-                </GlassCard>
+                </div>
             );
+            return isWrapped ? content : <GlassCard className="p-6">{content}</GlassCard>;
         };
 
         const NetWorthGoalCard = ({ netWorth, onGoalChange, targetAmount }) => {
