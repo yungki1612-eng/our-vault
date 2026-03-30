@@ -817,7 +817,7 @@
                                 <div className={`h-full transition-all duration-1000 ${loanStats.actual >= loanStats.required ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${loanProgress}%` }}></div>
                             </div>
                             <div className="flex justify-between text-xs font-bold">
-                                <span className="text-slate-400">보너스 대비 상환 목표 {loanGoal}%</span>
+                                <span className="text-slate-400">보너스 대비 상환 목표 {loanGoal}% ({formatCurrency(loanStats.required)})</span>
                                 <span className="text-slate-600">{loanProgress.toFixed(1)}%</span>
                             </div>
                         </div>
@@ -840,7 +840,7 @@
                                 <div className={`h-full transition-all duration-1000 ${investStats.actual >= investStats.target ? 'bg-emerald-500' : 'bg-indigo-500'}`} style={{ width: `${investProgress}%` }}></div>
                             </div>
                             <div className="flex justify-between text-xs font-bold">
-                                <span className="text-slate-400">수입 대비 투자 목표 {investGoal}%</span>
+                                <span className="text-slate-400">수입 대비 투자 목표 {investGoal}% ({formatCurrency(investStats.target)})</span>
                                 <span className="text-slate-600">{investProgress.toFixed(1)}%</span>
                             </div>
                         </div>
@@ -1122,7 +1122,7 @@
                                 </div>
                             }
                         >
-                            <div className="h-full"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={30} stroke="#94a3b8" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ borderRadius: '12px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} /><Bar dataKey="저축률" name="저축률" fill="#10B981" radius={[4,4,0,0]} barSize={16} /><Line type="monotone" dataKey="저축률" name="저축률" stroke="#059669" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} /><Line type="monotone" dataKey="투자비중" name="투자비중" stroke="#6366f1" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} /></ComposedChart></ResponsiveContainer></div>
+                            <div className="h-full"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" /><XAxis dataKey="name" fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} /><YAxis fontSize={10} width={30} stroke="#94a3b8" unit="%" axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ borderRadius: '12px' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} /><Bar dataKey="저축률" name="저축률" fill="#10B981" radius={[4,4,0,0]} barSize={16} /><Line type="monotone" dataKey="투자비중" name="투자비중" stroke="#6366f1" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} /></ComposedChart></ResponsiveContainer></div>
                         </CollapsibleCard>
                         <CollapsibleCard title="메모" icon={Icons.Edit2} className="h-64">
                             <MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} isWrapped />
