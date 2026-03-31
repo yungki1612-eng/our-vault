@@ -275,7 +275,8 @@
             if (!ym || typeof ym !== 'string') return '2024-01';
             const [y, m] = ym.split('-').map(Number);
             if (isNaN(y) || isNaN(m)) return '2024-01';
-            let py = y - 1, pm = m; 
+            let py = y, pm = m - 1; 
+            if (pm === 0) { py--; pm = 12; }
             if (py < 2024) return ym;
             return `${py}-${String(pm).padStart(2, '0')}`;
         };
@@ -329,8 +330,7 @@
         };
 
         const normalizeCategory = (cat, type) => {
-             if (!cat) return '';
-            const upper = String(cat).toUpperCase().trim();
+            const upper = String(cat || '').toUpperCase().trim();
             if (type === 'assets') {
                 if (['SAVING', 'SAVINGS', '예적금', '현금', '적금', '예금', '저축', 'BANK', 'DEPOSIT'].some(k => upper.includes(k))) return 'SAVINGS';
                 if (['INVEST', 'STOCK', '주식', '증권', '펀드'].some(k => upper.includes(k))) return 'INVESTMENT';
@@ -352,12 +352,22 @@
                 if (upper === 'LEASE' || upper.includes('전세')) return 'LEASE';
                 return 'LOAN';
             }
-            return upper;
+            return upper || 'ALL';
         };
 
         const isItemHidden = (item, type, meta) => {
             if (!meta || !meta.hiddenRows || !meta.hiddenRows[type]) return false;
-            const itemKey = `${item.category||'ALL'}|${item.category2||''}|${item.name}`;
+            let normalizedCat = item.category;
+            if (type === 'assets') {
+                normalizedCat = ASSET_CATEGORIES[item.category] ? item.category : Object.keys(ASSET_CATEGORIES)[0];
+            } else if (type === 'budget') {
+                normalizedCat = BUDGET_CATEGORIES[item.category] ? item.category : Object.keys(BUDGET_CATEGORIES)[0];
+            } else if (type === 'loans' || type === 'stockProfit') {
+                normalizedCat = 'ALL';
+            } else {
+                normalizedCat = item.category || 'ALL';
+            }
+            const itemKey = `${normalizedCat}|${item.category2||''}|${item.name}`;
             return meta.hiddenRows[type].includes(itemKey);
         };
 
@@ -745,10 +755,10 @@
             const [activeItem, setActiveIndex] = useState(null);
              const stats = useMemo(() => {
                 const budget = data[date]?.budget || [];
-                const income = budget.filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
-                const expense = budget.filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
-                const saving = budget.filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
-                const invest = budget.filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const income = budget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const expense = budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const saving = budget.filter(b => normalizeCategory(b.category, 'budget') === 'SAVING' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const invest = budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
                 return { income, expense, saving, invest };
             }, [date, data]);
             const getPercent = (val) => stats.income > 0 ? (val / stats.income) * 100 : 0;
@@ -776,7 +786,7 @@
                     if (monthData && monthData.budget) {
                         if ([3, 6, 9, 12].includes(m)) {
                             totalIncome += monthData.budget
-                                .filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME') && !isItemHidden(b, 'budget', data.meta))
+                                .filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta))
                                 .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
                         }
                         const repaymentItem = monthData.budget.find(b => b.name.replace(/\s/g, '') === '대출상환' && !isItemHidden(b, 'budget', data.meta));
@@ -793,10 +803,10 @@
                     const monthData = data[monthKey];
                     if (monthData && monthData.budget) {
                         totalIncome += monthData.budget
-                            .filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME') && !isItemHidden(b, 'budget', data.meta))
+                            .filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta))
                             .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
                         actualInvest += monthData.budget
-                            .filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST') && !isItemHidden(b, 'budget', data.meta))
+                            .filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta))
                             .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
                     }
                 }
@@ -885,10 +895,10 @@
                 const months = Object.keys(data).filter(k => k.startsWith(year));
                 months.forEach(m => {
                     const budget = data[m]?.budget || [];
-                    totalIncome += budget.filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
-                    totalExpense += budget.filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
-                    totalSaving += budget.filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
-                    totalInvest += budget.filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST') && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    totalIncome += budget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    totalExpense += budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    totalSaving += budget.filter(b => normalizeCategory(b.category, 'budget') === 'SAVING' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    totalInvest += budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
                 });
                 return { totalIncome, totalExpense, totalSaving, totalInvest };
             }, [year, data]);
@@ -932,7 +942,7 @@
             }, [safeData.realEstate]);
 
             const assetBreakdown = Object.keys(ASSET_CATEGORIES).map(catKey => {
-                let sum = (currentData.assets || []).filter(a => a.category === catKey && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+                let sum = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === catKey && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
                 if (catKey === 'REAL_ESTATE') sum += reStats.totalValue;
                 return { label: ASSET_CATEGORIES[catKey].label, value: sum };
             }).filter(i => i.value > 0);
@@ -940,17 +950,17 @@
             const totalAssets = (currentData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue;
             const prevTotalAssets = prevYearData ? (prevYearData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue : totalAssets;
             
-            const liabilitiesExclJeonse = (currentData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세') && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt;
-            const prevLiabilities = prevYearData ? (prevYearData.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세') && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt : liabilitiesExclJeonse;
+            const liabilitiesExclJeonse = (currentData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt;
+            const prevLiabilities = prevYearData ? (prevYearData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt : liabilitiesExclJeonse;
             const netWorth = totalAssets - liabilitiesExclJeonse;
             const prevNetWorth = prevTotalAssets - prevLiabilities;
             const calcYoY = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / prev) * 100 : 0;
-            const totalStockAssets = (currentData.assets || []).filter(a => a.category === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
-            const prevTotalStockAssets = prevYearData ? (prevYearData.assets || []).filter(a => a.category === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) : 0;
+            const totalStockAssets = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+            const prevTotalStockAssets = prevYearData ? (prevYearData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) : 0;
             
             // 신규 지표: 비상금 지수 (Months of coverage)
-            const liquidAssets = (currentData.assets || []).filter(a => a.category === 'SAVINGS' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
-            const monthlyExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE') && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+            const liquidAssets = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+            const monthlyExpense = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
             const emergencyIndex = monthlyExpense > 0 ? (liquidAssets / monthlyExpense).toFixed(1) : '∞';
 
             const annualData = useMemo(() => {
@@ -963,12 +973,12 @@
                 });
                 return { profit, dividend, year: viewYear };
             }, [safeData, viewYear, allMonths]);
-            const totalIncome = (currentData.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME') && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
-            const totalExpense = (currentData.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE') && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+            const totalIncome = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+            const totalExpense = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
             const fullGrowthData = allMonths.map(month => {
                 const d = safeData[month];
                 const assets = (d?.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
-                const loans = (d?.loans || []).filter(l => l.category !== 'LEASE' && !l.name.includes('전세') && !isItemHidden(l, 'loans', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const loans = (d?.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
                 const netAssets = assets - loans;
                 return { name: month, 총자산: assets, 순자산: netAssets, 부채비율: netAssets !== 0 ? parseFloat(((loans / netAssets) * 100).toFixed(1)) : 0 };
             });
@@ -977,16 +987,16 @@
                 const d = safeData[month];
                 const result = { name: month };
                 Object.keys(ASSET_CATEGORIES).forEach(key => {
-                    result[ASSET_CATEGORIES[key].label] = (d?.assets || []).filter(a => a.category === key && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+                    result[ASSET_CATEGORIES[key].label] = (d?.assets || []).filter(a => normalizeCategory(a.category, 'assets') === key && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
                 });
                 return result;
             });
             const cashFlowData = recentMonths.map(month => {
                 const d = safeData[month];
-                const income = (d?.budget || []).filter(b => (b.category === 'INCOME' || normalizeCategory(b.category || b.name, 'budget') === 'INCOME') && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                const expense = (d?.budget || []).filter(b => (b.category === 'EXPENSE' || normalizeCategory(b.category || b.name, 'budget') === 'EXPENSE') && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                const saving = (d?.budget || []).filter(b => (b.category === 'SAVING' || normalizeCategory(b.category || b.name, 'budget') === 'SAVING') && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                const invest = (d?.budget || []).filter(b => (b.category === 'INVEST' || normalizeCategory(b.category || b.name, 'budget') === 'INVEST') && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const income = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const expense = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const saving = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'SAVING' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const invest = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
                 
                 return {
                     name: month,
@@ -999,7 +1009,7 @@
                 };
             });
             const portfolioData = Object.keys(ASSET_CATEGORIES).map(catKey => {
-                const categoryItems = (currentData.assets || []).filter(a => a.category === catKey && !isItemHidden(a, 'assets', safeData.meta));
+                const categoryItems = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === catKey && !isItemHidden(a, 'assets', safeData.meta));
                 let val = categoryItems.reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
                 if (catKey === 'REAL_ESTATE') val += reStats.totalValue;
                 return { name: ASSET_CATEGORIES[catKey].label, value: val, color: ASSET_CATEGORIES[catKey].color };
@@ -1185,7 +1195,7 @@
                        if (isItemHidden(b, 'budget', data.meta)) return;
                        const val = evaluateFormula(b.amount) || 0;
                        if (val <= 0) return;
-                        const cat1 = normalizeCategory(b.category || b.name, 'budget');
+                        const cat1 = normalizeCategory(b.category, 'budget');
                         const cat2 = b.category2 || '기타';
 
                         if (cat1 === 'INCOME') { totalIncome += val; incomeBySrc[cat2] = (incomeBySrc[cat2] || 0) + val; }
@@ -1427,12 +1437,12 @@
                 const currentUnique = new Set();
                 const tempGroups = hasCategory ? Object.fromEntries(Object.keys(categories).map(k => [k, []])) : { ALL: [] };
                 Object.values(safeData).forEach(m => { (m[listKey] || []).forEach(i => {
-                    const itemKey = `${i.category||'ALL'}|${i.category2||''}|${i.name}`;
+                    const validCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                    const validCat2 = i.category2 || '';
+                    const itemKey = `${validCat}|${validCat2}|${i.name}`;
                     if (!currentUnique.has(itemKey)) {
                         currentUnique.add(itemKey);
-                        const cat = hasCategory ? i.category : 'ALL';
-                        const validCat = (hasCategory && categories[cat]) ? cat : (hasCategory ? Object.keys(categories)[0] : 'ALL');
-                        if(tempGroups[validCat]) tempGroups[validCat].push({ name: i.name, category: validCat, category2: i.category2 || '', itemKey });
+                        if(tempGroups[validCat]) tempGroups[validCat].push({ name: i.name, category: validCat, category2: validCat2, itemKey });
                     }
                 }); });
                 setOrderedItems(prev => {
@@ -1458,20 +1468,47 @@
                 if (hasCategory && targetCat !== sourceCat) {
                     if(confirm(`'${fromName}' 항목을 '${categories[sourceCat]?.label}'에서 '${categories[targetCat]?.label}'(으)로 이동하시겠습니까?`)) {
                         const newData = JSON.parse(JSON.stringify(safeData));
-                        Object.keys(newData).forEach(month => { if (isMonthKey(month) && newData[month][listKey]) { const item = newData[month][listKey].find(i => i.name === fromName); if (item) item.category = targetCat; } });
+                        Object.keys(newData).forEach(month => { 
+                            if (isMonthKey(month) && newData[month][listKey]) { 
+                                const item = newData[month][listKey].find(i => {
+                                    const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                                    return i.name === fromName && iCat === sourceCat;
+                                }); 
+                                if (item) item.category = targetCat; 
+                            } 
+                        });
                         onUpdate(newData);
                     }
                 }
             };
-            const handleDeleteRow = (itemKey, label) => { if (!confirm(`'${label}' 항목을 정말 삭제하시겠습니까?`)) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) newData[m][listKey] = newData[m][listKey].filter(i => `${i.category||'ALL'}|${i.category2||''}|${i.name}` !== itemKey); }); onUpdate(newData); };
-            const handleRename = (oldN, newN) => { if (!newN || oldN === newN) return; const newData = JSON.parse(JSON.stringify(safeData)); Object.keys(newData).forEach(m => { if (isMonthKey(m) && newData[m][listKey]) { const item = newData[m][listKey].find(i => i.name === oldN); if (item) item.name = newN; } }); onUpdate(newData); };
+            const handleDeleteRow = (itemKey, label) => { 
+                if (!confirm(`'${label}' 항목을 정말 삭제하시겠습니까?`)) return; 
+                const newData = JSON.parse(JSON.stringify(safeData)); 
+                Object.keys(newData).forEach(m => { 
+                    if (isMonthKey(m) && newData[m][listKey]) 
+                        newData[m][listKey] = newData[m][listKey].filter(i => {
+                            const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                            const iCat2 = i.category2 || '';
+                            return `${iCat}|${iCat2}|${i.name}` !== itemKey;
+                        }); 
+                }); 
+                onUpdate(newData); 
+            };
+
             const handleCellChange = (month, itemName, field, val, itemCategory, itemCategory2) => {
                 const newData = JSON.parse(JSON.stringify(safeData));
                 if (!newData[month][listKey]) newData[month][listKey] = [];
                 const list = newData[month][listKey];
                 const searchCat1 = hasCategory ? (itemCategory || targetCategory || Object.keys(categories)[0]) : 'ALL';
                 const searchCat2 = hasCategory ? (itemCategory2 !== undefined ? itemCategory2 : targetCategory2) : '';
-                const idx = list.findIndex(i => i.name === itemName && (i.category||'ALL') === searchCat1 && (i.category2||'') === searchCat2);
+                
+                // 일관된 카테고리 정규화 로직 적용
+                const idx = list.findIndex(i => {
+                    const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                    const iCat2 = i.category2 || '';
+                    return i.name === itemName && iCat === searchCat1 && iCat2 === searchCat2;
+                });
+
                 if (idx >= 0) { list[idx][field] = val; } 
                 else {
                     const newItem = { id: Date.now(), name: itemName };
@@ -1488,12 +1525,22 @@
                 const newData = JSON.parse(JSON.stringify(safeData));
                 let conflict = false;
                 if (oldName !== newName || oldCat1 !== cat1 || oldCat2 !== cat2) {
-                    Object.values(newData).forEach(m => { if (m[listKey] && m[listKey].some(i => i.name === newName && (i.category||'ALL') === cat1 && (i.category2||'') === cat2)) conflict = true; });
+                    Object.values(newData).forEach(m => {
+                        if (m[listKey] && m[listKey].some(i => {
+                            const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                            const iCat2 = i.category2 || '';
+                            return i.name === newName && iCat === cat1 && iCat2 === cat2;
+                        })) conflict = true;
+                    });
                 }
                 if (conflict) { alert('이미 존재하는 항목입니다.'); return; }
                 Object.keys(newData).forEach(m => {
                     if (isMonthKey(m) && newData[m][listKey]) {
-                        const item = newData[m][listKey].find(i => i.name === oldName && (i.category||'ALL') === oldCat1 && (i.category2||'') === oldCat2);
+                        const item = newData[m][listKey].find(i => {
+                            const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                            const iCat2 = i.category2 || '';
+                            return i.name === oldName && iCat === oldCat1 && iCat2 === oldCat2;
+                        });
                         if (item) {
                             item.name = newName;
                             if (hasCategory) { item.category = cat1; item.category2 = cat2; }
@@ -1641,7 +1688,11 @@
                                                         </td>
                                                     )}
                                                     {visibleMonths.map(month => {
-                                                        const found = (safeData[month][listKey] || []).find(i => i.name === item.name);
+                                                        const found = (safeData[month][listKey] || []).find(i => {
+                                                            const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                                                            const iCat2 = i.category2 || '';
+                                                            return i.name === item.name && iCat === (item.category || catKey) && iCat2 === (item.category2 || '');
+                                                        });
                                                         if (type === 'stockProfit') {
                                                             const profit = found ? (found.profit || 0) : 0;
                                                             const dividend = found ? (found.dividend || 0) : 0;
@@ -1669,9 +1720,15 @@
                                                 <td className="sticky-c-sum p-2 text-right text-xs" colSpan={3} style={{ left: 0, paddingRight: '0.75rem', minWidth: colWidths.c1+colWidths.c2+colWidths.c3, width: colWidths.c1+colWidths.c2+colWidths.c3, maxWidth: colWidths.c1+colWidths.c2+colWidths.c3 }}>{categories[catKey].label} 합계</td>
                                                 {visibleMonths.map(month => {
                                                     const sum = visibleItems.reduce((acc, item) => { 
-                                                        const found = (safeData[month][listKey] || []).find(i => i.name === item.name && (i.category||'ALL') === (item.category||'ALL') && (i.category2||'') === (item.category2||'')); 
-                                                        const val = found ? (found.value ?? found.amount ?? 0) : 0; 
-                                                        return acc + evaluateFormula(val); 
+                                                        const found = (safeData[month][listKey] || []).find(i => {
+                                                            const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                                                            const iCat2 = i.category2 || '';
+                                                            const itemCat = (hasCategory && categories[item.category]) ? item.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                                                            const itemCat2 = item.category2 || '';
+                                                            return i.name === item.name && iCat === itemCat && iCat2 === itemCat2;
+                                                        }); 
+                                                        const val = found ? (found.value ?? found.amount ?? (found.profit !== undefined ? (evaluateFormula(found.profit) + evaluateFormula(found.dividend)) : 0)) : 0; 
+                                                        return acc + (typeof val === 'number' ? val : evaluateFormula(val)); 
                                                     }, 0);
                                                     return (<td key={month} className="p-2 text-right border-r border-slate-200 text-xs bg-slate-50 min-w-[72px]">{formatCurrency(sum)}</td>);
                                                 })}
