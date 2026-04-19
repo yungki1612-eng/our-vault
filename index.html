@@ -753,8 +753,8 @@
 
         const MonthlyAssetAllocationCard = ({ date, data, isWrapped }) => {
             const allocationPlan = [
-                { label: '주식', targetRatio: 35, color: '#818cf8', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.includes('ISA'))).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
+                { label: '주식', targetRatio: 37, color: '#818cf8', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200',
+                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.includes('ISA'))).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
                 { label: '코인', targetRatio: 3, color: '#f59e0b', bgColor: 'bg-amber-50', textColor: 'text-amber-600', borderColor: 'border-amber-200',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'').includes('코인')).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
                 { label: '대출상환', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-50', textColor: 'text-rose-600', borderColor: 'border-rose-200',
@@ -773,7 +773,6 @@
                     const actualRatio = income > 0 ? (actualAmt / income) * 100 : 0;
                     return { ...plan, income, targetAmt, actualAmt, achieved, progress, actualRatio };
                 });
-                // 연간 월별 달성 현황 계산
                 const year = date.substring(0, 4);
                 const yearlyAchieved = Array.from({ length: 12 }, (_, i) => {
                     const monthKey = `${year}-${String(i + 1).padStart(2, '0')}`;
@@ -791,80 +790,69 @@
             }, [date, data]);
 
             const content = (
-                <div className="flex-1 flex flex-col min-h-0 w-full overflow-y-auto custom-scrollbar">
+                <div className="flex-1 flex flex-col min-h-0 w-full">
                     {/* 수입 합계 헤더 */}
-                    <div className="flex items-center justify-between mb-3 px-1">
+                    <div className="flex items-center justify-between mb-2 px-1">
                         <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-4 rounded-full bg-emerald-400"></div>
+                            <div className="w-1.5 h-3.5 rounded-full bg-emerald-400"></div>
                             <span className="text-[11px] font-bold text-slate-500">이번 달 수입 합계</span>
                         </div>
                         <span className="text-sm font-black text-emerald-600">{formatCurrency(stats.income)}</span>
                     </div>
                     {/* 배분 항목 테이블 */}
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                         {stats.items.map((item, idx) => (
-                            <div key={idx} className={`rounded-xl border ${item.borderColor} ${item.bgColor} p-2.5`}>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></div>
-                                        <span className="text-[11px] font-bold text-slate-700">{item.label}</span>
-                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.textColor} bg-white/70`}>목표 {item.targetRatio}%</span>
+                            <div key={idx} className={`rounded-lg border ${item.borderColor} ${item.bgColor} px-2.5 py-2`}>
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></div>
+                                        <span className="text-[10px] font-bold text-slate-700">{item.label}</span>
+                                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${item.textColor} bg-white/70`}>목표 {item.targetRatio}%</span>
                                     </div>
-                                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${item.achieved ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                    <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold ${item.achieved ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                                         {item.achieved ? (
-                                            <><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>달성</>
+                                            <><svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>달성</>
                                         ) : (
-                                            <><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3"/></svg>진행중</>
+                                            <>진행중</>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 mb-1.5">
-                                    <div className="flex-1 bg-white/60 rounded-full h-1.5 overflow-hidden">
-                                        <div className="h-full rounded-full transition-all duration-700"
-                                            style={{ width: `${item.progress}%`, backgroundColor: item.color }}></div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                    <div className="flex-1 bg-white/60 rounded-full h-1 overflow-hidden">
+                                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${item.progress}%`, backgroundColor: item.color }}></div>
                                     </div>
-                                    <span className="text-[9px] font-mono text-slate-400 w-8 text-right">{item.progress.toFixed(0)}%</span>
+                                    <span className="text-[8px] font-mono text-slate-400 w-6 text-right">{item.progress.toFixed(0)}%</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[9px] text-slate-400">목표</span>
-                                        <span className="text-[10px] font-bold text-slate-600">{formatCurrency(item.targetAmt)}</span>
+                                        <span className="text-[8px] text-slate-400">목표</span>
+                                        <span className="text-[9px] font-bold text-slate-600">{formatCurrency(item.targetAmt)}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[9px] text-slate-400">실제</span>
-                                        <span className={`text-[10px] font-bold ${item.achieved ? 'text-emerald-600' : item.textColor}`}>{formatCurrency(item.actualAmt)}</span>
-                                        <span className="text-[9px] text-slate-400">({item.actualRatio.toFixed(1)}%)</span>
+                                        <span className="text-[8px] text-slate-400">실제</span>
+                                        <span className={`text-[9px] font-bold ${item.achieved ? 'text-emerald-600' : item.textColor}`}>{formatCurrency(item.actualAmt)}</span>
+                                        <span className="text-[8px] text-slate-400">({item.actualRatio.toFixed(1)}%)</span>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    {/* 연간 월별 달성 트래커 */}
-                    <div className="mt-3 pt-3 border-t border-slate-100">
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <span className="text-[10px] font-bold text-slate-500">{stats.year}년 전략 달성 현황</span>
-                            <span className="text-[9px] text-slate-400">{stats.yearlyAchieved.filter(m => m.achieved).length} / 12개월</span>
+                    {/* 연간 월별 달성 트래커 - 1줄 12박스 */}
+                    <div className="mt-2 pt-2 border-t border-slate-100">
+                        <div className="flex items-center justify-between mb-1.5 px-0.5">
+                            <span className="text-[9px] font-bold text-slate-500">{stats.year}년 달성 현황</span>
+                            <span className="text-[8px] text-slate-400">{stats.yearlyAchieved.filter(m => m.achieved).length} / 12개월</span>
                         </div>
-                        <div className="grid grid-cols-6 gap-1.5">
+                        <div className="grid grid-cols-12 gap-1">
                             {stats.yearlyAchieved.map((m) => {
                                 const isCurrentMonth = date === `${stats.year}-${String(m.month).padStart(2, '0')}`;
                                 return (
-                                    <div key={m.month}
-                                        className={`relative rounded-lg aspect-square flex flex-col items-center justify-center transition-all duration-300
-                                            ${m.achieved
-                                                ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-sm shadow-emerald-200'
-                                                : m.hasData
-                                                    ? 'bg-slate-100 border border-slate-200'
-                                                    : 'bg-white border border-dashed border-slate-200'
-                                            }
-                                            ${isCurrentMonth ? 'ring-2 ring-indigo-400 ring-offset-1' : ''}
+                                    <div key={m.month} title={`${m.month}월${m.achieved ? ' ✓ 달성' : m.hasData ? ' 미달성' : ' 데이터 없음'}`}
+                                        className={`h-6 rounded flex flex-col items-center justify-center transition-all duration-300
+                                            ${m.achieved ? 'bg-emerald-400' : m.hasData ? 'bg-slate-100 border border-slate-200' : 'bg-white border border-dashed border-slate-200'}
+                                            ${isCurrentMonth ? 'ring-1 ring-indigo-400 ring-offset-1' : ''}
                                         `}>
-                                        <span className={`text-[9px] font-bold leading-none ${m.achieved ? 'text-white' : 'text-slate-400'}`}>{m.month}월</span>
-                                        {m.achieved && (
-                                            <svg className="w-2.5 h-2.5 text-white/80 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
-                                            </svg>
-                                        )}
+                                        <span className={`text-[7px] font-bold leading-none ${m.achieved ? 'text-white' : 'text-slate-400'}`}>{m.month}</span>
                                     </div>
                                 );
                             })}
