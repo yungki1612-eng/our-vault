@@ -759,7 +759,7 @@
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'').includes('코인')).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
                 { label: '대출상환', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-50', textColor: 'text-rose-600', borderColor: 'border-rose-200',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'') === '대출상환').reduce((a,b) => a + (Number(b.amount) || 0), 0) },
-                { label: '신용카드', targetRatio: 20, color: '#06b6d4', bgColor: 'bg-cyan-50', textColor: 'text-cyan-600', borderColor: 'border-cyan-200',
+                { label: '신용카드', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-50', textColor: 'text-cyan-600', borderColor: 'border-cyan-200',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && b.name.includes('신용카드')).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
             ];
             const stats = useMemo(() => {
@@ -768,7 +768,7 @@
                 const items = allocationPlan.map(plan => {
                     const targetAmt = income * (plan.targetRatio / 100);
                     const actualAmt = plan.getActual(budget);
-                    const achieved = income > 0 && actualAmt >= targetAmt;
+                    const achieved = income > 0 && (plan.isLimit ? actualAmt <= targetAmt : actualAmt >= targetAmt);
                     const progress = targetAmt > 0 ? Math.min((actualAmt / targetAmt) * 100, 100) : (actualAmt > 0 ? 100 : 0);
                     const actualRatio = income > 0 ? (actualAmt / income) * 100 : 0;
                     return { ...plan, income, targetAmt, actualAmt, achieved, progress, actualRatio };
@@ -782,7 +782,7 @@
                     const allAchieved = allocationPlan.every(plan => {
                         const targetAmt = mIncome * (plan.targetRatio / 100);
                         const actualAmt = plan.getActual(mBudget);
-                        return actualAmt >= targetAmt;
+                        return plan.isLimit ? actualAmt <= targetAmt : actualAmt >= targetAmt;
                     });
                     return { month: i + 1, achieved: allAchieved, hasData: true };
                 });
@@ -809,11 +809,11 @@
                                         <span className="text-[10px] font-bold text-slate-700">{item.label}</span>
                                         <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${item.textColor} bg-white/70`}>목표 {item.targetRatio}%</span>
                                     </div>
-                                    <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold ${item.achieved ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                    <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold ${item.achieved ? 'bg-emerald-100 text-emerald-700' : (item.isLimit ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500')}`}>
                                         {item.achieved ? (
                                             <><svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>달성</>
                                         ) : (
-                                            <>진행중</>
+                                            <>{item.isLimit ? '초과' : '진행중'}</>
                                         )}
                                     </div>
                                 </div>
