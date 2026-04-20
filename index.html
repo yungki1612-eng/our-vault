@@ -754,17 +754,17 @@
         const MonthlyAssetAllocationCard = ({ date, data, isWrapped }) => {
             const allocationPlan = [
                 { label: '주식', targetRatio: 37, color: '#818cf8', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200',
-                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.includes('ISA'))).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: '코인', targetRatio: 3, color: '#f59e0b', bgColor: 'bg-amber-50', textColor: 'text-amber-600', borderColor: 'border-amber-200',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'').includes('코인')).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'').includes('코인')).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: '대출상환', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-50', textColor: 'text-rose-600', borderColor: 'border-rose-200',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'') === '대출상환').reduce((a,b) => a + (Number(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'') === '대출상환').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: '신용카드', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-50', textColor: 'text-cyan-600', borderColor: 'border-cyan-200',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && b.name.includes('신용카드')).reduce((a,b) => a + (Number(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && b.name.includes('신용카드')).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
             ];
             const stats = useMemo(() => {
                 const budget = data[date]?.budget || [];
-                const income = budget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                const income = budget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
                 const items = allocationPlan.map(plan => {
                     const targetAmt = income * (plan.targetRatio / 100);
                     const actualAmt = plan.getActual(budget);
@@ -777,7 +777,7 @@
                 const yearlyAchieved = Array.from({ length: 12 }, (_, i) => {
                     const monthKey = `${year}-${String(i + 1).padStart(2, '0')}`;
                     const mBudget = data[monthKey]?.budget || [];
-                    const mIncome = mBudget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (Number(b.amount) || 0), 0);
+                    const mIncome = mBudget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
                     if (mIncome <= 0) return { month: i + 1, achieved: false, hasData: false };
                     const allAchieved = allocationPlan.every(plan => {
                         const targetAmt = mIncome * (plan.targetRatio / 100);
