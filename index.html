@@ -1586,7 +1586,8 @@
                 Object.values(safeData).forEach(m => { (m[listKey] || []).forEach(i => {
                     const groupCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? normalizeCategory(i.category, type) : 'ALL');
                     const validCat2 = i.category2 || '';
-                    const itemKey = `${i.category || 'ALL'}|${validCat2}|${i.name}`;
+                    // For hasCategory=false (loans/stockProfit), key by name only to prevent duplicates
+                    const itemKey = hasCategory ? `${i.category || 'ALL'}|${validCat2}|${i.name}` : i.name;
                     if (!currentUnique.has(itemKey)) {
                         currentUnique.add(itemKey);
                         if(tempGroups[groupCat]) tempGroups[groupCat].push({ name: i.name, category: i.category, category2: validCat2, itemKey });
@@ -1656,7 +1657,18 @@
                 if (idx >= 0) { list[idx][field] = val; } 
                 else {
                     const newItem = { id: Date.now(), name: itemName };
-                    if (hasCategory) { newItem.category = searchCat1; newItem.category2 = searchCat2; }
+                    if (hasCategory) {
+                        newItem.category = searchCat1;
+                        newItem.category2 = searchCat2;
+                    } else {
+                        // For loans/stockProfit: inherit category from existing entry in other months
+                        // to prevent duplicate rows caused by mismatched itemKeys
+                        const existingEntry = Object.keys(safeData)
+                            .filter(isMonthKey)
+                            .flatMap(m => safeData[m]?.[listKey] || [])
+                            .find(i => i.name === itemName);
+                        if (existingEntry?.category) newItem.category = existingEntry.category;
+                    }
                     if(type === 'assets') newItem.value = 0; else if(type === 'stockProfit') { newItem.profit = 0; newItem.dividend = 0; } else newItem.amount = 0;
                     newItem[field] = val; list.push(newItem);
                 }
