@@ -46,44 +46,38 @@
             position: sticky; 
             left: 0; 
             z-index: 50 !important; 
-            background-color: rgba(248, 250, 252, 0.98); 
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px); 
+            background-color: #f8fafc;
             border-right: 2px solid #cbd5e1 !important;
         }
         .sticky-col-cell { 
             position: sticky; 
             left: 0; 
             z-index: 40 !important; 
-            background-color: rgba(255, 255, 255, 0.98); 
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px); 
+            background-color: #ffffff;
             border-right: 2px solid #cbd5e1 !important;
         }
         .sticky-sum-cell { 
             position: sticky; 
             left: 0; 
             z-index: 40 !important; 
-            background-color: rgba(241, 245, 249, 0.98); 
-            -webkit-backdrop-filter: blur(8px);
-            backdrop-filter: blur(8px); 
+            background-color: #f1f5f9;
             border-right: 2px solid #94a3b8 !important;
             font-weight: 800;
         }
-        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #e2e8f0; }
-        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 1px solid #e2e8f0; }
-        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: rgba(255, 255, 255, 0.98); border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
-        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #cbd5e1; }
-        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 1px solid #cbd5e1; }
-        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
-        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: rgba(248, 250, 252, 0.98); border-right: 2px solid #94a3b8 !important; font-weight: 800; }
+        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: #ffffff; border-right: 1px solid #e2e8f0; }
+        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: #ffffff; border-right: 1px solid #e2e8f0; }
+        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: #ffffff; border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
+        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: #f8fafc; border-right: 1px solid #cbd5e1; }
+        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: #f8fafc; border-right: 1px solid #cbd5e1; }
+        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: #f8fafc; border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
+        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: #f8fafc; border-right: 2px solid #94a3b8 !important; font-weight: 800; }
         
-        .dark .sticky-col-header { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
-        .dark .sticky-col-cell { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
-        .dark .sticky-sum-cell { background-color: rgba(30, 41, 59, 0.95); border-right-color: #475569 !important; }
-        .dark .sticky-c1, .dark .sticky-c2, .dark .sticky-c3 { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155; }
-        .dark .sticky-c1-hdr, .dark .sticky-c2-hdr, .dark .sticky-c3-hdr { background-color: rgba(15, 23, 42, 0.95); border-right-color: #334155 !important; }
-        .dark .sticky-c-sum { background-color: rgba(30, 41, 59, 0.95); border-right-color: #475569 !important; }
+        .dark .sticky-col-header { background-color: #0f172a; border-right-color: #334155 !important; }
+        .dark .sticky-col-cell { background-color: #0f172a; border-right-color: #334155 !important; }
+        .dark .sticky-sum-cell { background-color: #1e293b; border-right-color: #475569 !important; }
+        .dark .sticky-c1, .dark .sticky-c2, .dark .sticky-c3 { background-color: #0f172a; border-right-color: #334155; }
+        .dark .sticky-c1-hdr, .dark .sticky-c2-hdr, .dark .sticky-c3-hdr { background-color: #0f172a; border-right-color: #334155 !important; }
+        .dark .sticky-c-sum { background-color: #1e293b; border-right-color: #475569 !important; }
 
         .sticky-category { 
             position: sticky; 
@@ -431,14 +425,38 @@
                 Object.keys(monthIndices).forEach(m => {
                     if (!newData[m]) newData[m] = { assets: [], loans: [], budget: [], stockProfit: [] };
                 });
+                // Detect column layout from header (new Korean format vs old English format)
+                const hLower = header.map(h => (h || '').trim().toLowerCase());
+                const col1Idx = hLower.indexOf('항목1');
+                const col2Idx = hLower.indexOf('항목2');
+                const col3Idx = hLower.indexOf('항목3');
+                const colNameIdx = hLower.indexOf('항목명');
+                const colTypeIdx = hLower.indexOf('구분');
+                const isNewTripleFormat = col1Idx !== -1 && col2Idx !== -1 && col3Idx !== -1;
+                const isNewNameFormat = colNameIdx !== -1;
                 for (let i = 1; i < lines.length; i++) {
                     const row = parseCSVLine(lines[i]);
                     if (row.length < 2) continue;
-                    let category = ''; let name = '';
+                    let category = '', category2 = '', name = '';
                     if (type === 'stockProfit') {
-                        const rawType = (row[0] || '').trim().toUpperCase();
+                        let rawType;
+                        if (isNewNameFormat && colTypeIdx !== -1) {
+                            name = (row[colNameIdx] || '').trim();
+                            rawType = (row[colTypeIdx] || '').trim().toUpperCase();
+                        } else {
+                            rawType = (row[0] || '').trim().toUpperCase();
+                            name = (row[1] || '').trim();
+                        }
                         category = (rawType === 'PROFIT' || rawType === 'DIVIDEND' || rawType === 'P' || rawType === 'D') ? rawType : 'PROFIT';
-                        name = (row[1] || '').trim();
+                    } else if (isNewTripleFormat && (type === 'assets' || type === 'budget')) {
+                        const catLabel = (row[col1Idx] || '').trim();
+                        category2 = (row[col2Idx] || '').trim();
+                        name = (row[col3Idx] || '').trim();
+                        const cats = type === 'assets' ? ASSET_CATEGORIES : BUDGET_CATEGORIES;
+                        const matchedKey = Object.entries(cats).find(([, v]) => v.label === catLabel);
+                        category = matchedKey ? matchedKey[0] : normalizeCategory(catLabel, type);
+                    } else if (isNewNameFormat && type === 'loans') {
+                        name = (row[colNameIdx] || '').trim();
                     } else {
                         category = normalizeCategory((row[0] || '').trim(), type);
                         name = (row[1] || '').trim();
@@ -451,12 +469,16 @@
                         const listKey = type === 'stockProfit' ? 'stockProfit' : type;
                         if (!newData[month][listKey]) newData[month][listKey] = [];
                         const list = newData[month][listKey];
-                        const existingItem = list.find(item => item.name === name);
+                        const existingItem = list.find(item =>
+                            item.name === name &&
+                            (type === 'stockProfit' ? true : (item.category || '') === category && (item.category2 || '') === category2)
+                        );
                         if (existingItem) {
                             if (type === 'stockProfit') {
                                 if (category === 'DIVIDEND' || category === 'D') existingItem.dividend = val; else existingItem.profit = val;
                             } else {
                                 if (category) existingItem.category = category;
+                                if (category2 !== undefined) existingItem.category2 = category2;
                                 if (type === 'assets') existingItem.value = val; else existingItem.amount = val;
                             }
                         } else {
@@ -466,6 +488,7 @@
                                 if (category === 'DIVIDEND' || category === 'D') newItem.dividend = val; else newItem.profit = val;
                             } else {
                                 if (category) newItem.category = category;
+                                if (category2) newItem.category2 = category2;
                                 if (type === 'assets') newItem.value = val; else newItem.amount = val;
                             }
                             list.push(newItem);
@@ -488,43 +511,90 @@
             }).catch(err => { console.error(err); alert("파일 읽기 실패"); setIsUploading(false); });
         };
 
+        const CSV_FILE_NAMES = {
+            assets: '자산관리',
+            budget: '수입지출',
+            loans: '대출관리',
+            stockProfit: '주식실현손익',
+        };
+
         const downloadCSV = (data, type) => {
             const months = Object.keys(data).filter(isMonthKey).sort();
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            let header = (type === 'stockProfit') ? "Type,Item" : "Category,Item";
-            months.forEach(m => header += `,${m}`);
-            csvContent += header + "\n";
             const listKey = type === 'stockProfit' ? 'stockProfit' : type;
-            const uniqueItemsMap = new Map();
-            months.forEach(m => { (data[m]?.[listKey] || []).forEach(item => { if (!uniqueItemsMap.has(item.name)) uniqueItemsMap.set(item.name, item.category || ''); }); });
-            uniqueItemsMap.forEach((category, name) => {
-                if (type === 'stockProfit') {
-                    const rowProfit = [`PROFIT`, `"${name}"`];
-                    const rowDividend = [`DIVIDEND`, `"${name}"`];
+            const fileName = CSV_FILE_NAMES[type] || type;
+
+            // Collect all unique items preserving order across months
+            // For categorized types, key = category|category2|name; for others key = name
+            const uniqueItemsOrdered = [];
+            const seenKeys = new Set();
+            months.forEach(m => {
+                (data[m]?.[listKey] || []).forEach(item => {
+                    const cat1 = item.category || '';
+                    const cat2 = item.category2 || '';
+                    const key = `${cat1}|${cat2}|${item.name}`;
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        uniqueItemsOrdered.push({ name: item.name, category: cat1, category2: cat2, key });
+                    }
+                });
+            });
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+
+            if (type === 'assets' || type === 'budget') {
+                // Header: 항목1, 항목2, 항목3, YYYY-MM, ...
+                const categories = type === 'assets' ? ASSET_CATEGORIES : BUDGET_CATEGORIES;
+                csvContent += '항목1,항목2,항목3,' + months.join(',') + '\n';
+                uniqueItemsOrdered.forEach(({ name, category, category2 }) => {
+                    const catLabel = categories[category]?.label || category || '';
+                    const row = [`"${catLabel}"`, `"${category2}"`, `"${name}"`];
                     months.forEach(m => {
-                        const found = (data[m]?.[listKey] || []).find(i => i.name === name);
-                        rowProfit.push(found ? (found.profit || 0) : 0);
-                        rowDividend.push(found ? (found.dividend || 0) : 0);
-                    });
-                    csvContent += rowProfit.join(",") + "\n" + rowDividend.join(",") + "\n";
-                } else {
-                    const row = [`"${category}"`, `"${name}"`];
-                    months.forEach(m => {
-                        const found = (data[m]?.[listKey] || []).find(i => i.name === name);
-                        let val = 0;
-                        if (found) { if (type === 'assets') val = found.value; else val = found.amount; }
+                        const found = (data[m]?.[listKey] || []).find(i =>
+                            i.name === name &&
+                            (i.category || '') === category &&
+                            (i.category2 || '') === category2
+                        );
+                        const val = found ? (type === 'assets' ? (found.value ?? 0) : (found.amount ?? 0)) : 0;
                         row.push(val);
                     });
-                    csvContent += row.join(",") + "\n";
-                }
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `${type}_data.csv`);
+                    csvContent += row.join(',') + '\n';
+                });
+            } else if (type === 'loans') {
+                // Header: 항목명, YYYY-MM, ...
+                csvContent += '항목명,' + months.join(',') + '\n';
+                uniqueItemsOrdered.forEach(({ name }) => {
+                    const row = [`"${name}"`];
+                    months.forEach(m => {
+                        const found = (data[m]?.[listKey] || []).find(i => i.name === name);
+                        row.push(found ? (found.amount ?? 0) : 0);
+                    });
+                    csvContent += row.join(',') + '\n';
+                });
+            } else if (type === 'stockProfit') {
+                // Header: 항목명, 구분, YYYY-MM, ...
+                csvContent += '항목명,구분,' + months.join(',') + '\n';
+                uniqueItemsOrdered.forEach(({ name }) => {
+                    const rowP = [`"${name}"`, 'P'];
+                    const rowD = [`"${name}"`, 'D'];
+                    months.forEach(m => {
+                        const found = (data[m]?.[listKey] || []).find(i => i.name === name);
+                        rowP.push(found ? (found.profit ?? 0) : 0);
+                        rowD.push(found ? (found.dividend ?? 0) : 0);
+                    });
+                    csvContent += rowP.join(',') + '\n';
+                    csvContent += rowD.join(',') + '\n';
+                });
+            }
+
+            const blob = new Blob([csvContent.replace('data:text/csv;charset=utf-8,', '')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${fileName}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         };
 
         // --- Base UI Components ---
@@ -1579,6 +1649,7 @@
                 const searchCat2 = itemCategory2 !== undefined ? itemCategory2 : targetCategory2;
                 
                 const idx = list.findIndex(i => {
+                    if (!hasCategory) return i.name === itemName; // loans / stockProfit: name only
                     return i.name === itemName && (i.category || 'ALL') === searchCat1 && (i.category2 || '') === (searchCat2 || '');
                 });
 
@@ -1694,7 +1765,7 @@
                                             const isFirstCat1 = isEditing || idx === 0;
                                             const isFirstCat2 = isEditing || idx === 0 || (idx > 0 && visibleItems[idx - 1].category2 !== item.category2);
                                             return (
-                                                <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-indigo-50/30 transition-colors group/row`}>
+                                                <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-indigo-50/60 transition-colors group/row`}>
                                                     {hasCategory ? (
                                                         <>
                                                             <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>
@@ -1762,7 +1833,11 @@
                                                     )}
                                                     {visibleMonths.map(month => {
                                                         const found = (safeData[month][listKey] || []).find(i => {
-                                                            const iCat = (hasCategory && categories[i.category]) ? i.category : (hasCategory ? Object.keys(categories)[0] : 'ALL');
+                                                            if (!hasCategory) {
+                                                                // loans / stockProfit: match by name only
+                                                                return i.name === item.name;
+                                                            }
+                                                            const iCat = categories[i.category] ? i.category : Object.keys(categories)[0];
                                                             const iCat2 = i.category2 || '';
                                                             return i.name === item.name && iCat === (item.category || catKey) && iCat2 === (item.category2 || '');
                                                         });
@@ -1781,7 +1856,7 @@
                                                             const val = found ? (found.value ?? found.amount ?? 0) : 0;
                                                             const fieldName = type === 'assets' ? 'value' : 'amount';
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-slate-300/50 bg-white/30 min-w-[72px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
+                                                                <td key={month} className="p-0 border-r border-slate-300/50 bg-white min-w-[72px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
                                                             );
                                                         }
                                                     })}
@@ -2076,9 +2151,19 @@
                             }} />
                             <GlassButton onClick={() => fileInputRef.current.click()}><Icons.Upload className="w-3.5 h-3.5"/> 업로드</GlassButton>
                             <GlassButton onClick={() => {
-                                let csv = "data:text/csv;charset=utf-8,\uFEFFName," + years.join(",") + "\n";
-                                salaryData.items.forEach(item => { csv += `"${item.name}",` + years.map(y => item.values[y] || 0).join(",") + "\n"; });
-                                const link = document.createElement("a"); link.setAttribute("href", encodeURI(csv)); link.setAttribute("download", "our_salary_history.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                                const totalRow = salaryData.items.reduce((acc, item) => acc + Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0), 0);
+                                let csvRows = '이름,합계,' + years.join(',') + '\n';
+                                salaryData.items.forEach(item => {
+                                    const itemTotal = Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0);
+                                    csvRows += `"${item.name}",${itemTotal},` + years.map(y => item.values[y] || 0).join(',') + '\n';
+                                });
+                                const blob = new Blob(['\uFEFF' + csvRows], { type: 'text/csv;charset=utf-8;' });
+                                const url = URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.setAttribute('href', url);
+                                link.setAttribute('download', '연봉관리.csv');
+                                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                                URL.revokeObjectURL(url);
                             }}><Icons.Download className="w-3.5 h-3.5"/> 다운로드</GlassButton>
                         </div></div>
                         <div className="overflow-auto custom-scrollbar" ref={containerRef}>
