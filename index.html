@@ -2467,12 +2467,12 @@
             return (
                 <div className="space-y-6 animate-fade-in">
                     <div className="grid grid-cols-1 gap-6">
-                        <LoanCalculator />
-                    </div>
-                    <div className="grid grid-cols-1 gap-6">
                         <LoanTrendGraph data={data} />
                     </div>
                     <GenericSpreadsheet data={data} type="loans" onUpdate={onUpdate} hasCategory={false} />
+                    <div className="grid grid-cols-1 gap-6">
+                        <LoanCalculator />
+                    </div>
                 </div>
             );
         };
