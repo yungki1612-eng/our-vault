@@ -42,48 +42,52 @@
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
 
+        /* ===== Flat Excel-Style Spreadsheet ===== */
         .sticky-col-header { 
             position: sticky; 
             left: 0; 
             z-index: 50 !important; 
-            background-color: #f8fafc;
-            border-right: 2px solid #cbd5e1 !important;
+            background-color: #eef0f3;
+            border-right: 1px solid #b0b8c4 !important;
+            border-bottom: 2px solid #8c95a0 !important;
         }
         .sticky-col-cell { 
             position: sticky; 
             left: 0; 
             z-index: 40 !important; 
-            background-color: #ffffff;
-            border-right: 2px solid #cbd5e1 !important;
+            background-color: #eef0f3;
+            border-right: 1px solid #b0b8c4 !important;
         }
         .sticky-sum-cell { 
             position: sticky; 
             left: 0; 
             z-index: 40 !important; 
-            background-color: #f1f5f9;
-            border-right: 2px solid #94a3b8 !important;
+            background-color: #dde1e7;
+            border-right: 1px solid #8c95a0 !important;
+            border-top: 1px solid #8c95a0 !important;
             font-weight: 800;
         }
-        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: #ffffff; border-right: 1px solid #e2e8f0; }
-        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: #ffffff; border-right: 1px solid #e2e8f0; }
-        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: #ffffff; border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
-        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: #f8fafc; border-right: 1px solid #cbd5e1; }
-        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: #f8fafc; border-right: 1px solid #cbd5e1; }
-        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: #f8fafc; border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 8px -2px rgba(0,0,0,0.1); }
-        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: #f8fafc; border-right: 2px solid #94a3b8 !important; font-weight: 800; }
+        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: #eef0f3; border-right: 1px solid #b0b8c4; }
+        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: #eef0f3; border-right: 1px solid #b0b8c4; }
+        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: #eef0f3; border-right: 2px solid #8c95a0 !important; }
+        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: #dde1e7; border-right: 1px solid #b0b8c4; border-bottom: 2px solid #8c95a0 !important; }
+        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: #dde1e7; border-right: 1px solid #b0b8c4; border-bottom: 2px solid #8c95a0 !important; }
+        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: #dde1e7; border-right: 2px solid #8c95a0 !important; border-bottom: 2px solid #8c95a0 !important; }
+        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: #dde1e7; border-right: 2px solid #8c95a0 !important; border-top: 1px solid #8c95a0 !important; font-weight: 800; }
         
-        .dark .sticky-col-header { background-color: #0f172a; border-right-color: #334155 !important; }
-        .dark .sticky-col-cell { background-color: #0f172a; border-right-color: #334155 !important; }
-        .dark .sticky-sum-cell { background-color: #1e293b; border-right-color: #475569 !important; }
-        .dark .sticky-c1, .dark .sticky-c2, .dark .sticky-c3 { background-color: #0f172a; border-right-color: #334155; }
-        .dark .sticky-c1-hdr, .dark .sticky-c2-hdr, .dark .sticky-c3-hdr { background-color: #0f172a; border-right-color: #334155 !important; }
-        .dark .sticky-c-sum { background-color: #1e293b; border-right-color: #475569 !important; }
+        .dark .sticky-col-header { background-color: #1e293b; border-right-color: #334155 !important; border-bottom-color: #475569 !important; }
+        .dark .sticky-col-cell { background-color: #1e293b; border-right-color: #334155 !important; }
+        .dark .sticky-sum-cell { background-color: #0f172a; border-right-color: #475569 !important; }
+        .dark .sticky-c1, .dark .sticky-c2, .dark .sticky-c3 { background-color: #1e293b; border-right-color: #334155; }
+        .dark .sticky-c1-hdr, .dark .sticky-c2-hdr, .dark .sticky-c3-hdr { background-color: #0f172a; border-right-color: #334155 !important; border-bottom-color: #475569 !important; }
+        .dark .sticky-c-sum { background-color: #0f172a; border-right-color: #475569 !important; }
 
         .sticky-category { 
             position: sticky; 
             left: 0; 
             z-index: 45 !important; 
-            border-right: 2px solid rgba(0,0,0,0.05) !important;
+            background-color: #eef0f3;
+            border-right: 1px solid #b0b8c4 !important;
         }
         .cursor-move { cursor: move; }
         
@@ -1714,57 +1718,57 @@
             };
             const handleDeleteMonth = (month) => { if (!confirm(`${month} 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return; const newData = JSON.parse(JSON.stringify(safeData)); delete newData[month]; onUpdate(newData); };
             return (
-                <GlassCard className="flex flex-col h-[calc(100vh-180px)] overflow-hidden">
-                    <div className="p-4 bg-white/50 border-b border-white/50 flex flex-wrap gap-3 justify-between items-center text-xs backdrop-blur-md z-40 relative">
+                <div className="flex flex-col h-[calc(100vh-180px)] overflow-hidden bg-white border border-slate-300 shadow-sm">
+                    <div className="px-3 py-2 bg-[#f2f4f7] border-b border-slate-300 flex flex-wrap gap-2 justify-between items-center text-xs z-40 relative">
                         <div className="flex gap-2 items-center">
                             {hasCategory && (
                                 <>
-                                    <select className="p-2 border border-white/60 rounded-xl bg-white/60 backdrop-blur-sm outline-none focus:ring-2 ring-indigo-500/20" value={targetCategory} onChange={(e) => setTargetCategory(e.target.value)}>{Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}</select>
-                                    <input type="text" placeholder="항목2 입력" className="p-2 border border-white/60 rounded-xl bg-white/60 w-24 outline-none focus:ring-2 ring-indigo-500/20" value={targetCategory2} onChange={(e) => setTargetCategory2(e.target.value)} />
+                                    <select className="px-2 py-1.5 border border-slate-300 bg-white outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-slate-700 text-xs" value={targetCategory} onChange={(e) => setTargetCategory(e.target.value)}>{Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}</select>
+                                    <input type="text" placeholder="항목2" className="px-2 py-1.5 border border-slate-300 bg-white w-24 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-xs" value={targetCategory2} onChange={(e) => setTargetCategory2(e.target.value)} />
                                 </>
                             )}
-                            <input type="text" placeholder="항목명 입력" className="p-2 border border-white/60 rounded-xl bg-white/60 w-32 outline-none focus:ring-2 ring-indigo-500/20" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
-                            <GlassButton onClick={handleAddRow} active><Icons.Plus className="w-3.5 h-3.5"/> 추가</GlassButton>
+                            <input type="text" placeholder="항목명" className="px-2 py-1.5 border border-slate-300 bg-white w-32 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-xs" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+                            <button onClick={handleAddRow} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"><Icons.Plus className="w-3.5 h-3.5"/> 추가</button>
                         </div>
                         <div className="flex gap-2 items-center">
-                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none mr-2 px-2 py-1 rounded-lg hover:bg-white/40"><input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} className="rounded text-indigo-600"/> 숨김 항목</label>
-                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none mr-2 px-2 py-1 rounded-lg hover:bg-white/40"><input type="checkbox" checked={showHiddenMonths} onChange={e => setShowHiddenMonths(e.target.checked)} className="rounded text-indigo-600"/> 숨김 열</label>
-                            <button onClick={handleAddMonth} className="bg-emerald-500 text-white px-3 py-2.5 rounded-xl hover:bg-emerald-600 flex gap-1 font-bold shadow-emerald-200 shadow-md transition-all hover:-translate-y-0.5"><Icons.CalendarPlus className="w-3.5 h-3.5"/> 월 추가</button>
+                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none px-2 py-1 hover:bg-slate-200 transition-colors"><input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} className="text-indigo-600"/> 숨김 항목</label>
+                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none px-2 py-1 hover:bg-slate-200 transition-colors"><input type="checkbox" checked={showHiddenMonths} onChange={e => setShowHiddenMonths(e.target.checked)} className="text-indigo-600"/> 숨김 열</label>
+                            <button onClick={handleAddMonth} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors"><Icons.CalendarPlus className="w-3.5 h-3.5"/> 월 추가</button>
                             <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={(e) => processFileUpload(e.target.files[0], safeData, type, onUpdate, setIsUploading)} />
-                            <GlassButton onClick={() => fileInputRef.current.click()} disabled={isUploading}>{isUploading ? <Icons.Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Icons.Upload className="w-3.5 h-3.5"/>} CSV 업로드</GlassButton>
-                            <GlassButton onClick={() => downloadCSV(safeData, type)}><Icons.Download className="w-3.5 h-3.5"/> CSV 다운로드</GlassButton>
+                            <button onClick={() => fileInputRef.current.click()} disabled={isUploading} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors disabled:opacity-50">{isUploading ? <Icons.Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Icons.Upload className="w-3.5 h-3.5"/>} CSV 업로드</button>
+                            <button onClick={() => downloadCSV(safeData, type)} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors"><Icons.Download className="w-3.5 h-3.5"/> CSV 다운로드</button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-auto custom-scrollbar bg-white/30 relative">
+                    <div className="flex-1 overflow-auto custom-scrollbar bg-white relative">
                         <table className="min-w-max text-sm text-right border-collapse">
-                            <thead className="bg-slate-50 text-slate-500 sticky top-0 z-40 shadow-sm">
-                                <tr>
+                            <thead className="sticky top-0 z-40">
+                                <tr style={{ background: '#dde1e7' }}>
                                     {hasCategory ? (
                                         <>
-                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-2 h-full cursor-col-resize hover:bg-slate-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
-                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-2 h-full cursor-col-resize hover:bg-slate-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
-                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-2 h-full cursor-col-resize hover:bg-slate-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
+                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-slate-600 relative" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-400 z-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
+                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-slate-600 relative" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-400 z-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
+                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-slate-600 relative" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-400 z-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
                                         </>
                                     ) : (
-                                        <th className="sticky-col-header p-2 text-left border-r-2 border-slate-200 w-28 pl-6 font-bold text-xs">항목명</th>
+                                        <th className="sticky-col-header p-2 text-left w-28 pl-3 font-bold text-xs text-slate-600">항목명</th>
                                     )}
                                     {visibleMonths.map(m => (
-                                        <th key={m} className={`p-2 min-w-[72px] border-r border-slate-300 font-bold text-center text-slate-600 group/th relative ${hiddenMonths.has(m) ? 'bg-slate-100/50' : ''}`}>
-                                            <div className="flex flex-col items-center justify-center gap-1">
-                                                <span className="text-[10px] text-slate-400 font-medium tracking-tighter uppercase">{m.split('-')[0]}</span>
+                                        <th key={m} className={`p-0 min-w-[80px] border-r border-[#b0b8c4] font-bold text-center text-slate-600 group/th relative border-b-2 border-b-[#8c95a0] ${hiddenMonths.has(m) ? 'opacity-60' : ''}`} style={{ background: '#dde1e7' }}>
+                                            <div className="flex flex-col items-center justify-center py-1.5 px-2">
+                                                <span className="text-[9px] text-slate-400 font-medium tracking-widest uppercase">{m.split('-')[0]}</span>
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-sm font-black">{m.split('-')[1]}월</span>
-                                                    <button onClick={(e) => { e.stopPropagation(); toggleHideMonth(m); }} className={`p-1 rounded-md transition-all shadow-sm border ${hiddenMonths.has(m) ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200'}`} title={hiddenMonths.has(m) ? "열 보이기" : "열 숨기기"}>
+                                                    <span className="text-xs font-bold text-slate-700">{m.split('-')[1]}월</span>
+                                                    <button onClick={(e) => { e.stopPropagation(); toggleHideMonth(m); }} className={`p-0.5 transition-colors ${hiddenMonths.has(m) ? 'text-emerald-600' : 'text-slate-300 hover:text-indigo-500'}`} title={hiddenMonths.has(m) ? "열 보이기" : "열 숨기기"}>
                                                         {hiddenMonths.has(m) ? <Icons.Eye className="w-3 h-3"/> : <Icons.EyeOff className="w-3 h-3"/>}
                                                     </button>
                                                 </div>
-                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }} className="opacity-0 group-hover/th:opacity-100 p-1 hover:bg-rose-50 rounded text-slate-300 hover:text-rose-500 transition-all absolute top-1 right-1" title="열 삭제"><Icons.X className="w-2.5 h-2.5"/></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }} className="opacity-0 group-hover/th:opacity-100 p-0.5 text-slate-300 hover:text-rose-500 transition-all absolute top-0.5 right-0.5" title="열 삭제"><Icons.X className="w-2.5 h-2.5"/></button>
                                             </div>
                                         </th>
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
+                            <tbody className="divide-y divide-[#d0d5dd]">
                             {(hasCategory ? Object.keys(categories) : ['ALL']).map(catKey => {
                                 const items = orderedItems[catKey] || [];
                                 const visibleItems = items.filter(i => showHidden || !hiddenItems.has(i.itemKey || i.name));
@@ -1777,7 +1781,7 @@
                                             const isFirstCat1 = isEditing || idx === 0;
                                             const isFirstCat2 = isEditing || idx === 0 || (idx > 0 && visibleItems[idx - 1].category2 !== item.category2);
                                             return (
-                                                <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-indigo-50/60 transition-colors group/row`}>
+                                                <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#f7f8fa]'} hover:bg-[#eef2ff] transition-colors group/row`}>
                                                     {hasCategory ? (
                                                         <>
                                                             <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>
@@ -1868,7 +1872,7 @@
                                                             const val = found ? (found.value ?? found.amount ?? 0) : 0;
                                                             const fieldName = type === 'assets' ? 'value' : 'amount';
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-slate-300/50 bg-white min-w-[72px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-100/50 focus:outline-none text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
+                                                                <td key={month} className="p-0 border-r border-[#d0d5dd] min-w-[80px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-400 text-xs font-mono text-slate-700 hover:bg-[#f0f4ff] transition-colors"/></td>
                                                             );
                                                         }
                                                     })}
@@ -1876,7 +1880,7 @@
                                             );
                                         })}
                                         {hasCategory && (
-                                            <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-700">
+                                            <tr style={{ background: '#dde1e7' }} className="font-bold text-slate-700 border-t border-[#8c95a0]">
                                                 <td className="sticky-c-sum p-2 text-right text-xs" colSpan={3} style={{ left: 0, paddingRight: '0.75rem', minWidth: colWidths.c1+colWidths.c2+colWidths.c3, width: colWidths.c1+colWidths.c2+colWidths.c3, maxWidth: colWidths.c1+colWidths.c2+colWidths.c3 }}>{categories[catKey].label} 합계</td>
                                                 {visibleMonths.map(month => {
                                                     const sum = visibleItems.reduce((acc, item) => { 
@@ -1890,7 +1894,7 @@
                                                         const val = found ? (found.value ?? found.amount ?? (found.profit !== undefined ? (evaluateFormula(found.profit) + evaluateFormula(found.dividend)) : 0)) : 0; 
                                                         return acc + (typeof val === 'number' ? val : evaluateFormula(val)); 
                                                     }, 0);
-                                                    return (<td key={month} className="p-2 text-right border-r border-slate-200 text-xs bg-slate-50 min-w-[72px]">{formatCurrency(sum)}</td>);
+                                                    return (<td key={month} className="p-2 text-right border-r border-[#b0b8c4] text-xs min-w-[80px]" style={{ background: '#dde1e7' }}>{formatCurrency(sum)}</td>);
                                                 })}
                                             </tr>
                                         )}
@@ -1900,7 +1904,7 @@
                             </tbody>
                         </table>
                     </div>
-                </GlassCard>
+                </div>
             );
         };
 
