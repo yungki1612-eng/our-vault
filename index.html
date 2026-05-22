@@ -471,7 +471,15 @@
                     const row = parseCSVLine(lines[i]);
                     if (row.length < 2) continue;
                     let category = '', category2 = '', name = '';
-                    if (type === 'stockProfit') {
+                    if (type === 'stockProfit' && isNewTripleFormat) {
+                        // 새 포맷: 항목1(배당금/주식손익), 항목2(융기/수아), 항목3(항목명)
+                        const catLabel = (row[col1Idx] || '').trim();
+                        category2 = (row[col2Idx] || '').trim();
+                        name = (row[col3Idx] || '').trim();
+                        const matchedKey = Object.entries(STOCK_PROFIT_CATEGORIES).find(([, v]) => v.label === catLabel);
+                        category = matchedKey ? matchedKey[0] : (catLabel.includes('배당') ? 'DIVIDEND' : 'STOCK_PROFIT');
+                    } else if (type === 'stockProfit') {
+                        // 구형 포맷 호환: 항목명,구분 or 구분,항목명
                         let rawType;
                         if (isNewNameFormat && colTypeIdx !== -1) {
                             name = (row[colNameIdx] || '').trim();
@@ -480,7 +488,7 @@
                             rawType = (row[0] || '').trim().toUpperCase();
                             name = (row[1] || '').trim();
                         }
-                        category = (rawType === 'PROFIT' || rawType === 'DIVIDEND' || rawType === 'P' || rawType === 'D') ? rawType : 'PROFIT';
+                        category = (rawType === 'D' || rawType === 'DIVIDEND') ? 'DIVIDEND' : 'STOCK_PROFIT';
                     } else if (isNewTripleFormat && (type === 'assets' || type === 'budget')) {
                         const catLabel = (row[col1Idx] || '').trim();
                         category2 = (row[col2Idx] || '').trim();
@@ -504,11 +512,13 @@
                         const list = newData[month][listKey];
                         const existingItem = list.find(item =>
                             item.name === name &&
-                            (type === 'stockProfit' ? true : (item.category || '') === category && (item.category2 || '') === category2)
+                            (item.category || '') === category &&
+                            (item.category2 || '') === category2
                         );
                         if (existingItem) {
                             if (type === 'stockProfit') {
-                                if (category === 'DIVIDEND' || category === 'D') existingItem.dividend = val; else existingItem.profit = val;
+                                if (category === 'DIVIDEND') existingItem.dividend = val;
+                                else existingItem.profit = val;
                             } else {
                                 if (category) existingItem.category = category;
                                 if (category2 !== undefined) existingItem.category2 = category2;
@@ -517,8 +527,12 @@
                         } else {
                             const newItem = { id: Date.now() + Math.random() + i, name };
                             if (type === 'stockProfit') {
-                                newItem.profit = 0; newItem.dividend = 0;
-                                if (category === 'DIVIDEND' || category === 'D') newItem.dividend = val; else newItem.profit = val;
+                                newItem.category = category;
+                                newItem.category2 = category2;
+                                newItem.profit = 0;
+                                newItem.dividend = 0;
+                                if (category === 'DIVIDEND') newItem.dividend = val;
+                                else newItem.profit = val;
                             } else {
                                 if (category) newItem.category = category;
                                 if (category2) newItem.category2 = category2;
