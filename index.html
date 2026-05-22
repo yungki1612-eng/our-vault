@@ -389,8 +389,10 @@
                 normalizedCat = ASSET_CATEGORIES[item.category] ? item.category : Object.keys(ASSET_CATEGORIES)[0];
             } else if (type === 'budget') {
                 normalizedCat = BUDGET_CATEGORIES[item.category] ? item.category : Object.keys(BUDGET_CATEGORIES)[0];
-            } else if (type === 'loans' || type === 'stockProfit') {
+            } else if (type === 'loans') {
                 normalizedCat = 'ALL';
+            } else if (type === 'stockProfit') {
+                normalizedCat = STOCK_PROFIT_CATEGORIES[item.category] ? item.category : Object.keys(STOCK_PROFIT_CATEGORIES)[0];
             } else {
                 normalizedCat = item.category || 'ALL';
             }
@@ -1188,8 +1190,8 @@
                 let profit = 0, dividend = 0;
                 months.forEach(m => {
                     const d = safeData[m]?.stockProfit || [];
-                    profit += d.filter(i => !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
-                    dividend += d.filter(i => !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
+                    profit += d.filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
+                    dividend += d.filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
                 });
                 return { profit, dividend, year: viewYear };
             }, [safeData, viewYear, allMonths]);
@@ -2001,7 +2003,14 @@
                                                             const itemCat2 = item.category2 || '';
                                                             return i.name === item.name && iCat === itemCat && iCat2 === itemCat2;
                                                         }); 
-                                                        const val = found ? (found.value ?? found.amount ?? (found.profit !== undefined ? (evaluateFormula(found.profit) + evaluateFormula(found.dividend)) : 0)) : 0; 
+                                                        let val = 0;
+                                                        if (found) {
+                                                            if (type === 'stockProfit') {
+                                                                val = item.category === 'DIVIDEND' ? (evaluateFormula(found.dividend) || 0) : (evaluateFormula(found.profit) || 0);
+                                                            } else {
+                                                                val = found.value ?? found.amount ?? 0;
+                                                            }
+                                                        }
                                                         return acc + (typeof val === 'number' ? val : evaluateFormula(val)); 
                                                     }, 0);
                                                     return (<td key={month} className="p-2 text-right border-r border-[var(--ss-hdr-border)] text-xs font-bold min-w-[88px] text-indigo-700" style={{ background: 'var(--ss-sum-bg)' }}>{formatCurrency(sum)}</td>);
@@ -2591,6 +2600,63 @@
             );
         };
 
+        const migrateStockProfitData = (data) => {
+            let migrated = false;
+            const newData = JSON.parse(JSON.stringify(data));
+            
+            Object.keys(newData).forEach(month => {
+                if (isMonthKey(month) && newData[month].stockProfit) {
+                    const newStockProfit = [];
+                    newData[month].stockProfit.forEach(item => {
+                        const hasValidCategory = item.category === 'DIVIDEND' || item.category === 'STOCK_PROFIT';
+                        if (!hasValidCategory) {
+                            const hasProfit = item.profit !== undefined && item.profit !== null && String(item.profit).trim() !== '0' && String(item.profit).trim() !== '';
+                            const hasDividend = item.dividend !== undefined && item.dividend !== null && String(item.dividend).trim() !== '0' && String(item.dividend).trim() !== '';
+                            
+                            if (hasProfit) {
+                                newStockProfit.push({
+                                    id: item.id || (Date.now() + Math.random()),
+                                    name: item.name,
+                                    category: 'STOCK_PROFIT',
+                                    category2: item.category2 || '',
+                                    profit: item.profit,
+                                    dividend: 0
+                                });
+                                migrated = true;
+                            }
+                            if (hasDividend) {
+                                newStockProfit.push({
+                                    id: item.id ? `${item.id}_div` : (Date.now() + Math.random() + 0.1),
+                                    name: item.name,
+                                    category: 'DIVIDEND',
+                                    category2: item.category2 || '',
+                                    profit: 0,
+                                    dividend: item.dividend
+                                });
+                                migrated = true;
+                            }
+                            if (!hasProfit && !hasDividend) {
+                                newStockProfit.push({
+                                    id: item.id || (Date.now() + Math.random()),
+                                    name: item.name,
+                                    category: 'STOCK_PROFIT',
+                                    category2: item.category2 || '',
+                                    profit: 0,
+                                    dividend: 0
+                                });
+                                migrated = true;
+                            }
+                        } else {
+                            newStockProfit.push(item);
+                        }
+                    });
+                    newData[month].stockProfit = newStockProfit;
+                }
+            });
+            
+            return { newData, migrated };
+        };
+
         function App() {
             const [user, setUser] = useState(null);
             const [syncId, setSyncId] = useState(() => localStorage.getItem('fm_sync_id') || generateUUID());
@@ -2616,6 +2682,13 @@
             }, [darkMode]);
 
             const updateFinancialData = (newData) => { setFinancialData(newData); setLastUpdated(Date.now()); };
+            useEffect(() => {
+                const { newData, migrated } = migrateStockProfitData(financialData);
+                if (migrated) {
+                    setFinancialData(newData);
+                    setLastUpdated(Date.now());
+                }
+            }, [financialData]);
             useEffect(() => { localStorage.setItem('financialData', JSON.stringify(financialData)); }, [financialData]);
             useEffect(() => { if (!auth) return; const initAuth = async () => { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await auth.signInWithCustomToken(__initial_auth_token); else await auth.signInAnonymously(); }; initAuth(); const unsubscribe = auth.onAuthStateChanged(setUser); return () => unsubscribe(); }, []);
             useEffect(() => { if (!user || !db) return; localStorage.setItem('fm_sync_id', syncId); const docRef = db.doc(`artifacts/${appId}/public/data/financial_sheets/${syncId}`); const unsubscribe = docRef.onSnapshot((docSnap) => { if (docSnap.exists) { const cloudData = docSnap.data(); setFinancialData(prev => { if (JSON.stringify(prev) !== JSON.stringify(cloudData)) return cloudData; return prev; }); setLastUpdated(Date.now()); } }); return () => unsubscribe(); }, [user, syncId]);
@@ -2682,10 +2755,6 @@
         }
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-    </script>
-</body>
-</html>
- />);
     </script>
 </body>
 </html>
