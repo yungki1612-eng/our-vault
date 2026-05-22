@@ -604,18 +604,23 @@
                     csvContent += row.join(',') + '\n';
                 });
             } else if (type === 'stockProfit') {
-                // Header: 항목명, 구분, YYYY-MM, ...
-                csvContent += '항목명,구분,' + months.join(',') + '\n';
-                uniqueItemsOrdered.forEach(({ name }) => {
-                    const rowP = [`"${name}"`, 'P'];
-                    const rowD = [`"${name}"`, 'D'];
+                // 새 포맷: 항목1(배당금/주식손익), 항목2(융기/수아), 항목3(항목명), 날짜...
+                csvContent += '항목1,항목2,항목3,' + months.join(',') + '\n';
+                uniqueItemsOrdered.forEach(({ name, category, category2 }) => {
+                    const catLabel = STOCK_PROFIT_CATEGORIES[category]?.label || category || '';
+                    const row = [`"${catLabel}"`, `"${category2}"`, `"${name}"`];
                     months.forEach(m => {
-                        const found = (data[m]?.[listKey] || []).find(i => i.name === name);
-                        rowP.push(found ? (found.profit ?? 0) : 0);
-                        rowD.push(found ? (found.dividend ?? 0) : 0);
+                        const found = (data[m]?.[listKey] || []).find(i =>
+                            i.name === name &&
+                            (i.category || '') === category &&
+                            (i.category2 || '') === category2
+                        );
+                        // 배당금 카테고리면 dividend, 주식손익이면 profit
+                        const isCatDividend = category === 'DIVIDEND';
+                        const val = found ? (isCatDividend ? (found.dividend ?? 0) : (found.profit ?? 0)) : 0;
+                        row.push(val);
                     });
-                    csvContent += rowP.join(',') + '\n';
-                    csvContent += rowD.join(',') + '\n';
+                    csvContent += row.join(',') + '\n';
                 });
             }
 
