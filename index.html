@@ -823,10 +823,11 @@
         );
 
         const AIAnalysisCard = ({ assets, liabilities, netWorth, income, expense, year, data, isWrapped }) => {
-            const debtRatio = netWorth !== 0 ? (liabilities / netWorth) * 100 : 0;
+            const isCapitalImpairment = netWorth <= 0 && liabilities > 0;
+            const debtRatio = netWorth > 0 ? (liabilities / netWorth) * 100 : (liabilities > 0 ? 999 : 0);
             const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
             let assetStatus = "안정", assetColor = "text-emerald-500", assetBg = "bg-emerald-500";
-            if (debtRatio > 40) { assetStatus = "위험"; assetColor = "text-rose-500"; assetBg = "bg-rose-500"; } else if (debtRatio > 20) { assetStatus = "주의"; assetColor = "text-amber-500"; assetBg = "bg-amber-500"; }
+            if (isCapitalImpairment || debtRatio > 40) { assetStatus = "위험"; assetColor = "text-rose-500"; assetBg = "bg-rose-500"; } else if (debtRatio > 20) { assetStatus = "주의"; assetColor = "text-amber-500"; assetBg = "bg-amber-500"; }
             let budgetStatus = "양호", budgetColor = "text-emerald-500", budgetBg = "bg-emerald-500";
             if (income === 0) { budgetStatus = "정보 없음"; budgetColor = "text-slate-400"; budgetBg = "bg-slate-400"; } else if (savingsRate < 0) { budgetStatus = "적자"; budgetColor = "text-rose-500"; budgetBg = "bg-rose-500"; } else if (savingsRate < 20) { budgetStatus = "부족"; budgetColor = "text-amber-500"; budgetBg = "bg-amber-500"; }
             let adviceTitle = "안정적인 자산 관리 중입니다.";
@@ -845,9 +846,9 @@
                         </div>
                     )}
                     <div className={`relative z-10 flex-1 flex flex-col min-h-0 ${isWrapped ? 'text-slate-800' : 'text-white'}`}>
-                        <div className="flex items-baseline gap-2 mb-1"><span className={`text-2xl font-black ${isWrapped ? 'text-indigo-600' : 'text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200'} leading-none`}>{Math.max(0, 100 - (debtRatio * 0.5) + (savingsRate * 0.5)).toFixed(0)}</span><span className={`text-[10px] font-bold ${isWrapped ? 'text-slate-400' : 'text-indigo-200'} leading-tight uppercase tracking-wider`}>Health Score</span></div>
+                        <div className="flex items-baseline gap-2 mb-1"><span className={`text-2xl font-black ${isWrapped ? 'text-indigo-600' : 'text-transparent bg-clip-text bg-gradient-to-r from-white to-indigo-200'} leading-none`}>{isCapitalImpairment ? 0 : Math.max(0, 100 - (debtRatio * 0.5) + (savingsRate * 0.5)).toFixed(0)}</span><span className={`text-[10px] font-bold ${isWrapped ? 'text-slate-400' : 'text-indigo-200'} leading-tight uppercase tracking-wider`}>Health Score</span></div>
                         <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div className={`${isWrapped ? 'bg-slate-50' : 'bg-black/20'} rounded-lg p-2 backdrop-blur-sm border ${isWrapped ? 'border-slate-100' : 'border-white/5'}`}><div className="flex justify-between items-center mb-1"><span className={`text-[8px] ${isWrapped ? 'text-slate-400' : 'text-indigo-200'} font-bold uppercase tracking-wider`}>Debt Ratio</span><span className={`text-[8px] font-bold px-1 py-0.5 rounded ${assetStatus === "안정" ? "bg-emerald-500/20 text-emerald-600" : assetStatus === "주의" ? "bg-amber-500/20 text-amber-600" : "bg-rose-500/20 text-rose-600"}`}>{assetStatus}</span></div><div className="flex items-end gap-1.5"><span className={`text-sm font-bold ${isWrapped ? 'text-slate-700' : 'text-white'} leading-tight`}>{debtRatio.toFixed(1)}%</span></div><div className={`${isWrapped ? 'bg-slate-200' : 'bg-white/10'} w-full h-1 rounded-full mt-1.5 overflow-hidden`}><div className={`h-full rounded-full transition-all duration-1000 ${assetBg}`} style={{ width: `${Math.min(debtRatio, 100)}%` }} /></div></div>
+                            <div className={`${isWrapped ? 'bg-slate-50' : 'bg-black/20'} rounded-lg p-2 backdrop-blur-sm border ${isWrapped ? 'border-slate-100' : 'border-white/5'}`}><div className="flex justify-between items-center mb-1"><span className={`text-[8px] ${isWrapped ? 'text-slate-400' : 'text-indigo-200'} font-bold uppercase tracking-wider`}>Debt Ratio</span><span className={`text-[8px] font-bold px-1 py-0.5 rounded ${assetStatus === "안정" ? "bg-emerald-500/20 text-emerald-600" : assetStatus === "주의" ? "bg-amber-500/20 text-amber-600" : "bg-rose-500/20 text-rose-600"}`}>{assetStatus}</span></div><div className="flex items-end gap-1.5"><span className={`text-sm font-bold ${isWrapped ? 'text-slate-700' : 'text-white'} leading-tight`}>{isCapitalImpairment ? '자본잠식' : debtRatio.toFixed(1) + '%'}</span></div><div className={`${isWrapped ? 'bg-slate-200' : 'bg-white/10'} w-full h-1 rounded-full mt-1.5 overflow-hidden`}><div className={`h-full rounded-full transition-all duration-1000 ${assetBg}`} style={{ width: `${Math.min(debtRatio, 100)}%` }} /></div></div>
                             <div className={`${isWrapped ? 'bg-slate-50' : 'bg-black/20'} rounded-lg p-2 backdrop-blur-sm border ${isWrapped ? 'border-slate-100' : 'border-white/5'}`}><div className="flex justify-between items-center mb-1"><span className={`text-[8px] ${isWrapped ? 'text-slate-400' : 'text-indigo-200'} font-bold uppercase tracking-wider`}>Savings</span><span className={`text-[8px] font-bold px-1 py-0.5 rounded ${budgetStatus === "양호" ? "bg-emerald-500/20 text-emerald-600" : budgetStatus === "적자" ? "bg-rose-500/20 text-rose-600" : "bg-amber-500/20 text-amber-600"}`}>{budgetStatus}</span></div><div className="flex items-end gap-1.5"><span className={`text-sm font-bold ${isWrapped ? 'text-slate-700' : 'text-white'} leading-tight`}>{savingsRate.toFixed(1)}%</span></div><div className={`${isWrapped ? 'bg-slate-200' : 'bg-white/10'} w-full h-1 rounded-full mt-1.5 overflow-hidden`}><div className={`h-full rounded-full transition-all duration-1000 ${budgetBg}`} style={{ width: `${Math.min(Math.max(0, savingsRate), 100)}%` }} /></div></div>
                         </div>
                         <div className="mt-auto pt-3"><div className={`${isWrapped ? 'bg-indigo-50 border-indigo-100' : 'bg-white/10 border-white/10'} backdrop-blur-md rounded-xl px-2.5 py-2 border shadow-sm flex items-start gap-2`} title={`${adviceTitle} ${adviceDetail}`}><div className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0 mt-1" /><div className="min-w-0 flex-1"><p className={`text-[10px] ${isWrapped ? 'text-indigo-900' : 'text-indigo-50'} font-bold leading-tight truncate`}>{adviceTitle}</p><p className={`text-[9px] ${isWrapped ? 'text-indigo-700/80' : 'text-indigo-100/80'} leading-tight mt-0.5 line-clamp-2`}>{adviceDetail}</p></div></div></div>
@@ -1202,7 +1203,13 @@
                 const assets = (d?.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
                 const loans = (d?.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
                 const netAssets = assets - loans;
-                return { name: month, 총자산: assets, 순자산: netAssets, 부채비율: netAssets !== 0 ? parseFloat(((loans / netAssets) * 100).toFixed(1)) : 0 };
+                let dr = 0;
+                if (netAssets <= 0) {
+                    dr = loans > 0 ? 100 : 0;
+                } else {
+                    dr = Math.min((loans / netAssets) * 100, 100);
+                }
+                return { name: month, 총자산: assets, 순자산: netAssets, 부채비율: parseFloat(dr.toFixed(1)) };
             });
             const recentMonths = allMonths.slice(Math.max(0, allMonths.indexOf(viewDate) - 11), allMonths.indexOf(viewDate) + 1);
             const assetGrowthData = recentMonths.map(month => {
@@ -1375,14 +1382,14 @@
                             <div className="flex flex-col gap-2.5 h-full justify-center">
                                 {/* 부채비율 */}
                                 {(() => {
-                                    const dr = netWorth !== 0 ? (liabilitiesExclJeonse / netWorth) * 100 : 0;
-                                    const drStatus = dr > 40 ? {label:'위험', c:'text-rose-600', bg:'bg-rose-500', range: Math.min(dr,100)} : dr > 20 ? {label:'주의', c:'text-amber-600', bg:'bg-amber-500', range: Math.min(dr,100)} : {label:'안정', c:'text-emerald-600', bg:'bg-emerald-500', range: Math.min(dr,100)};
+                                    const dr = netWorth > 0 ? (liabilitiesExclJeonse / netWorth) * 100 : (liabilitiesExclJeonse > 0 ? 999 : 0);
+                                    const drStatus = (netWorth <= 0 && liabilitiesExclJeonse > 0) || dr > 40 ? {label:'위험', c:'text-rose-600', bg:'bg-rose-500', range: 100} : dr > 20 ? {label:'주의', c:'text-amber-600', bg:'bg-amber-500', range: Math.min(dr,100)} : {label:'안정', c:'text-emerald-600', bg:'bg-emerald-500', range: Math.min(dr,100)};
                                     const sr = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
                                     const srStatus = sr < 0 ? {label:'적자', c:'text-rose-600', bg:'bg-rose-500', range:0} : sr < 20 ? {label:'부족', c:'text-amber-600', bg:'bg-amber-500', range:Math.min(sr,100)} : {label:'양호', c:'text-emerald-600', bg:'bg-emerald-500', range:Math.min(sr,100)};
                                     const liqRatio = totalAssets > 0 ? (liquidAssets / totalAssets * 100) : 0;
                                     const liqStatus = liqRatio < 10 ? {label:'부족', c:'text-amber-600', bg:'bg-amber-500', range:liqRatio} : {label:'양호', c:'text-emerald-600', bg:'bg-emerald-500', range:liqRatio};
                                     const items = [
-                                        { label: '부채 비율', value: dr.toFixed(1)+'%', status: drStatus, desc: '순자산 대비 부채 (권장 <20%)' },
+                                        { label: '부채 비율', value: (netWorth <= 0 && liabilitiesExclJeonse > 0) ? '자본잠식' : dr.toFixed(1)+'%', status: drStatus, desc: '순자산 대비 부채 (권장 <20%)' },
                                         { label: '저축률', value: sr.toFixed(1)+'%', status: srStatus, desc: '수입 대비 잉여금 (권장 >20%)' },
                                         { label: '유동성 비율', value: liqRatio.toFixed(1)+'%', status: liqStatus, desc: '총자산 중 현금성 비중 (권장 >10%)' },
                                     ];
