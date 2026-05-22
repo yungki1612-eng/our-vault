@@ -42,38 +42,58 @@
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
 
-        /* ===== Flat Excel-Style Spreadsheet ===== */
+        /* ===== Refined Excel-Style Spreadsheet ===== */
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7d2e0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Spreadsheet header row background */
+        :root {
+            --ss-hdr-bg: #f0f4ff;
+            --ss-hdr-text: #4f5e7b;
+            --ss-hdr-border: #d4daf0;
+            --ss-hdr-border-strong: #b4bde4;
+            --ss-cell-bg: #ffffff;
+            --ss-cell-bg-alt: #f8faff;
+            --ss-cell-border: #e8ecf4;
+            --ss-sticky-bg: #f5f7fd;
+            --ss-sum-bg: #edf0fc;
+            --ss-sum-border: #b4bde4;
+        }
+
         .sticky-col-header { 
             position: sticky; 
             left: 0; 
             z-index: 50 !important; 
-            background-color: #eef0f3;
-            border-right: 1px solid #b0b8c4 !important;
-            border-bottom: 2px solid #8c95a0 !important;
+            background-color: var(--ss-hdr-bg);
+            border-right: 1px solid var(--ss-hdr-border) !important;
+            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
         }
         .sticky-col-cell { 
             position: sticky; 
             left: 0; 
             z-index: 40 !important; 
-            background-color: #eef0f3;
-            border-right: 1px solid #b0b8c4 !important;
+            background-color: var(--ss-sticky-bg);
+            border-right: 1px solid var(--ss-hdr-border) !important;
         }
         .sticky-sum-cell { 
             position: sticky; 
             left: 0; 
             z-index: 40 !important; 
-            background-color: #dde1e7;
-            border-right: 1px solid #8c95a0 !important;
-            border-top: 1px solid #8c95a0 !important;
+            background-color: var(--ss-sum-bg);
+            border-right: 1px solid var(--ss-sum-border) !important;
+            border-top: 1px solid var(--ss-sum-border) !important;
             font-weight: 800;
         }
-        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: #eef0f3; border-right: 1px solid #b0b8c4; }
-        .sticky-c2 { position: sticky; left: 70px; z-index: 40 !important; background-color: #eef0f3; border-right: 1px solid #b0b8c4; }
-        .sticky-c3 { position: sticky; left: 130px; z-index: 40 !important; background-color: #eef0f3; border-right: 2px solid #8c95a0 !important; }
-        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: #dde1e7; border-right: 1px solid #b0b8c4; border-bottom: 2px solid #8c95a0 !important; }
-        .sticky-c2-hdr { position: sticky; left: 70px; z-index: 50 !important; background-color: #dde1e7; border-right: 1px solid #b0b8c4; border-bottom: 2px solid #8c95a0 !important; }
-        .sticky-c3-hdr { position: sticky; left: 130px; z-index: 50 !important; background-color: #dde1e7; border-right: 2px solid #8c95a0 !important; border-bottom: 2px solid #8c95a0 !important; }
-        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: #dde1e7; border-right: 2px solid #8c95a0 !important; border-top: 1px solid #8c95a0 !important; font-weight: 800; }
+        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); }
+        .sticky-c2 { position: sticky; left: 80px; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); }
+        .sticky-c3 { position: sticky; left: 150px; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; }
+        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
+        .sticky-c2-hdr { position: sticky; left: 80px; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
+        .sticky-c3-hdr { position: sticky; left: 150px; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
+        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: var(--ss-sum-bg); border-right: 2px solid var(--ss-sum-border) !important; border-top: 1px solid var(--ss-sum-border) !important; font-weight: 800; }
         
         .dark .sticky-col-header { background-color: #1e293b; border-right-color: #334155 !important; border-bottom-color: #475569 !important; }
         .dark .sticky-col-cell { background-color: #1e293b; border-right-color: #334155 !important; }
@@ -86,8 +106,8 @@
             position: sticky; 
             left: 0; 
             z-index: 45 !important; 
-            background-color: #eef0f3;
-            border-right: 1px solid #b0b8c4 !important;
+            background-color: var(--ss-sticky-bg);
+            border-right: 1px solid var(--ss-hdr-border) !important;
         }
         .cursor-move { cursor: move; }
         
@@ -326,6 +346,15 @@
             INVEST:  { label: '투자', type: 'expense', bg: 'bg-indigo-50', text: 'text-indigo-700' }, 
             EXPENSE: { label: '지출', type: 'expense', bg: 'bg-rose-50',  text: 'text-rose-700' },        
         };
+
+        // 주식실현손익 카테고리 (항목1)
+        const STOCK_PROFIT_CATEGORIES = {
+            DIVIDEND:     { label: '배당금',   color: '#10B981', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
+            STOCK_PROFIT: { label: '주식손익', color: '#6366F1', bg: 'bg-indigo-50',   text: 'text-indigo-700' },
+        };
+
+        // 주식실현손익 항목2 (사람)
+        const STOCK_PROFIT_PERSONS = ['융기', '수아'];
 
         const normalizeCategory = (cat, type) => {
             const upper = String(cat || '').toUpperCase().trim();
@@ -1288,8 +1317,71 @@
                         <CollapsibleCard title="연간 누적 비율" icon={Icons.PieChart} className="h-64">
                             <YearlyRatioCard year={viewYear} data={safeData} isWrapped />
                         </CollapsibleCard>
-                        <CollapsibleCard title="AI Asset Advisor" icon={Icons.Sparkles} className="h-64">
-                            <AIAnalysisCard assets={totalAssets} liabilities={liabilitiesExclJeonse} netWorth={netWorth} income={totalIncome} expense={totalExpense} year={viewYear} data={safeData} isWrapped />
+                        <CollapsibleCard title="비상금 지수 & 월별 현황" icon={Icons.ShieldCheck} className="h-64">
+                            <div className="flex flex-col gap-3 h-full">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                                        <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider mb-1">비상금 지수</p>
+                                        <p className="text-2xl font-black text-emerald-700">{emergencyIndex}<span className="text-xs font-bold ml-1 text-emerald-500">개월</span></p>
+                                        <p className="text-[9px] text-emerald-600 mt-0.5">권장: 6개월 이상</p>
+                                    </div>
+                                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                                        <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider mb-1">이번달 저축률</p>
+                                        <p className={`text-2xl font-black ${totalIncome > 0 ? (((totalIncome-totalExpense)/totalIncome*100) >= 20 ? 'text-emerald-600' : 'text-amber-600') : 'text-slate-400'}`}>{totalIncome > 0 ? ((totalIncome-totalExpense)/totalIncome*100).toFixed(1) : '—'}<span className="text-xs font-bold ml-0.5">{totalIncome > 0 ? '%' : ''}</span></p>
+                                        <p className="text-[9px] text-indigo-500 mt-0.5">권장: 20% 이상</p>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex-1">
+                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">{viewYear}년 누적 주식 실현 손익</p>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[9px] text-slate-400">실현손익</p>
+                                            <p className={`text-sm font-black ${annualData.profit >= 0 ? 'text-rose-500' : 'text-blue-500'}`}>{formatCurrency(annualData.profit)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] text-slate-400">배당금</p>
+                                            <p className="text-sm font-black text-emerald-600">{formatCurrency(annualData.dividend)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] text-slate-400">합계</p>
+                                            <p className={`text-sm font-black ${(annualData.profit+annualData.dividend) >= 0 ? 'text-indigo-600' : 'text-blue-600'}`}>{formatCurrency(annualData.profit + annualData.dividend)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CollapsibleCard>
+                        <CollapsibleCard title="자산 건강 지표" icon={Icons.Activity} className="h-64">
+                            <div className="flex flex-col gap-2.5 h-full justify-center">
+                                {/* 부채비율 */}
+                                {(() => {
+                                    const dr = netWorth !== 0 ? (liabilitiesExclJeonse / netWorth) * 100 : 0;
+                                    const drStatus = dr > 40 ? {label:'위험', c:'text-rose-600', bg:'bg-rose-500', range: Math.min(dr,100)} : dr > 20 ? {label:'주의', c:'text-amber-600', bg:'bg-amber-500', range: Math.min(dr,100)} : {label:'안정', c:'text-emerald-600', bg:'bg-emerald-500', range: Math.min(dr,100)};
+                                    const sr = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+                                    const srStatus = sr < 0 ? {label:'적자', c:'text-rose-600', bg:'bg-rose-500', range:0} : sr < 20 ? {label:'부족', c:'text-amber-600', bg:'bg-amber-500', range:Math.min(sr,100)} : {label:'양호', c:'text-emerald-600', bg:'bg-emerald-500', range:Math.min(sr,100)};
+                                    const liqRatio = totalAssets > 0 ? (liquidAssets / totalAssets * 100) : 0;
+                                    const liqStatus = liqRatio < 10 ? {label:'부족', c:'text-amber-600', bg:'bg-amber-500', range:liqRatio} : {label:'양호', c:'text-emerald-600', bg:'bg-emerald-500', range:liqRatio};
+                                    const items = [
+                                        { label: '부채 비율', value: dr.toFixed(1)+'%', status: drStatus, desc: '순자산 대비 부채 (권장 <20%)' },
+                                        { label: '저축률', value: sr.toFixed(1)+'%', status: srStatus, desc: '수입 대비 잉여금 (권장 >20%)' },
+                                        { label: '유동성 비율', value: liqRatio.toFixed(1)+'%', status: liqStatus, desc: '총자산 중 현금성 비중 (권장 >10%)' },
+                                    ];
+                                    return items.map((item, i) => (
+                                        <div key={i} className="space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[10px] font-bold text-slate-600">{item.label}</span>
+                                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${item.status.c} bg-current/10`} style={{backgroundColor: item.status.c.includes('rose') ? '#fff1f2' : item.status.c.includes('amber') ? '#fffbeb' : '#f0fdf4'}}>{item.status.label}</span>
+                                                </div>
+                                                <span className={`text-[11px] font-black ${item.status.c}`}>{item.value}</span>
+                                            </div>
+                                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                <div className={`h-full rounded-full transition-all duration-700 ${item.status.bg}`} style={{ width: `${Math.min(item.status.range, 100)}%` }} />
+                                            </div>
+                                            <p className="text-[8px] text-slate-400">{item.desc}</p>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
                         </CollapsibleCard>
                     </div>
                     
@@ -1678,7 +1770,7 @@
                 }
                 onUpdate(newData);
             };
-            const handleAddRow = () => { if(!newItemName) return; const lastMonth = months[months.length-1]; if (lastMonth) { const defaultField = type === 'assets' ? 'value' : type === 'stockProfit' ? 'profit' : 'amount'; handleCellChange(lastMonth, newItemName, defaultField, 0); } setNewItemName(''); };
+            const handleAddRow = () => { if(!newItemName) return; const lastMonth = months[months.length-1]; if (lastMonth) { let defaultField = type === 'assets' ? 'value' : type === 'stockProfit' ? (targetCategory === 'DIVIDEND' ? 'dividend' : 'profit') : 'amount'; handleCellChange(lastMonth, newItemName, defaultField, 0); } setNewItemName(''); };
             const handleSaveRowEdit = () => {
                 if (!editingItemOption || !editingItemOption.newName) { setEditingItemOption(null); return; }
                 const { oldName, newName, cat1, cat2, oldCat1, oldCat2 } = editingItemOption;
@@ -1718,57 +1810,57 @@
             };
             const handleDeleteMonth = (month) => { if (!confirm(`${month} 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return; const newData = JSON.parse(JSON.stringify(safeData)); delete newData[month]; onUpdate(newData); };
             return (
-                <div className="flex flex-col h-[calc(100vh-180px)] overflow-hidden bg-white border border-slate-300 shadow-sm">
-                    <div className="px-3 py-2 bg-[#f2f4f7] border-b border-slate-300 flex flex-wrap gap-2 justify-between items-center text-xs z-40 relative">
+                <div className="flex flex-col h-[calc(100vh-180px)] overflow-hidden bg-white border border-slate-200 shadow-sm rounded-lg">
+                    <div className="px-3 py-2 bg-[var(--ss-hdr-bg)] border-b border-[var(--ss-hdr-border)] flex flex-wrap gap-2 justify-between items-center text-xs z-40 relative">
                         <div className="flex gap-2 items-center">
                             {hasCategory && (
                                 <>
-                                    <select className="px-2 py-1.5 border border-slate-300 bg-white outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-slate-700 text-xs" value={targetCategory} onChange={(e) => setTargetCategory(e.target.value)}>{Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}</select>
-                                    <input type="text" placeholder="항목2" className="px-2 py-1.5 border border-slate-300 bg-white w-24 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-xs" value={targetCategory2} onChange={(e) => setTargetCategory2(e.target.value)} />
+                                    <select className="px-2 py-1.5 border border-[var(--ss-hdr-border)] bg-white outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 text-slate-600 text-xs rounded" value={targetCategory} onChange={(e) => setTargetCategory(e.target.value)}>{Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}</select>
+                                    <input type="text" placeholder="항목2" className="px-2 py-1.5 border border-[var(--ss-hdr-border)] bg-white w-24 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 text-xs rounded" value={targetCategory2} onChange={(e) => setTargetCategory2(e.target.value)} />
                                 </>
                             )}
-                            <input type="text" placeholder="항목명" className="px-2 py-1.5 border border-slate-300 bg-white w-32 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-xs" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
-                            <button onClick={handleAddRow} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"><Icons.Plus className="w-3.5 h-3.5"/> 추가</button>
+                            <input type="text" placeholder="항목명" className="px-2 py-1.5 border border-[var(--ss-hdr-border)] bg-white w-32 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 text-xs rounded" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+                            <button onClick={handleAddRow} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold transition-colors rounded"><Icons.Plus className="w-3.5 h-3.5"/> 추가</button>
                         </div>
                         <div className="flex gap-2 items-center">
-                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none px-2 py-1 hover:bg-slate-200 transition-colors"><input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} className="text-indigo-600"/> 숨김 항목</label>
-                            <label className="flex items-center gap-1.5 text-slate-600 cursor-pointer select-none px-2 py-1 hover:bg-slate-200 transition-colors"><input type="checkbox" checked={showHiddenMonths} onChange={e => setShowHiddenMonths(e.target.checked)} className="text-indigo-600"/> 숨김 열</label>
-                            <button onClick={handleAddMonth} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors"><Icons.CalendarPlus className="w-3.5 h-3.5"/> 월 추가</button>
+                            <label className="flex items-center gap-1.5 text-slate-500 cursor-pointer select-none px-2 py-1 hover:bg-indigo-50 hover:text-indigo-600 transition-colors rounded"><input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} className="text-indigo-600"/> 숨김 항목</label>
+                            <label className="flex items-center gap-1.5 text-slate-500 cursor-pointer select-none px-2 py-1 hover:bg-indigo-50 hover:text-indigo-600 transition-colors rounded"><input type="checkbox" checked={showHiddenMonths} onChange={e => setShowHiddenMonths(e.target.checked)} className="text-indigo-600"/> 숨김 열</label>
+                            <button onClick={handleAddMonth} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors rounded"><Icons.CalendarPlus className="w-3.5 h-3.5"/> 월 추가</button>
                             <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={(e) => processFileUpload(e.target.files[0], safeData, type, onUpdate, setIsUploading)} />
-                            <button onClick={() => fileInputRef.current.click()} disabled={isUploading} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors disabled:opacity-50">{isUploading ? <Icons.Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Icons.Upload className="w-3.5 h-3.5"/>} CSV 업로드</button>
-                            <button onClick={() => downloadCSV(safeData, type)} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 text-xs font-medium transition-colors"><Icons.Download className="w-3.5 h-3.5"/> CSV 다운로드</button>
+                            <button onClick={() => fileInputRef.current.click()} disabled={isUploading} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-[var(--ss-hdr-border)] hover:bg-indigo-50 text-slate-500 text-xs font-medium transition-colors disabled:opacity-50 rounded">{isUploading ? <Icons.Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Icons.Upload className="w-3.5 h-3.5"/>} CSV 업로드</button>
+                            <button onClick={() => downloadCSV(safeData, type)} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-[var(--ss-hdr-border)] hover:bg-indigo-50 text-slate-500 text-xs font-medium transition-colors rounded"><Icons.Download className="w-3.5 h-3.5"/> CSV 다운로드</button>
                         </div>
                     </div>
                     <div className="flex-1 overflow-auto custom-scrollbar bg-white relative">
                         <table className="min-w-max text-sm text-right border-collapse">
                             <thead className="sticky top-0 z-40">
-                                <tr style={{ background: '#dde1e7' }}>
+                                <tr style={{ background: 'var(--ss-hdr-bg)' }}>
                                     {hasCategory ? (
                                         <>
-                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-slate-600 relative" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-400 z-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
-                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-slate-600 relative" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-400 z-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
-                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-slate-600 relative" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-400 z-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
+                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
+                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
+                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
                                         </>
                                     ) : (
-                                        <th className="sticky-col-header p-2 text-left w-28 pl-3 font-bold text-xs text-slate-600">항목명</th>
+                                        <th className="sticky-col-header p-2 text-left w-28 pl-3 font-bold text-xs text-[var(--ss-hdr-text)]">항목명</th>
                                     )}
                                     {visibleMonths.map(m => (
-                                        <th key={m} className={`p-0 min-w-[80px] border-r border-[#b0b8c4] font-bold text-center text-slate-600 group/th relative border-b-2 border-b-[#8c95a0] ${hiddenMonths.has(m) ? 'opacity-60' : ''}`} style={{ background: '#dde1e7' }}>
-                                            <div className="flex flex-col items-center justify-center py-1.5 px-2">
+                                        <th key={m} className={`p-0 min-w-[88px] border-r border-[var(--ss-hdr-border)] font-bold text-center text-[var(--ss-hdr-text)] group/th relative border-b-2 border-b-[var(--ss-hdr-border-strong)] ${hiddenMonths.has(m) ? 'opacity-50' : ''}`} style={{ background: 'var(--ss-hdr-bg)' }}>
+                                            <div className="flex flex-col items-center justify-center py-2 px-2">
                                                 <span className="text-[9px] text-slate-400 font-medium tracking-widest uppercase">{m.split('-')[0]}</span>
                                                 <div className="flex items-center gap-1">
-                                                    <span className="text-xs font-bold text-slate-700">{m.split('-')[1]}월</span>
-                                                    <button onClick={(e) => { e.stopPropagation(); toggleHideMonth(m); }} className={`p-0.5 transition-colors ${hiddenMonths.has(m) ? 'text-emerald-600' : 'text-slate-300 hover:text-indigo-500'}`} title={hiddenMonths.has(m) ? "열 보이기" : "열 숨기기"}>
+                                                    <span className="text-xs font-bold text-slate-600">{m.split('-')[1]}월</span>
+                                                    <button onClick={(e) => { e.stopPropagation(); toggleHideMonth(m); }} className={`p-0.5 transition-colors ${hiddenMonths.has(m) ? 'text-emerald-500' : 'text-slate-300 hover:text-indigo-400'}`} title={hiddenMonths.has(m) ? "열 보이기" : "열 숨기기"}>
                                                         {hiddenMonths.has(m) ? <Icons.Eye className="w-3 h-3"/> : <Icons.EyeOff className="w-3 h-3"/>}
                                                     </button>
                                                 </div>
-                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }} className="opacity-0 group-hover/th:opacity-100 p-0.5 text-slate-300 hover:text-rose-500 transition-all absolute top-0.5 right-0.5" title="열 삭제"><Icons.X className="w-2.5 h-2.5"/></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }} className="opacity-0 group-hover/th:opacity-100 p-0.5 text-slate-300 hover:text-rose-400 transition-all absolute top-0.5 right-0.5" title="열 삭제"><Icons.X className="w-2.5 h-2.5"/></button>
                                             </div>
                                         </th>
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-[#d0d5dd]">
+                            <tbody className="divide-y divide-[var(--ss-cell-border)]">
                             {(hasCategory ? Object.keys(categories) : ['ALL']).map(catKey => {
                                 const items = orderedItems[catKey] || [];
                                 const visibleItems = items.filter(i => showHidden || !hiddenItems.has(i.itemKey || i.name));
@@ -1781,7 +1873,7 @@
                                             const isFirstCat1 = isEditing || idx === 0;
                                             const isFirstCat2 = isEditing || idx === 0 || (idx > 0 && visibleItems[idx - 1].category2 !== item.category2);
                                             return (
-                                                <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#f7f8fa]'} hover:bg-[#eef2ff] transition-colors group/row`}>
+                                                <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-[var(--ss-cell-bg)]' : 'bg-[var(--ss-cell-bg-alt)]'} hover:bg-indigo-50/40 transition-colors group/row`}>
                                                     {hasCategory ? (
                                                         <>
                                                             <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>
@@ -1858,21 +1950,20 @@
                                                             return i.name === item.name && iCat === (item.category || catKey) && iCat2 === (item.category2 || '');
                                                         });
                                                         if (type === 'stockProfit') {
-                                                            const profit = found ? (found.profit || 0) : 0;
-                                                            const dividend = found ? (found.dividend || 0) : 0;
+                                                            // 새 구조: 카테고리별로 단일 값 표시 (배당금 카테고리면 dividend, 주식손익 카테고리면 profit)
+                                                            const isCatDividend = (item.category === 'DIVIDEND');
+                                                            const fieldKey = isCatDividend ? 'dividend' : 'profit';
+                                                            const val = found ? (found[fieldKey] || 0) : 0;
                                                             return (
-                                                                <td key={month} className="p-1 border-r border-slate-100 relative group/cell min-w-[72px]">
-                                                                    <div className="flex flex-col gap-1">
-                                                                        <div className="flex items-center gap-1 bg-white/40 rounded px-1"><span className="text-[9px] font-bold text-slate-400 w-3">P</span><CurrencyInput value={profit} onChange={(v) => handleCellChange(month, item.name, 'profit', v, item.category)} className={`flex-1 text-right bg-transparent outline-none text-[11px] font-mono ${profit < 0 ? 'text-blue-500' : profit > 0 ? 'text-rose-500' : 'text-slate-600'}`} /></div>
-                                                                        <div className="flex items-center gap-1 bg-indigo-50/30 rounded px-1 border-t border-indigo-100/50"><span className="text-[9px] font-bold text-indigo-400 w-3">D</span><CurrencyInput value={dividend} onChange={(v) => handleCellChange(month, item.name, 'dividend', v, item.category)} className="flex-1 text-right bg-transparent outline-none text-[11px] font-mono text-emerald-600" /></div>
-                                                                    </div>
+                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)] min-w-[88px]">
+                                                                    <CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldKey, v, item.category, item.category2)} className={`w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono hover:bg-indigo-50/30 transition-colors ${val < 0 ? 'text-blue-500' : val > 0 ? (isCatDividend ? 'text-emerald-600' : 'text-rose-500') : 'text-slate-400'}`} />
                                                                 </td>
                                                             );
                                                         } else {
                                                             const val = found ? (found.value ?? found.amount ?? 0) : 0;
                                                             const fieldName = type === 'assets' ? 'value' : 'amount';
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-[#d0d5dd] min-w-[80px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-400 text-xs font-mono text-slate-700 hover:bg-[#f0f4ff] transition-colors"/></td>
+                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)] min-w-[88px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
                                                             );
                                                         }
                                                     })}
@@ -1880,8 +1971,8 @@
                                             );
                                         })}
                                         {hasCategory && (
-                                            <tr style={{ background: '#dde1e7' }} className="font-bold text-slate-700 border-t border-[#8c95a0]">
-                                                <td className="sticky-c-sum p-2 text-right text-xs" colSpan={3} style={{ left: 0, paddingRight: '0.75rem', minWidth: colWidths.c1+colWidths.c2+colWidths.c3, width: colWidths.c1+colWidths.c2+colWidths.c3, maxWidth: colWidths.c1+colWidths.c2+colWidths.c3 }}>{categories[catKey].label} 합계</td>
+                                            <tr style={{ background: 'var(--ss-sum-bg)' }} className="font-bold text-indigo-800 border-t border-[var(--ss-sum-border)]">
+                                                <td className="sticky-c-sum p-2 text-right text-xs text-indigo-700" colSpan={3} style={{ left: 0, paddingRight: '0.75rem', minWidth: colWidths.c1+colWidths.c2+colWidths.c3, width: colWidths.c1+colWidths.c2+colWidths.c3, maxWidth: colWidths.c1+colWidths.c2+colWidths.c3 }}>{categories[catKey].label} 합계</td>
                                                 {visibleMonths.map(month => {
                                                     const sum = visibleItems.reduce((acc, item) => { 
                                                         const found = (safeData[month][listKey] || []).find(i => {
@@ -1894,7 +1985,7 @@
                                                         const val = found ? (found.value ?? found.amount ?? (found.profit !== undefined ? (evaluateFormula(found.profit) + evaluateFormula(found.dividend)) : 0)) : 0; 
                                                         return acc + (typeof val === 'number' ? val : evaluateFormula(val)); 
                                                     }, 0);
-                                                    return (<td key={month} className="p-2 text-right border-r border-[#b0b8c4] text-xs min-w-[80px]" style={{ background: '#dde1e7' }}>{formatCurrency(sum)}</td>);
+                                                    return (<td key={month} className="p-2 text-right border-r border-[var(--ss-hdr-border)] text-xs font-bold min-w-[88px] text-indigo-700" style={{ background: 'var(--ss-sum-bg)' }}>{formatCurrency(sum)}</td>);
                                                 })}
                                             </tr>
                                         )}
@@ -2563,7 +2654,7 @@
                             {activeTab === 'realestate' && <RealEstateSheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
                             {activeTab === 'budget' && <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} darkMode={darkMode} />}
                             {activeTab === 'loans' && <LoanManagement data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
-                            {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} hasCategory={false} darkMode={darkMode} />}
+                            {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} categories={STOCK_PROFIT_CATEGORIES} hasCategory={true} darkMode={darkMode} />}
                             {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
                         </div></main></div>
                     </div>
