@@ -1861,28 +1861,28 @@
                         </div>
                     </div>
                     <div className="flex-1 overflow-auto custom-scrollbar bg-white relative">
-                        <table className="min-w-max text-sm text-right border-collapse" style={{tableLayout: 'auto'}}>
+                        <table className="text-sm text-right border-collapse" style={{tableLayout: 'fixed', width: colWidths.c1 + colWidths.c2 + colWidths.c3 + visibleMonths.length * 70}}>
                             <colgroup>
                                 {hasCategory ? (
                                     <>
-                                        <col style={{ width: colWidths.c1, minWidth: colWidths.c1 }} />
-                                        <col style={{ width: colWidths.c2, minWidth: colWidths.c2 }} />
-                                        <col style={{ width: colWidths.c3, minWidth: colWidths.c3 }} />
+                                        <col style={{ width: colWidths.c1 }} />
+                                        <col style={{ width: colWidths.c2 }} />
+                                        <col style={{ width: colWidths.c3 }} />
                                     </>
                                 ) : (
-                                    <col style={{ width: colWidths.c1 + colWidths.c2 + colWidths.c3, minWidth: colWidths.c1 + colWidths.c2 + colWidths.c3 }} />
+                                    <col style={{ width: colWidths.c1 + colWidths.c2 + colWidths.c3 }} />
                                 )}
                                 {visibleMonths.map(m => (
-                                    <col key={m} style={{ width: 70, minWidth: 70 }} />
+                                    <col key={m} style={{ width: 70 }} />
                                 ))}
                             </colgroup>
                             <thead className="sticky top-0 z-40">
                                 <tr style={{ background: 'var(--ss-hdr-bg)' }}>
                                     {hasCategory ? (
                                         <>
-                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
-                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
-                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
+                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative overflow-hidden" style={{ left: 0 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
+                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative overflow-hidden" style={{ left: colWidths.c1 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
+                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
                                         </>
                                     ) : (
                                         <th className="sticky-col-header p-2 text-left w-28 pl-3 font-bold text-xs text-[var(--ss-hdr-text)]">항목명</th>
@@ -1919,19 +1919,19 @@
                                                 <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-[var(--ss-cell-bg)]' : 'bg-[var(--ss-cell-bg-alt)]'} hover:bg-indigo-50/40 transition-colors group/row`}>
                                                     {hasCategory ? (
                                                         <>
-                                                            <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0, minWidth: colWidths.c1, maxWidth: colWidths.c1, width: colWidths.c1 }}>
+                                                            <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0 }}>
                                                                 {isEditing ? (
                                                                     <select className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5" value={editingItemOption.cat1} onChange={(e) => setEditingItemOption({...editingItemOption, cat1: e.target.value})}>
                                                                         {Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
                                                                     </select>
                                                                 ) : isFirstCat1 ? <span className="block truncate w-full">{categories[catKey].label}</span> : ''}
                                                             </td>
-                                                            <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600 overflow-hidden" style={{ left: colWidths.c1, minWidth: colWidths.c2, maxWidth: colWidths.c2, width: colWidths.c2 }}>
+                                                            <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600 overflow-hidden" style={{ left: colWidths.c1 }}>
                                                                 {isEditing ? (
                                                                     <input type="text" className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-center" value={editingItemOption.cat2} onChange={(e) => setEditingItemOption({...editingItemOption, cat2: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
                                                                 ) : isFirstCat2 ? <span className="block truncate w-full">{item.category2 || ''}</span> : ''}
                                                             </td>
-                                                            <td className="sticky-c3 bg-inherit p-2" style={{ left: colWidths.c1 + colWidths.c2, minWidth: colWidths.c3, maxWidth: colWidths.c3, width: colWidths.c3 }}>
+                                                            <td className="sticky-c3 bg-inherit p-2 overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2 }}>
                                                                 {isEditing ? (
                                                                     <div className="flex items-center justify-between">
                                                                         <input type="text" autoFocus className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-xs" value={editingItemOption.newName} onChange={(e) => setEditingItemOption({...editingItemOption, newName: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
@@ -2013,7 +2013,7 @@
                                         })}
                                         {hasCategory && (
                                             <tr style={{ background: 'var(--ss-sum-bg)' }} className="font-bold text-indigo-800 border-t border-[var(--ss-sum-border)]">
-                                                <td className="sticky-c-sum p-2 text-right text-xs text-indigo-700" colSpan={3} style={{ left: 0, paddingRight: '0.75rem', minWidth: colWidths.c1+colWidths.c2+colWidths.c3, width: colWidths.c1+colWidths.c2+colWidths.c3, maxWidth: colWidths.c1+colWidths.c2+colWidths.c3 }}>{categories[catKey].label} 합계</td>
+                                                <td className="sticky-c-sum p-2 text-right text-xs text-indigo-700" colSpan={3} style={{ left: 0, paddingRight: '0.75rem' }}>{categories[catKey].label} 합계</td>
                                                 {visibleMonths.map(month => {
                                                     const sum = visibleItems.reduce((acc, item) => { 
                                                         const found = (safeData[month][listKey] || []).find(i => {
