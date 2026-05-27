@@ -1861,7 +1861,7 @@
                         </div>
                     </div>
                     <div className="flex-1 overflow-auto custom-scrollbar bg-white relative">
-                        <table className="text-sm text-right border-collapse" style={{tableLayout: 'fixed', width: colWidths.c1 + colWidths.c2 + colWidths.c3 + visibleMonths.length * 85}}>
+                        <table className="text-sm text-right border-collapse" style={{tableLayout: 'fixed', width: colWidths.c1 + colWidths.c2 + colWidths.c3 + visibleMonths.length * 102}}>
                             <colgroup>
                                 {hasCategory ? (
                                     <>
@@ -1873,7 +1873,7 @@
                                     <col style={{ width: colWidths.c1 + colWidths.c2 + colWidths.c3 }} />
                                 )}
                                 {visibleMonths.map(m => (
-                                    <col key={m} style={{ width: 85 }} />
+                                    <col key={m} style={{ width: 102 }} />
                                 ))}
                             </colgroup>
                             <thead className="sticky top-0 z-40">
@@ -1888,7 +1888,7 @@
                                         <th className="sticky-col-header p-2 text-left pl-3 font-bold text-xs text-[var(--ss-hdr-text)]" style={{ left: 0, width: colWidths.c1 + colWidths.c2 + colWidths.c3, minWidth: colWidths.c1 + colWidths.c2 + colWidths.c3, maxWidth: colWidths.c1 + colWidths.c2 + colWidths.c3 }}>항목명</th>
                                     )}
                                     {visibleMonths.map(m => (
-                                        <th key={m} className={`p-0 border-r border-[var(--ss-hdr-border)] font-bold text-center text-[var(--ss-hdr-text)] group/th relative border-b-2 border-b-[var(--ss-hdr-border-strong)] ${hiddenMonths.has(m) ? 'opacity-50' : ''}`} style={{ background: 'var(--ss-hdr-bg)', minWidth: '85px', maxWidth: '85px', width: '85px' }}>
+                                        <th key={m} className={`p-0 border-r border-[var(--ss-hdr-border)] font-bold text-center text-[var(--ss-hdr-text)] group/th relative border-b-2 border-b-[var(--ss-hdr-border-strong)] ${hiddenMonths.has(m) ? 'opacity-50' : ''}`} style={{ background: 'var(--ss-hdr-bg)', minWidth: '102px', maxWidth: '102px', width: '102px' }}>
                                             <div className="flex flex-col items-center justify-center py-2 px-2">
                                                 <span className="text-[9px] text-slate-400 font-medium tracking-widest uppercase">{m.split('-')[0]}</span>
                                                 <div className="flex items-center gap-1">
@@ -1996,7 +1996,7 @@
                                                             const fieldKey = isCatDividend ? 'dividend' : 'profit';
                                                             const val = found ? (found[fieldKey] || 0) : 0;
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)]" style={{ minWidth: '85px', maxWidth: '85px', width: '85px' }}>
+                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)]" style={{ minWidth: '102px', maxWidth: '102px', width: '102px' }}>
                                                                     <CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldKey, v, item.category, item.category2)} className={`w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono hover:bg-indigo-50/30 transition-colors ${val < 0 ? 'text-blue-500' : val > 0 ? (isCatDividend ? 'text-emerald-600' : 'text-rose-500') : 'text-slate-400'}`} />
                                                                 </td>
                                                             );
@@ -2004,7 +2004,7 @@
                                                             const val = found ? (found.value ?? found.amount ?? 0) : 0;
                                                             const fieldName = type === 'assets' ? 'value' : 'amount';
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)]" style={{ minWidth: '85px', maxWidth: '85px', width: '85px' }}><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
+                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)]" style={{ minWidth: '102px', maxWidth: '102px', width: '102px' }}><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
                                                             );
                                                         }
                                                     })}
@@ -2033,7 +2033,7 @@
                                                         }
                                                         return acc + (typeof val === 'number' ? val : evaluateFormula(val)); 
                                                     }, 0);
-                                                    return (<td key={month} className="p-2 text-right border-r border-[var(--ss-hdr-border)] text-xs font-bold text-indigo-700" style={{ background: 'var(--ss-sum-bg)', minWidth: '85px', maxWidth: '85px', width: '85px' }}>{formatCurrency(sum)}</td>);
+                                                    return (<td key={month} className="p-2 text-right border-r border-[var(--ss-hdr-border)] text-xs font-bold text-indigo-700" style={{ background: 'var(--ss-sum-bg)', minWidth: '102px', maxWidth: '102px', width: '102px' }}>{formatCurrency(sum)}</td>);
                                                 })}
                                             </tr>
                                         )}
