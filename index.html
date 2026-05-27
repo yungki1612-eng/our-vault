@@ -88,11 +88,11 @@
             font-weight: 800;
         }
         .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); }
-        .sticky-c2 { position: sticky; left: 80px; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); }
-        .sticky-c3 { position: sticky; left: 150px; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; }
+        .sticky-c2 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); }
+        .sticky-c3 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; }
         .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
-        .sticky-c2-hdr { position: sticky; left: 80px; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
-        .sticky-c3-hdr { position: sticky; left: 150px; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
+        .sticky-c2-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
+        .sticky-c3-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
         .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: var(--ss-sum-bg); border-right: 2px solid var(--ss-sum-border) !important; border-top: 1px solid var(--ss-sum-border) !important; font-weight: 800; }
         
         .dark .sticky-col-header { background-color: #1e293b; border-right-color: #334155 !important; border-bottom-color: #475569 !important; }
@@ -1861,7 +1861,7 @@
                         </div>
                     </div>
                     <div className="flex-1 overflow-auto custom-scrollbar bg-white relative">
-                        <table className="text-sm text-right border-collapse" style={{tableLayout: 'fixed', width: colWidths.c1 + colWidths.c2 + colWidths.c3 + visibleMonths.length * 70}}>
+                        <table className="text-sm text-right border-collapse" style={{tableLayout: 'fixed', width: colWidths.c1 + colWidths.c2 + colWidths.c3 + visibleMonths.length * 77}}>
                             <colgroup>
                                 {hasCategory ? (
                                     <>
@@ -1873,22 +1873,22 @@
                                     <col style={{ width: colWidths.c1 + colWidths.c2 + colWidths.c3 }} />
                                 )}
                                 {visibleMonths.map(m => (
-                                    <col key={m} style={{ width: 70 }} />
+                                    <col key={m} style={{ width: 77 }} />
                                 ))}
                             </colgroup>
                             <thead className="sticky top-0 z-40">
                                 <tr style={{ background: 'var(--ss-hdr-bg)' }}>
                                     {hasCategory ? (
                                         <>
-                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative overflow-hidden" style={{ left: 0 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
-                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative overflow-hidden" style={{ left: colWidths.c1 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
-                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] relative overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
+                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] border-r border-[var(--ss-hdr-border)] overflow-hidden" style={{ left: 0, width: colWidths.c1, minWidth: colWidths.c1, maxWidth: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
+                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] border-r border-[var(--ss-hdr-border)] overflow-hidden" style={{ left: colWidths.c1, width: colWidths.c2, minWidth: colWidths.c2, maxWidth: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
+                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] border-r-2 border-[var(--ss-hdr-border-strong)] overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2, width: colWidths.c3, minWidth: colWidths.c3, maxWidth: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
                                         </>
                                     ) : (
-                                        <th className="sticky-col-header p-2 text-left w-28 pl-3 font-bold text-xs text-[var(--ss-hdr-text)]">항목명</th>
+                                        <th className="sticky-col-header p-2 text-left pl-3 font-bold text-xs text-[var(--ss-hdr-text)]" style={{ left: 0, width: colWidths.c1 + colWidths.c2 + colWidths.c3, minWidth: colWidths.c1 + colWidths.c2 + colWidths.c3, maxWidth: colWidths.c1 + colWidths.c2 + colWidths.c3 }}>항목명</th>
                                     )}
                                     {visibleMonths.map(m => (
-                                        <th key={m} className={`p-0 min-w-[70px] border-r border-[var(--ss-hdr-border)] font-bold text-center text-[var(--ss-hdr-text)] group/th relative border-b-2 border-b-[var(--ss-hdr-border-strong)] ${hiddenMonths.has(m) ? 'opacity-50' : ''}`} style={{ background: 'var(--ss-hdr-bg)' }}>
+                                        <th key={m} className={`p-0 border-r border-[var(--ss-hdr-border)] font-bold text-center text-[var(--ss-hdr-text)] group/th relative border-b-2 border-b-[var(--ss-hdr-border-strong)] ${hiddenMonths.has(m) ? 'opacity-50' : ''}`} style={{ background: 'var(--ss-hdr-bg)', minWidth: '77px', maxWidth: '77px', width: '77px' }}>
                                             <div className="flex flex-col items-center justify-center py-2 px-2">
                                                 <span className="text-[9px] text-slate-400 font-medium tracking-widest uppercase">{m.split('-')[0]}</span>
                                                 <div className="flex items-center gap-1">
@@ -1919,19 +1919,19 @@
                                                 <tr key={iKey} className={`${idx % 2 === 0 ? 'bg-[var(--ss-cell-bg)]' : 'bg-[var(--ss-cell-bg-alt)]'} hover:bg-indigo-50/40 transition-colors group/row`}>
                                                     {hasCategory ? (
                                                         <>
-                                                            <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0 }}>
+                                                            <td className="sticky-c1 bg-inherit p-2 text-center text-xs font-bold text-slate-700 overflow-hidden" style={{ left: 0, width: colWidths.c1, minWidth: colWidths.c1, maxWidth: colWidths.c1 }}>
                                                                 {isEditing ? (
                                                                     <select className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5" value={editingItemOption.cat1} onChange={(e) => setEditingItemOption({...editingItemOption, cat1: e.target.value})}>
                                                                         {Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
                                                                     </select>
                                                                 ) : isFirstCat1 ? <span className="block truncate w-full">{categories[catKey].label}</span> : ''}
                                                             </td>
-                                                            <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600 overflow-hidden" style={{ left: colWidths.c1 }}>
+                                                            <td className="sticky-c2 bg-inherit p-2 text-center text-xs font-medium text-slate-600 overflow-hidden" style={{ left: colWidths.c1, width: colWidths.c2, minWidth: colWidths.c2, maxWidth: colWidths.c2 }}>
                                                                 {isEditing ? (
                                                                     <input type="text" className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-center" value={editingItemOption.cat2} onChange={(e) => setEditingItemOption({...editingItemOption, cat2: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
                                                                 ) : isFirstCat2 ? <span className="block truncate w-full">{item.category2 || ''}</span> : ''}
                                                             </td>
-                                                            <td className="sticky-c3 bg-inherit p-2 overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2 }}>
+                                                            <td className="sticky-c3 bg-inherit p-2 overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2, width: colWidths.c3, minWidth: colWidths.c3, maxWidth: colWidths.c3 }}>
                                                                 {isEditing ? (
                                                                     <div className="flex items-center justify-between">
                                                                         <input type="text" autoFocus className="w-full bg-white border border-indigo-300 rounded focus:outline-none p-0.5 text-xs" value={editingItemOption.newName} onChange={(e) => setEditingItemOption({...editingItemOption, newName: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
@@ -1996,7 +1996,7 @@
                                                             const fieldKey = isCatDividend ? 'dividend' : 'profit';
                                                             const val = found ? (found[fieldKey] || 0) : 0;
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)] min-w-[70px]">
+                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)]" style={{ minWidth: '77px', maxWidth: '77px', width: '77px' }}>
                                                                     <CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldKey, v, item.category, item.category2)} className={`w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono hover:bg-indigo-50/30 transition-colors ${val < 0 ? 'text-blue-500' : val > 0 ? (isCatDividend ? 'text-emerald-600' : 'text-rose-500') : 'text-slate-400'}`} />
                                                                 </td>
                                                             );
@@ -2004,7 +2004,7 @@
                                                             const val = found ? (found.value ?? found.amount ?? 0) : 0;
                                                             const fieldName = type === 'assets' ? 'value' : 'amount';
                                                             return (
-                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)] min-w-[70px]"><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
+                                                                <td key={month} className="p-0 border-r border-[var(--ss-cell-border)]" style={{ minWidth: '77px', maxWidth: '77px', width: '77px' }}><CurrencyInput value={val} onChange={(v) => handleCellChange(month, item.name, fieldName, v, item.category, item.category2)} className="w-full h-full p-2 text-right bg-transparent focus:bg-indigo-50/60 focus:outline-none focus:ring-inset focus:ring-2 focus:ring-indigo-300 text-xs font-mono text-slate-700 hover:bg-indigo-50/30 transition-colors"/></td>
                                                             );
                                                         }
                                                     })}
@@ -2033,7 +2033,7 @@
                                                         }
                                                         return acc + (typeof val === 'number' ? val : evaluateFormula(val)); 
                                                     }, 0);
-                                                    return (<td key={month} className="p-2 text-right border-r border-[var(--ss-hdr-border)] text-xs font-bold min-w-[70px] text-indigo-700" style={{ background: 'var(--ss-sum-bg)' }}>{formatCurrency(sum)}</td>);
+                                                    return (<td key={month} className="p-2 text-right border-r border-[var(--ss-hdr-border)] text-xs font-bold text-indigo-700" style={{ background: 'var(--ss-sum-bg)', minWidth: '77px', maxWidth: '77px', width: '77px' }}>{formatCurrency(sum)}</td>);
                                                 })}
                                             </tr>
                                         )}
@@ -2324,7 +2324,7 @@
                         <div className="overflow-auto custom-scrollbar" ref={containerRef}>
                             <table className="min-w-full text-sm text-right">
                                 <thead className="bg-slate-50/80 text-slate-500"><tr><th className="p-4 text-left w-28 font-bold border-r border-slate-100 sticky left-0 bg-slate-50/95 backdrop-blur-sm z-20 shadow-sm">이름</th><th className="p-4 w-32 font-black text-indigo-600 border-r border-slate-100 sticky left-28 bg-indigo-50/95 backdrop-blur-sm z-20 shadow-sm">합계</th>
-                                    {years.map(year => (<th key={year} data-year={year} className="p-4 min-w-[88px] font-bold border-r border-slate-100 last:border-0 group/th relative"><div className="flex items-center justify-center gap-1">{year}<button onClick={(e) => { e.stopPropagation(); handleDeleteYear(year); }} className="opacity-0 group-hover/th:opacity-100 p-1.5 hover:bg-rose-100 rounded-lg text-rose-400 transition-all absolute right-1 top-1/2 -translate-y-1/2" title="연도 삭제"><Icons.X className="w-3 h-3"/></button></div></th>))}
+                                    {years.map(year => (<th key={year} data-year={year} className="p-4 min-w-[97px] font-bold border-r border-slate-100 last:border-0 group/th relative"><div className="flex items-center justify-center gap-1">{year}<button onClick={(e) => { e.stopPropagation(); handleDeleteYear(year); }} className="opacity-0 group-hover/th:opacity-100 p-1.5 hover:bg-rose-100 rounded-lg text-rose-400 transition-all absolute right-1 top-1/2 -translate-y-1/2" title="연도 삭제"><Icons.X className="w-3 h-3"/></button></div></th>))}
                                 </tr></thead>
                                 <tbody className="divide-y divide-slate-100">{salaryData.items.map((item, idx) => {
                                     const itemTotal = Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0);
