@@ -18,13 +18,21 @@
     <!-- Babel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     
+    <!-- Google Fonts: Outfit & Space Grotesk -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
-                extend: {}
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        grotesk: ['"Space Grotesk"', 'sans-serif'],
+                    }
+                }
             }
         }
     </script>
@@ -42,6 +50,106 @@
         @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
 
+        /* ===== Quantum Glassmorphism Theme ===== */
+        .quantum-card {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .quantum-card:hover {
+            background: rgba(255, 255, 255, 0.55);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.08);
+            transform: translateY(-1px);
+        }
+        .dark .quantum-card {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
+        }
+        .dark .quantum-card:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45) !important;
+        }
+
+        .quantum-btn {
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .quantum-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.55);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+            transform: translateY(-1px);
+        }
+        .dark .quantum-btn {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        .dark .quantum-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12) !important;
+            border-color: rgba(255, 255, 255, 0.25) !important;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2) !important;
+        }
+
+        .quantum-bg {
+            background: radial-gradient(circle at 50% 50%, #f8fafc 0%, #cbd5e1 100%);
+            color: #1e293b;
+            transition: background 0.3s ease;
+        }
+        .dark .quantum-bg {
+            background: radial-gradient(circle at 50% 50%, #0f1026 0%, #070814 100%) !important;
+            color: #e2e8f0 !important;
+        }
+
+        /* Smooth floating blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.08;
+            pointer-events: none;
+            animation: float 20s ease-in-out infinite;
+        }
+        .dark .blob {
+            opacity: 0.15;
+        }
+        .blob-blue {
+            background: #06b6d4;
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            left: -100px;
+        }
+        .blob-purple {
+            background: #8b5cf6;
+            width: 500px;
+            height: 500px;
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+        .blob-pink {
+            background: #ec4899;
+            width: 350px;
+            height: 350px;
+            top: 40%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
         /* ===== Refined Excel-Style Spreadsheet ===== */
         /* Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -49,18 +157,30 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #c7d2e0; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Spreadsheet header row background */
         :root {
-            --ss-hdr-bg: #f0f4ff;
+            --ss-hdr-bg: rgba(255, 255, 255, 0.6);
             --ss-hdr-text: #4f5e7b;
-            --ss-hdr-border: #d4daf0;
-            --ss-hdr-border-strong: #b4bde4;
-            --ss-cell-bg: #ffffff;
-            --ss-cell-bg-alt: #f8faff;
-            --ss-cell-border: #e8ecf4;
-            --ss-sticky-bg: #f5f7fd;
-            --ss-sum-bg: #edf0fc;
-            --ss-sum-border: #b4bde4;
+            --ss-hdr-border: rgba(0, 0, 0, 0.06);
+            --ss-hdr-border-strong: rgba(0, 0, 0, 0.12);
+            --ss-cell-bg: rgba(255, 255, 255, 0.4);
+            --ss-cell-bg-alt: rgba(255, 255, 255, 0.2);
+            --ss-cell-border: rgba(0, 0, 0, 0.04);
+            --ss-sticky-bg: rgba(248, 250, 252, 0.75);
+            --ss-sum-bg: rgba(226, 232, 240, 0.65);
+            --ss-sum-border: rgba(0, 0, 0, 0.12);
+        }
+
+        .dark {
+            --ss-hdr-bg: rgba(25, 27, 50, 0.7);
+            --ss-hdr-text: #94a3b8;
+            --ss-hdr-border: rgba(255, 255, 255, 0.08);
+            --ss-hdr-border-strong: rgba(6, 182, 212, 0.4);
+            --ss-cell-bg: rgba(255, 255, 255, 0.02);
+            --ss-cell-bg-alt: rgba(255, 255, 255, 0.01);
+            --ss-cell-border: rgba(255, 255, 255, 0.05);
+            --ss-sticky-bg: rgba(15, 16, 32, 0.75);
+            --ss-sum-bg: rgba(10, 11, 22, 0.85);
+            --ss-sum-border: rgba(6, 182, 212, 0.4);
         }
 
         .sticky-col-header { 
@@ -70,6 +190,8 @@
             background-color: var(--ss-hdr-bg);
             border-right: 1px solid var(--ss-hdr-border) !important;
             border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         .sticky-col-cell { 
             position: sticky; 
@@ -77,6 +199,8 @@
             z-index: 40 !important; 
             background-color: var(--ss-sticky-bg);
             border-right: 1px solid var(--ss-hdr-border) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         .sticky-sum-cell { 
             position: sticky; 
@@ -86,21 +210,16 @@
             border-right: 1px solid var(--ss-sum-border) !important;
             border-top: 1px solid var(--ss-sum-border) !important;
             font-weight: 800;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
-        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); }
-        .sticky-c2 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); }
-        .sticky-c3 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; }
-        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
-        .sticky-c2-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
-        .sticky-c3-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; border-bottom: 2px solid var(--ss-hdr-border-strong) !important; }
-        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: var(--ss-sum-bg); border-right: 2px solid var(--ss-sum-border) !important; border-top: 1px solid var(--ss-sum-border) !important; font-weight: 800; }
-        
-        .dark .sticky-col-header { background-color: #1e293b; border-right-color: #334155 !important; border-bottom-color: #475569 !important; }
-        .dark .sticky-col-cell { background-color: #1e293b; border-right-color: #334155 !important; }
-        .dark .sticky-sum-cell { background-color: #0f172a; border-right-color: #475569 !important; }
-        .dark .sticky-c1, .dark .sticky-c2, .dark .sticky-c3 { background-color: #1e293b; border-right-color: #334155; }
-        .dark .sticky-c1-hdr, .dark .sticky-c2-hdr, .dark .sticky-c3-hdr { background-color: #0f172a; border-right-color: #334155 !important; border-bottom-color: #475569 !important; }
-        .dark .sticky-c-sum { background-color: #0f172a; border-right-color: #475569 !important; }
+        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .sticky-c2 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .sticky-c3 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .sticky-c2-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .sticky-c3-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; border-bottom: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: var(--ss-sum-bg); border-right: 2px solid var(--ss-sum-border) !important; border-top: 1px solid var(--ss-sum-border) !important; font-weight: 800; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
         .sticky-category { 
             position: sticky; 
@@ -653,13 +772,13 @@
 
         // --- Base UI Components ---
         const GlassCard = ({ children, className = "", onClick }) => (
-            <div onClick={onClick} className={`bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-md dark:shadow-2xl rounded-2xl transition-all duration-300 hover:shadow-xl dark:hover:shadow-indigo-500/10 hover:-translate-y-1 ${className}`}>
+            <div onClick={onClick} className={`quantum-card rounded-2xl transition-all duration-300 ${className}`}>
                 {children}
             </div>
         );
 
         const GlassButton = ({ children, onClick, active, className = "", disabled }) => (
-            <button onClick={onClick} disabled={disabled} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all duration-200 border ${active ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
+            <button onClick={onClick} disabled={disabled} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all duration-200 ${active ? 'bg-indigo-600 text-white border border-indigo-500 shadow-sm' : 'quantum-btn text-slate-700 dark:text-slate-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
                 {children}
             </button>
         );
@@ -2746,25 +2865,30 @@
 
             return (
                 <ErrorBoundary>
-                    <div className={`h-screen font-sans overflow-hidden flex flex-col transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-200' : 'bg-slate-200/60 text-slate-800'}`}>
+                    <div className="h-screen font-sans overflow-hidden flex flex-col transition-all duration-300 quantum-bg relative">
+                        {/* Background Animated Blobs */}
+                        <div className="blob blob-blue"></div>
+                        <div className="blob blob-purple"></div>
+                        <div className="blob blob-pink"></div>
+
                         <SyncModal isOpen={showSyncModal} onClose={() => setShowSyncModal(false)} currentId={syncId} onSyncIdChange={setSyncId} />
-                        <div className={`sticky top-0 z-50 backdrop-blur-xl border-b shrink-0 transition-colors duration-300 ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200 shadow-sm'}`}>
-                            <div className="flex items-center h-16 max-w-[1600px] mx-auto px-6 lg:px-10">
+                        <div className={`sticky top-0 z-50 backdrop-blur-xl border-b shrink-0 transition-all duration-300 ${darkMode ? 'bg-black/30 border-white/5' : 'bg-white/40 border-black/5 shadow-sm'}`}>
+                            <div className="flex items-center h-16 max-w-[1600px] mx-auto px-6 lg:px-10 relative z-10">
                                 <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
                                     <div className="flex items-center gap-2 text-indigo-500 shrink-0">
                                         <Icons.LayoutDashboard className="w-8 h-8" />
-                                        <span className={`text-xl font-black tracking-tighter hidden sm:inline ${darkMode ? 'text-white' : 'text-slate-900'}`}>FinMaster</span>
+                                        <span className={`text-xl font-black tracking-tighter hidden sm:inline ${darkMode ? 'text-white' : 'text-slate-900'} font-grotesk`}>FinMaster</span>
                                     </div>
                                     {activeTab === 'dashboard' && (
-                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm shrink-0 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                                            <button onClick={() => handleDashboardMonthChange(-1)} className={`p-0.5 rounded-full transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}><Icons.ChevronLeft className="w-4 h-4"/></button>
+                                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm shrink-0 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/40 border-black/5'}`}>
+                                            <button onClick={() => handleDashboardMonthChange(-1)} className={`p-0.5 rounded-full transition-colors ${darkMode ? 'text-slate-400 hover:bg-white/10' : 'text-slate-400 hover:bg-white/60'}`}><Icons.ChevronLeft className="w-4 h-4"/></button>
                                             <span className={`text-sm font-extrabold min-w-[72px] text-center ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>{dashboardViewDate}</span>
-                                            <button onClick={() => handleDashboardMonthChange(1)} className={`p-0.5 rounded-full transition-colors ${darkMode ? 'text-slate-400 hover:bg-slate-700' : 'text-slate-400 hover:bg-slate-100'}`}><Icons.ChevronRight className="w-4 h-4"/></button>
+                                            <button onClick={() => handleDashboardMonthChange(1)} className={`p-0.5 rounded-full transition-colors ${darkMode ? 'text-slate-400 hover:bg-white/10' : 'text-slate-400 hover:bg-white/60'}`}><Icons.ChevronRight className="w-4 h-4"/></button>
                                         </div>
                                     )}
                                     <nav className="hidden md:flex items-center gap-1 overflow-x-auto no-scrollbar">
                                         {TABS.map(tab => (
-                                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-md' : darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-indigo-400' : 'text-slate-500 hover:bg-slate-100 hover:text-indigo-600'}`}>
+                                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-md' : darkMode ? 'text-slate-300 hover:bg-white/5 hover:text-indigo-400' : 'text-slate-600 hover:bg-white/50 hover:text-indigo-600'}`}>
                                                 <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : darkMode ? 'text-slate-500' : 'text-slate-400'}`}/> 
                                                 {tab.label}
                                             </button>
@@ -2772,10 +2896,10 @@
                                     </nav>
                                 </div>
                                 <div className="flex items-center gap-3 shrink-0 ml-4">
-                                    <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-lg transition-all border ${darkMode ? 'bg-slate-800 border-slate-700 text-yellow-400 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-indigo-600'}`} title={darkMode ? '라이트 모드' : '나이트 모드'}>
+                                    <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-lg transition-all border ${darkMode ? 'bg-white/5 border-white/10 text-yellow-400 hover:bg-white/10' : 'bg-white/40 border-black/5 text-slate-500 hover:bg-white/60 hover:text-indigo-600'}`} title={darkMode ? '라이트 모드' : '나이트 모드'}>
                                         {darkMode ? <Icons.Sun className="w-4 h-4" /> : <Icons.Moon className="w-4 h-4" />}
                                     </button>
-                                    <button onClick={() => setShowSyncModal(true)} className={`text-xs font-bold flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-lg border ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white' : 'bg-white border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-100'}`}>
+                                    <button onClick={() => setShowSyncModal(true)} className={`text-xs font-bold flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-lg border ${darkMode ? 'bg-white/5 border-white/10 text-slate-300 hover:text-white' : 'bg-white/40 border-black/5 text-slate-600 hover:text-indigo-600 hover:border-indigo-100'}`}>
                                         <Icons.Cloud className={`w-3.5 h-3.5 ${isSyncing ? 'animate-pulse text-indigo-500' : ''}`}/>
                                         <span className="hidden sm:inline">{isSyncing ? '저장 중...' : '연동'}</span>
                                     </button>
@@ -2784,7 +2908,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <div className={`md:hidden overflow-x-auto no-scrollbar px-4 py-2 border-t flex gap-2 ${darkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'}`}>{TABS.map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white' : darkMode ? 'text-slate-400 bg-slate-800' : 'text-slate-500 bg-slate-50'}`}>{tab.label}</button>)) }</div>
+                            <div className={`md:hidden overflow-x-auto no-scrollbar px-4 py-2 border-t flex gap-2 relative z-10 ${darkMode ? 'border-white/5 bg-[#0f1026]/40 backdrop-blur-xl' : 'border-black/5 bg-white/40 backdrop-blur-xl'}`}>{TABS.map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white' : darkMode ? 'text-slate-300 bg-white/5' : 'text-slate-600 bg-slate-100/50'}`}>{tab.label}</button>)) }</div>
                         </div>
                         <div className="flex-1 flex flex-col relative z-10 overflow-hidden"><main className="flex-1 overflow-auto p-4 lg:p-8 custom-scrollbar"><div className="max-w-[1600px] mx-auto space-y-6 pb-20">
                             {activeTab === 'dashboard' && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} viewDate={dashboardViewDate} setViewDate={setDashboardViewDate} />}
