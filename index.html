@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html lang="ko" class="dark">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Master (Final v19 - Scroll Fixed & AI Design)</title>
-    
+
     <!-- React & ReactDOM -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    
+
     <!-- Prop-types -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
-    
+
     <!-- Recharts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.5.0/Recharts.min.js"></script>
 
     <!-- Babel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    
+
     <!-- Google Fonts: Outfit & Space Grotesk -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,15 +39,41 @@
             }
         }
     </script>
-    
+
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
 
         /* ===== Quantum Glassmorphism Theme ===== */
         .quantum-card {
@@ -55,6 +84,7 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .quantum-card:hover {
             background: rgba(255, 255, 255, 0.05) !important;
             border-color: rgba(255, 255, 255, 0.15) !important;
@@ -68,6 +98,7 @@
             backdrop-filter: blur(10px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .quantum-btn:hover:not(:disabled) {
             background: rgba(255, 255, 255, 0.12) !important;
             border-color: rgba(255, 255, 255, 0.25) !important;
@@ -90,6 +121,7 @@
             pointer-events: none;
             animation: float 20s ease-in-out infinite;
         }
+
         .blob-blue {
             background: #06b6d4;
             width: 400px;
@@ -97,6 +129,7 @@
             top: -100px;
             left: -100px;
         }
+
         .blob-purple {
             background: #8b5cf6;
             width: 500px;
@@ -105,6 +138,7 @@
             right: -100px;
             animation-delay: -5s;
         }
+
         .blob-pink {
             background: #ec4899;
             width: 350px;
@@ -113,18 +147,42 @@
             left: 50%;
             animation-delay: -10s;
         }
+
         @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.95); }
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
         }
 
         /* ===== Refined Excel-Style Spreadsheet ===== */
         /* Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
 
         :root {
             --ss-hdr-bg: rgba(25, 27, 50, 0.7);
@@ -144,38 +202,48 @@
             box-shadow: 0 0 15px rgba(6, 182, 212, 0.15), inset 0 0 10px rgba(6, 182, 212, 0.05);
             border-color: rgba(6, 182, 212, 0.4) !important;
         }
-        
+
         .pulse-ambient {
             animation: pulse-ambient 4s ease-in-out infinite;
         }
+
         @keyframes pulse-ambient {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.6; }
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
         }
 
-        .sticky-col-header { 
-            position: sticky; 
-            left: 0; 
-            z-index: 50 !important; 
+        .sticky-col-header {
+            position: sticky;
+            left: 0;
+            z-index: 50 !important;
             background-color: var(--ss-hdr-bg);
             border-right: 1px solid var(--ss-hdr-border) !important;
             border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
-        .sticky-col-cell { 
-            position: sticky; 
-            left: 0; 
-            z-index: 40 !important; 
+
+        .sticky-col-cell {
+            position: sticky;
+            left: 0;
+            z-index: 40 !important;
             background-color: var(--ss-sticky-bg);
             border-right: 1px solid var(--ss-hdr-border) !important;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
-        .sticky-sum-cell { 
-            position: sticky; 
-            left: 0; 
-            z-index: 40 !important; 
+
+        .sticky-sum-cell {
+            position: sticky;
+            left: 0;
+            z-index: 40 !important;
             background-color: var(--ss-sum-bg);
             border-right: 1px solid var(--ss-sum-border) !important;
             border-top: 1px solid var(--ss-sum-border) !important;
@@ -183,34 +251,105 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
-        .sticky-c1 { position: sticky; left: 0; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .sticky-c2 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 1px solid var(--ss-hdr-border); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .sticky-c3 { position: sticky; z-index: 40 !important; background-color: var(--ss-sticky-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .sticky-c1-hdr { position: sticky; left: 0; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .sticky-c2-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 1px solid var(--ss-hdr-border); border-bottom: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .sticky-c3-hdr { position: sticky; z-index: 50 !important; background-color: var(--ss-hdr-bg); border-right: 2px solid var(--ss-hdr-border-strong) !important; border-bottom: 2px solid var(--ss-hdr-border-strong) !important; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .sticky-c-sum { position: sticky; left: 0; z-index: 45 !important; background-color: var(--ss-sum-bg); border-right: 2px solid var(--ss-sum-border) !important; border-top: 1px solid var(--ss-sum-border) !important; font-weight: 800; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
-        .sticky-category { 
-            position: sticky; 
-            left: 0; 
-            z-index: 45 !important; 
+        .sticky-c1 {
+            position: sticky;
+            left: 0;
+            z-index: 40 !important;
+            background-color: var(--ss-sticky-bg);
+            border-right: 1px solid var(--ss-hdr-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .sticky-c2 {
+            position: sticky;
+            z-index: 40 !important;
+            background-color: var(--ss-sticky-bg);
+            border-right: 1px solid var(--ss-hdr-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .sticky-c3 {
+            position: sticky;
+            z-index: 40 !important;
+            background-color: var(--ss-sticky-bg);
+            border-right: 2px solid var(--ss-hdr-border-strong) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .sticky-c1-hdr {
+            position: sticky;
+            left: 0;
+            z-index: 50 !important;
+            background-color: var(--ss-hdr-bg);
+            border-right: 1px solid var(--ss-hdr-border);
+            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .sticky-c2-hdr {
+            position: sticky;
+            z-index: 50 !important;
+            background-color: var(--ss-hdr-bg);
+            border-right: 1px solid var(--ss-hdr-border);
+            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .sticky-c3-hdr {
+            position: sticky;
+            z-index: 50 !important;
+            background-color: var(--ss-hdr-bg);
+            border-right: 2px solid var(--ss-hdr-border-strong) !important;
+            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .sticky-c-sum {
+            position: sticky;
+            left: 0;
+            z-index: 45 !important;
+            background-color: var(--ss-sum-bg);
+            border-right: 2px solid var(--ss-sum-border) !important;
+            border-top: 1px solid var(--ss-sum-border) !important;
+            font-weight: 800;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .sticky-category {
+            position: sticky;
+            left: 0;
+            z-index: 45 !important;
             background-color: var(--ss-sticky-bg);
             border-right: 1px solid var(--ss-hdr-border) !important;
         }
-        .cursor-move { cursor: move; }
-        
+
+        .cursor-move {
+            cursor: move;
+        }
+
         /* Hide scrollbar for Chrome, Safari and Opera */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
+
         /* Hide scrollbar for IE, Edge and Firefox */
         .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
         }
     </style>
 </head>
+
 <body class="bg-slate-200/60 text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
     <div id="root"></div>
 
@@ -226,11 +365,11 @@
                 root.innerHTML = '<div style="padding:40px;font-family:monospace;background:#0f1026;color:#f87171;min-height:100vh;box-sizing:border-box"><h2 style="color:#f43f5e;margin-bottom:8px;font-size:20px">🚨 ' + msg + '</h2><pre style="white-space:pre-wrap;font-size:11px;background:rgba(255,0,0,0.1);padding:16px;border-radius:8px;border:1px solid rgba(255,0,0,0.3);overflow:auto;max-height:80vh">' + detail + '</pre></div>';
             }
         }
-        window.onerror = function(msg, url, line, col, err) {
+        window.onerror = function (msg, url, line, col, err) {
             showError('Runtime Error', msg + '\n\nFile: ' + url + '\nLine: ' + line + ', Col: ' + col + '\n\nStack:\n' + (err ? err.stack : 'No stack'));
             return true;
         };
-        window.addEventListener('unhandledrejection', function(e) {
+        window.addEventListener('unhandledrejection', function (e) {
             showError('Unhandled Promise Rejection', String(e.reason));
         });
     </script>
@@ -418,8 +557,8 @@
             data.salary = {
                 years: years,
                 items: [
-                    { id: 1, name: '융기', values: {} },
-                    { id: 2, name: '수아', values: {} }
+                    { id: 1, name: 'Yungki', values: {} },
+                    { id: 2, name: 'Sua', values: {} }
                 ]
             };
             data.salary.items.forEach(item => {
@@ -452,32 +591,32 @@
             EXPENSE: { label: 'Expenses', type: 'expense', bg: 'bg-rose-500/10',  text: 'text-rose-400' },        
         };
 
-        // 주식실현손익 카테고리 (항목1)
+        // Stock Profit Categories (Category 1)
         const STOCK_PROFIT_CATEGORIES = {
             DIVIDEND:     { label: 'Dividend',   color: '#10B981', bg: 'bg-emerald-500/10',  text: 'text-emerald-400' },
             STOCK_PROFIT: { label: 'Stock Profit', color: '#6366F1', bg: 'bg-indigo-500/10',   text: 'text-indigo-400' },
         };
 
-        // 주식실현손익 항목2 (사람)
-        const STOCK_PROFIT_PERSONS = ['융기', '수아'];
+        // Stock Profit Persons (Category 2)
+        const STOCK_PROFIT_PERSONS = ['Yungki', 'Sua'];
 
         const normalizeCategory = (cat, type) => {
             const upper = String(cat || '').toUpperCase().trim();
             if (type === 'assets') {
-                if (['SAVING', 'SAVINGS', '예적금', '현금', '적금', '예금', '저축', 'BANK', 'DEPOSIT', 'CASH'].some(k => upper.includes(k))) return 'SAVINGS';
-                if (['INVEST', 'STOCK', '주식', '증권', '펀드', 'STOCKS', 'EQUITY', 'PORTFOLIO'].some(k => upper.includes(k))) return 'INVESTMENT';
-                if (['COIN', 'CRYPTO', '코인', '비트코인', 'BTC', 'ETH'].some(k => upper.includes(k))) return 'COIN';
-                if (['ESTATE', 'REAL', '부동산', '전세', '보증금', '아파트', '주택', 'REALESTATE', 'PROPERTY', 'LAND'].some(k => upper.includes(k))) return 'REAL_ESTATE';
-                if (['PENSION', 'IRP', '퇴직연금', '연금', 'RETIREMENT'].some(k => upper.includes(k))) return 'PENSION';
+                if (['SAVING', 'SAVINGS', 'Savings', 'Cash', 'Deposit', 'Bank', 'BANK', 'DEPOSIT', 'CASH'].some(k => upper.includes(k))) return 'SAVINGS';
+                if (['INVEST', 'STOCK', 'Stock', 'Investment', 'Fund', 'STOCKS', 'EQUITY', 'PORTFOLIO'].some(k => upper.includes(k))) return 'INVESTMENT';
+                if (['COIN', 'CRYPTO', 'Coin', 'Bitcoin', 'BTC', 'ETH'].some(k => upper.includes(k))) return 'COIN';
+                if (['ESTATE', 'REAL', 'Property', 'Estate', 'Jeonse', 'Apartment', 'REALESTATE', 'PROPERTY', 'LAND'].some(k => upper.includes(k))) return 'REAL_ESTATE';
+                if (['PENSION', 'IRP', 'Retirement', 'Pension', 'RETIREMENT'].some(k => upper.includes(k))) return 'PENSION';
                 return 'SAVINGS';
             } else if (type === 'budget') {
-                if (['INCOME', 'REVENUE', '수입', '급여', '월급', 'SALARY', 'PAY'].some(k => upper.includes(k))) return 'INCOME';
-                if (['SAVING', '저축', '적금', 'SAVINGS'].some(k => upper.includes(k)))          return 'SAVING';
-                if (['INVEST', '투자', 'INVESTMENT'].some(k => upper.includes(k)))                  return 'INVEST';
-                if (['EXPENSE', 'EXPENSES', '지출', '소비', '카드', 'OUTFLOW'].some(k => upper.includes(k))) return 'EXPENSE';
+                if (['INCOME', 'REVENUE', 'Income', 'Salary', 'Pay', 'SALARY', 'PAY'].some(k => upper.includes(k))) return 'INCOME';
+                if (['SAVING', 'Saving', 'SAVINGS'].some(k => upper.includes(k)))          return 'SAVING';
+                if (['INVEST', 'Investment', 'INVESTMENT'].some(k => upper.includes(k)))                  return 'INVEST';
+                if (['EXPENSE', 'EXPENSES', 'Expense', 'Spend', 'Card', 'OUTFLOW'].some(k => upper.includes(k))) return 'EXPENSE';
                 return 'EXPENSE';
             } else if (type === 'loans') {
-                if (upper === 'LEASE' || upper.includes('전세') || upper.includes('JEONSE')) return 'LEASE';
+                if (upper === 'LEASE' || upper.includes('JEONSE')) return 'LEASE';
                 return 'DEBT';
             }
             return upper;
@@ -575,7 +714,7 @@
                     if (row.length < 2) continue;
                     let category = '', category2 = '', name = '';
                     if (type === 'stockProfit' && isNewTripleFormat) {
-                        // 새 포맷: 항목1(배당금/주식손익), 항목2(융기/수아), 항목3(항목명)
+                        // 새 포맷: 항목1(배당금/주식손익), 항목2(Yungki/Sua), 항목3(항목명)
                         const catLabel = (row[col1Idx] || '').trim();
                         category2 = (row[col2Idx] || '').trim();
                         name = (row[col3Idx] || '').trim();
@@ -908,7 +1047,7 @@
                                 {Icon ? <Icon className="w-3.5 h-3.5" /> : <Icons.Wallet className="w-3.5 h-3.5"/>}
                             </div>
                             <span className={`text-[10px] font-bold uppercase tracking-widest ${title === 'Total Assets' ? 'text-cyan-400 font-grotesk' : 'text-slate-400'}`}>
-                                {title === 'Total Assets' ? 'PORTFOLIO_AGGREGATED_WORTH' : title}
+                                {title === 'Total Assets' ? 'PORTFOLIO_WORTH' : title}
                             </span>
                             {(tooltip || breakdown) && !isNoHover && (
                                 <div className="group/tip relative flex items-center">
@@ -1034,13 +1173,13 @@
         const MonthlyAssetAllocationCard = ({ date, data, isWrapped }) => {
             const allocationPlan = [
                 { label: 'Stocks', targetRatio: 37, color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
-                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['융기','수아','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.toLowerCase().includes('toss stock') || b.name.includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['Yungki','Sua','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.toLowerCase().includes('toss stock') || b.name.includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Crypto', targetRatio: 3, color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && (b.name.replace(/\s/g,'').includes('코인') || b.name.toLowerCase().includes('coin') || b.name.toLowerCase().includes('crypto'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Loan Repayment', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && ['대출상환', 'loanrepayment', 'loanrepay'].includes(b.name.replace(/\s/g, '').toLowerCase())).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Credit Cards', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['융기','수아','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('신용카드') || b.name.toLowerCase().includes('creditcard') || b.name.toLowerCase().includes('credit card'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['Yungki','Sua','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('신용카드') || b.name.toLowerCase().includes('creditcard') || b.name.toLowerCase().includes('credit card'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
             ];
             const stats = useMemo(() => {
                 const budget = data[date]?.budget || [];
@@ -1296,7 +1435,77 @@
             );
         };
 
-        const Dashboard = ({ data = {}, onUpdate, viewDate: viewDateProp, setViewDate: setViewDateProp }) => {
+        const CombinedAssetTelemetry = ({ totalAssets, liquidAssets, liabilities, prevTotalAssets, calcYoY }) => {
+            const stakedAssets = Math.max(0, totalAssets - liquidAssets);
+            const yoy = calcYoY(totalAssets, prevTotalAssets);
+            
+            let trendColor = 'text-slate-400', trendBg = 'bg-white/5', TrendIcon = Icons.TrendingUp;
+            if (yoy > 0) { trendColor = 'text-cyan-400'; trendBg = 'bg-cyan-500/10'; TrendIcon = Icons.TrendingUp; } 
+            else if (yoy < 0) { trendColor = 'text-blue-400'; trendBg = 'bg-blue-500/10'; TrendIcon = Icons.TrendingDown; }
+
+            const formatAbbr = (val) => {
+                if (typeof val !== 'number' || isNaN(val)) return '₩ 0.0M';
+                return `₩ ${(val / 1000000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`;
+            };
+
+            return (
+                <div className="relative overflow-hidden bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl p-6 flex flex-col justify-between w-full h-full shadow-xl shadow-black/20 group">
+                    <div className="absolute right-0 top-0 w-32 h-32 opacity-25 pointer-events-none transition-transform duration-700 group-hover:scale-105">
+                        <svg viewBox="0 0 100 100" className="w-full h-full text-cyan-400/30">
+                            <circle cx="100" cy="0" r="80" fill="none" stroke="currentColor" strokeDasharray="3,3" strokeWidth="1"/>
+                            <circle cx="100" cy="0" r="60" fill="none" stroke="currentColor" strokeWidth="0.75"/>
+                            <circle cx="100" cy="0" r="40" fill="none" stroke="currentColor" strokeDasharray="5,5" strokeWidth="0.5"/>
+                            <circle cx="100" cy="0" r="20" fill="none" stroke="currentColor" strokeWidth="0.5"/>
+                        </svg>
+                    </div>
+
+                    <div className="relative z-10 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-cyan-400 tracking-[0.2em] font-grotesk uppercase">
+                                PORTFOLIO_AGGREGATED_WORTH
+                            </span>
+                            {yoy !== 0 && (
+                                <div className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full ${trendBg} ${trendColor} border border-current/10 font-mono`}>
+                                    <TrendIcon className="w-2.5 h-2.5 mr-0.5" />
+                                    YoY {Math.abs(yoy).toFixed(1)}%
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-grotesk">
+                                ₩ {new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(totalAssets)}
+                            </span>
+                        </div>
+
+                        <div className="w-full h-px bg-white/10 my-2"></div>
+
+                        <div className="grid grid-cols-3 gap-4 pt-1">
+                            <div>
+                                <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-grotesk">Liquid Value</span>
+                                <span className="text-base sm:text-lg font-black text-slate-200 mt-1 font-grotesk block truncate">
+                                    {formatAbbr(liquidAssets)}
+                                </span>
+                            </div>
+                            <div>
+                                <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-grotesk">Staked Assets</span>
+                                <span className="text-base sm:text-lg font-black text-slate-200 mt-1 font-grotesk block truncate">
+                                    {formatAbbr(stakedAssets)}
+                                </span>
+                            </div>
+                            <div>
+                                <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-grotesk">Active Debt</span>
+                                <span className="text-base sm:text-lg font-black text-rose-400 mt-1 font-grotesk block truncate">
+                                    {formatAbbr(liabilities)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+                const Dashboard = ({ data = {}, onUpdate, viewDate: viewDateProp, setViewDate: setViewDateProp }) => {
             const safeData = data || {};
             const allMonths = Object.keys(safeData).filter(isMonthKey).sort();
             const [viewDateLocal, setViewDateLocal] = useState(() => {
@@ -1461,14 +1670,24 @@
                             </p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                        {['total', 'net', 'debt', 'invest', 'annual'].map((id) => (
-                            <div key={id}>{renderScoreCard(id)}</div>
-                        ))}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <CombinedAssetTelemetry 
+                                totalAssets={totalAssets} 
+                                liquidAssets={liquidAssets} 
+                                liabilities={liabilitiesExclJeonse} 
+                                prevTotalAssets={prevTotalAssets}
+                                calcYoY={calcYoY}
+                            />
+                        </div>
+                        <div className="lg:col-span-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                            {renderScoreCard('net')}
+                            {renderScoreCard('annual')}
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2">
-                            <CollapsibleCard title="Asset Flow Telemetry" icon={Icons.Activity} className="h-[500px]">
+                            <CollapsibleCard title="Asset Flow" icon={Icons.Activity} className="h-[500px]">
                                 <div className="flex-1">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <ComposedChart data={fullGrowthData}>
@@ -2481,7 +2700,7 @@
         };
 
                 const SalarySheet = ({ data, onUpdate }) => {
-            const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: '융기', values: {} }, { id: 2, name: '수아', values: {} }] };
+            const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: 'Yungki', values: {} }, { id: 2, name: 'Sua', values: {} }] };
             const [years, setYears] = useState(salaryData.years);
             const fileInputRef = useRef(null);
             const containerRef = useRef(null);
@@ -2526,7 +2745,7 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {itemTotals.map(it => { 
                             const lv = getLevel(it.total); 
-                            const displayName = it.name === '융기' ? 'Yungki' : it.name === '수아' ? 'Sua' : it.name;
+                            const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
                             return (
                                 <GlassCard key={it.id} className="p-6">
                                     <div className="flex justify-between items-start mb-4">
@@ -2554,8 +2773,8 @@
                                     <YAxis fontSize={12} width={60} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
                                     <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
                                     <Legend iconType="circle" />
-                                    <Line type="monotone" dataKey="융기" name="Yungki" stroke="#06b6d4" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
-                                    <Line type="monotone" dataKey="수아" name="Sua" stroke="#ec4899" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
+                                    <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#06b6d4" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
+                                    <Line type="monotone" dataKey="Sua" name="Sua" stroke="#ec4899" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -2589,7 +2808,7 @@
                                     const totalRow = salaryData.items.reduce((acc, item) => acc + Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0), 0);
                                     let csvRows = 'Name,Total,' + years.join(',') + '\n';
                                     salaryData.items.forEach(item => {
-                                        const displayName = item.name === '융기' ? 'Yungki' : item.name === '수아' ? 'Sua' : item.name;
+                                        const displayName = item.name === 'Yungki' ? 'Yungki' : item.name === 'Sua' ? 'Sua' : item.name;
                                         const itemTotal = Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0);
                                         csvRows += `"${displayName}",${itemTotal},` + years.map(y => item.values[y] || 0).join(',') + '\n';
                                     });
@@ -2624,7 +2843,7 @@
                                 <tbody className="divide-y divide-white/5">
                                     {salaryData.items.map((item, idx) => {
                                         const itemTotal = Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0);
-                                        const displayName = item.name === '융기' ? 'Yungki' : item.name === '수아' ? 'Sua' : item.name;
+                                        const displayName = item.name === 'Yungki' ? 'Yungki' : item.name === 'Sua' ? 'Sua' : item.name;
                                         return (
                                             <tr key={item.id} className={`hover:bg-white/5 transition-colors group/tr ${idx % 2 === 0 ? 'bg-[var(--ss-cell-bg)]' : 'bg-[var(--ss-cell-bg-alt)]'}`}>
                                                 <td className="p-4 text-left font-extrabold text-slate-300 bg-[var(--ss-sticky-bg)] sticky left-0 border-r border-white/5 z-10 group-hover/tr:bg-white/5 transition-colors">{displayName}</td>
@@ -3087,7 +3306,7 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <h1 className="text-md font-bold tracking-tight font-grotesk text-white leading-none">QuantumVault</h1>
+                                            <h1 className="text-md font-bold tracking-tight font-grotesk text-white leading-none">Our-Vault</h1>
                                             <p className="text-[8px] text-white/40 uppercase tracking-widest mt-0.5 leading-none">Holographic Telemetry Console</p>
                                         </div>
                                     </div>
@@ -3200,7 +3419,7 @@
         root.render(<App />);
     </script>
     <script>
-        (function() {
+        (function () {
             try {
                 var src = document.getElementById('app-jsx').textContent;
                 var compiled = Babel.transform(src, {
@@ -3208,10 +3427,11 @@
                     plugins: ['proposal-class-properties', 'proposal-optional-chaining', 'proposal-nullish-coalescing-operator']
                 }).code;
                 eval(compiled);
-            } catch(e) {
+            } catch (e) {
                 showError('Babel / JS Error', e.message + '\n\nStack:\n' + (e.stack || ''));
             }
         })();
     </script>
 </body>
+
 </html>
