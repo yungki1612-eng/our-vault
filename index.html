@@ -219,7 +219,23 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-    <script type="text/babel">
+    <script>
+        function showError(msg, detail) {
+            var root = document.getElementById('root');
+            if (root) {
+                root.innerHTML = '<div style="padding:40px;font-family:monospace;background:#0f1026;color:#f87171;min-height:100vh;box-sizing:border-box"><h2 style="color:#f43f5e;margin-bottom:8px;font-size:20px">🚨 ' + msg + '</h2><pre style="white-space:pre-wrap;font-size:11px;background:rgba(255,0,0,0.1);padding:16px;border-radius:8px;border:1px solid rgba(255,0,0,0.3);overflow:auto;max-height:80vh">' + detail + '</pre></div>';
+            }
+        }
+        window.onerror = function(msg, url, line, col, err) {
+            showError('Runtime Error', msg + '\n\nFile: ' + url + '\nLine: ' + line + ', Col: ' + col + '\n\nStack:\n' + (err ? err.stack : 'No stack'));
+            return true;
+        };
+        window.addEventListener('unhandledrejection', function(e) {
+            showError('Unhandled Promise Rejection', String(e.reason));
+        });
+    </script>
+
+    <script type="text/plain" id="app-jsx">
 
         // ResizeObserver Polyfill
         if (typeof ResizeObserver === 'undefined') {
@@ -3052,7 +3068,6 @@
                                 ))}
                             </div>
                         </div>
-                        </div>
                         <div className="flex-1 flex flex-col relative z-10 overflow-hidden"><main className="flex-1 overflow-auto p-4 lg:p-8 custom-scrollbar"><div className="max-w-[1600px] mx-auto space-y-6 pb-20">
                             {activeTab === 'dashboard' && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} viewDate={dashboardViewDate} setViewDate={setDashboardViewDate} />}
                             {activeTab === 'assets' && <GenericSpreadsheet data={financialData} type="assets" onUpdate={updateFinancialData} categories={ASSET_CATEGORIES} hasCategory={true} darkMode={darkMode} />}
@@ -3068,6 +3083,20 @@
         }
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+    </script>
+    <script>
+        (function() {
+            try {
+                var src = document.getElementById('app-jsx').textContent;
+                var compiled = Babel.transform(src, {
+                    presets: ['react', ['env', { targets: { browsers: ['last 2 versions'] } }]],
+                    plugins: ['proposal-class-properties', 'proposal-optional-chaining', 'proposal-nullish-coalescing-operator']
+                }).code;
+                eval(compiled);
+            } catch(e) {
+                showError('Babel / JS Error', e.message + '\n\nStack:\n' + (e.stack || ''));
+            }
+        })();
     </script>
 </body>
 </html>
