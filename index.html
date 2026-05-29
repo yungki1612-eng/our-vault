@@ -2817,7 +2817,7 @@
             const [lastUpdated, setLastUpdated] = useState(Date.now());
             const [isSyncing, setIsSyncing] = useState(false);
             const [showSyncModal, setShowSyncModal] = useState(false);
-            const [darkMode, setDarkMode] = useState(() => localStorage.getItem('fm_darkMode') === 'true');
+            const [darkMode, setDarkMode] = useState(() => localStorage.getItem('fm_darkMode') !== 'false');
 
             useEffect(() => {
                 localStorage.setItem('fm_darkMode', darkMode);
