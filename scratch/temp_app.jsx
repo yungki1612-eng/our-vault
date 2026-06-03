@@ -1,380 +1,4 @@
-<!DOCTYPE html>
-<html lang="ko" class="dark">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Master (Final v19 - Scroll Fixed & AI Design)</title>
-
-    <!-- React & ReactDOM -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-
-    <!-- Prop-types -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
-
-    <!-- Recharts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.5.0/Recharts.min.js"></script>
-
-    <!-- Babel -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-
-    <!-- Google Fonts: Outfit & Space Grotesk -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
-                        grotesk: ['"Space Grotesk"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(30, 41, 59, 0.5);
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 3px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
-        }
-
-        @keyframes fade-in {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-fade-in {
-            animation: fade-in 0.5s ease-out forwards;
-        }
-
-        /* ===== Quantum Glassmorphism Theme ===== */
-        .quantum-card {
-            background: rgba(255, 255, 255, 0.03) !important;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .quantum-card:hover {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
-            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45) !important;
-            transform: translateY(-1px);
-        }
-
-        .quantum-btn {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .quantum-btn:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.12) !important;
-            border-color: rgba(255, 255, 255, 0.25) !important;
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2) !important;
-            transform: translateY(-1px);
-        }
-
-        .quantum-bg {
-            background: radial-gradient(circle at 50% 50%, #0f1026 0%, #070814 100%) !important;
-            color: #e2e8f0 !important;
-        }
-
-        /* Smooth floating blobs */
-        .blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            z-index: 0;
-            opacity: 0.15;
-            pointer-events: none;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .blob-blue {
-            background: #06b6d4;
-            width: 400px;
-            height: 400px;
-            top: -100px;
-            left: -100px;
-        }
-
-        .blob-purple {
-            background: #8b5cf6;
-            width: 500px;
-            height: 500px;
-            bottom: -150px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        .blob-pink {
-            background: #ec4899;
-            width: 350px;
-            height: 350px;
-            top: 40%;
-            left: 50%;
-            animation-delay: -10s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(30px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-20px, 20px) scale(0.95);
-            }
-        }
-
-        /* ===== Refined Excel-Style Spreadsheet ===== */
-        /* Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
-        }
-
-        :root {
-            --ss-hdr-bg: rgba(25, 27, 50, 0.7);
-            --ss-hdr-text: #94a3b8;
-            --ss-hdr-border: rgba(255, 255, 255, 0.08);
-            --ss-hdr-border-strong: rgba(6, 182, 212, 0.4);
-            --ss-cell-bg: rgba(255, 255, 255, 0.02);
-            --ss-cell-bg-alt: rgba(255, 255, 255, 0.01);
-            --ss-cell-border: rgba(255, 255, 255, 0.05);
-            --ss-sticky-bg: rgba(15, 16, 32, 0.75);
-            --ss-sum-bg: rgba(10, 11, 22, 0.85);
-            --ss-sum-border: rgba(6, 182, 212, 0.4);
-        }
-
-        /* Neon linear border */
-        .neon-border-cyan {
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15), inset 0 0 10px rgba(6, 182, 212, 0.05);
-            border-color: rgba(6, 182, 212, 0.4) !important;
-        }
-
-        .pulse-ambient {
-            animation: pulse-ambient 4s ease-in-out infinite;
-        }
-
-        @keyframes pulse-ambient {
-
-            0%,
-            100% {
-                opacity: 0.3;
-            }
-
-            50% {
-                opacity: 0.6;
-            }
-        }
-
-        .sticky-col-header {
-            position: sticky;
-            left: 0;
-            z-index: 50 !important;
-            background-color: var(--ss-hdr-bg);
-            border-right: 1px solid var(--ss-hdr-border) !important;
-            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-col-cell {
-            position: sticky;
-            left: 0;
-            z-index: 40 !important;
-            background-color: var(--ss-sticky-bg);
-            border-right: 1px solid var(--ss-hdr-border) !important;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-sum-cell {
-            position: sticky;
-            left: 0;
-            z-index: 40 !important;
-            background-color: var(--ss-sum-bg);
-            border-right: 1px solid var(--ss-sum-border) !important;
-            border-top: 1px solid var(--ss-sum-border) !important;
-            font-weight: 800;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-c1 {
-            position: sticky;
-            left: 0;
-            z-index: 40 !important;
-            background-color: var(--ss-sticky-bg);
-            border-right: 1px solid var(--ss-hdr-border);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-c2 {
-            position: sticky;
-            z-index: 40 !important;
-            background-color: var(--ss-sticky-bg);
-            border-right: 1px solid var(--ss-hdr-border);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-c3 {
-            position: sticky;
-            z-index: 40 !important;
-            background-color: var(--ss-sticky-bg);
-            border-right: 2px solid var(--ss-hdr-border-strong) !important;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-c1-hdr {
-            position: sticky;
-            left: 0;
-            z-index: 50 !important;
-            background-color: var(--ss-hdr-bg);
-            border-right: 1px solid var(--ss-hdr-border);
-            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-c2-hdr {
-            position: sticky;
-            z-index: 50 !important;
-            background-color: var(--ss-hdr-bg);
-            border-right: 1px solid var(--ss-hdr-border);
-            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-c3-hdr {
-            position: sticky;
-            z-index: 50 !important;
-            background-color: var(--ss-hdr-bg);
-            border-right: 2px solid var(--ss-hdr-border-strong) !important;
-            border-bottom: 2px solid var(--ss-hdr-border-strong) !important;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-c-sum {
-            position: sticky;
-            left: 0;
-            z-index: 45 !important;
-            background-color: var(--ss-sum-bg);
-            border-right: 2px solid var(--ss-sum-border) !important;
-            border-top: 1px solid var(--ss-sum-border) !important;
-            font-weight: 800;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-
-        .sticky-category {
-            position: sticky;
-            left: 0;
-            z-index: 45 !important;
-            background-color: var(--ss-sticky-bg);
-            border-right: 1px solid var(--ss-hdr-border) !important;
-        }
-
-        .cursor-move {
-            cursor: move;
-        }
-
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        /* Hide scrollbar for IE, Edge and Firefox */
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            /* IE and Edge */
-            scrollbar-width: none;
-            /* Firefox */
-        }
-    </style>
-</head>
-
-<body class="bg-slate-200/60 text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
-    <div id="root"></div>
-
-    <!-- Firebase Compat SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-
-    <script>
-        function showError(msg, detail) {
-            var root = document.getElementById('root');
-            if (root) {
-                root.innerHTML = '<div style="padding:40px;font-family:monospace;background:#0f1026;color:#f87171;min-height:100vh;box-sizing:border-box"><h2 style="color:#f43f5e;margin-bottom:8px;font-size:20px">🚨 ' + msg + '</h2><pre style="white-space:pre-wrap;font-size:11px;background:rgba(255,0,0,0.1);padding:16px;border-radius:8px;border:1px solid rgba(255,0,0,0.3);overflow:auto;max-height:80vh">' + detail + '</pre></div>';
-            }
-        }
-        window.onerror = function (msg, url, line, col, err) {
-            showError('Runtime Error', msg + '\n\nFile: ' + url + '\nLine: ' + line + ', Col: ' + col + '\n\nStack:\n' + (err ? err.stack : 'No stack'));
-            return true;
-        };
-        window.addEventListener('unhandledrejection', function (e) {
-            showError('Unhandled Promise Rejection', String(e.reason));
-        });
-    </script>
-
-    <script type="text/plain" id="app-jsx">
 
         // ResizeObserver Polyfill
         if (typeof ResizeObserver === 'undefined') {
@@ -422,7 +46,6 @@
             Activity: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
             Plus: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
             Trash2: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
-            Pencil: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>,
             CalendarPlus: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M10 16h4"/><path d="M12 14v4"/></svg>,
             ChevronRight: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
             Home: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
@@ -558,76 +181,13 @@
             data.salary = {
                 years: years,
                 items: [
-                    { id: 1, name: 'Yungki', values: {} },
-                    { id: 2, name: 'Sua', values: {} }
+                    { id: 1, name: '융기', values: {} },
+                    { id: 2, name: '수아', values: {} }
                 ]
             };
             data.salary.items.forEach(item => {
                 years.forEach(y => item.values[y] = 0);
             });
-
-            data.portfolio = {
-                exchangeRate: 1380,
-                persons: {
-                    sua: {
-                        name: '수아',
-                        color: '#ec4899',
-                        accounts: [
-                            {
-                                id: 'sua-mirae-01',
-                                broker: '미래에셋증권',
-                                accountName: 'ISA 계좌',
-                                accountType: 'ISA',
-                                holdings: [
-                                    { id: 'sh-001', name: 'NVIDIA', ticker: 'NVDA', market: 'US', quantity: 10, avgPrice: 120.50, currency: 'USD', category: '미국주식' },
-                                    { id: 'sh-002', name: 'Apple', ticker: 'AAPL', market: 'US', quantity: 15, avgPrice: 175.00, currency: 'USD', category: '미국주식' },
-                                    { id: 'sh-003', name: '삼성전자', ticker: '005930.KS', market: 'KR', quantity: 100, avgPrice: 72000, currency: 'KRW', category: '국내주식' },
-                                ]
-                            },
-                            {
-                                id: 'sua-toss-01',
-                                broker: '토스증권',
-                                accountName: '연금저축 계좌',
-                                accountType: 'PENSION',
-                                holdings: [
-                                    { id: 'sh-004', name: 'TIGER S&P500', ticker: '360750.KS', market: 'KR', quantity: 50, avgPrice: 15200, currency: 'KRW', category: '국내ETF' },
-                                ]
-                            }
-                        ],
-                        debts: []
-                    },
-                    yungki: {
-                        name: '융기',
-                        color: '#06b6d4',
-                        accounts: [
-                            {
-                                id: 'yk-toss-01',
-                                broker: '토스증권',
-                                accountName: '해외주식 계좌',
-                                accountType: 'GENERAL',
-                                holdings: [
-                                    { id: 'yh-001', name: 'TSMC', ticker: 'TSM', market: 'US', quantity: 20, avgPrice: 140.00, currency: 'USD', category: '미국주식' },
-                                    { id: 'yh-002', name: 'Google', ticker: 'GOOG', market: 'US', quantity: 15, avgPrice: 165.00, currency: 'USD', category: '미국주식' },
-                                    { id: 'yh-003', name: 'NVIDIA', ticker: 'NVDA', market: 'US', quantity: 8, avgPrice: 110.00, currency: 'USD', category: '미국주식' },
-                                ]
-                            },
-                            {
-                                id: 'yk-kiwoom-01',
-                                broker: '키움증권',
-                                accountName: 'IRP 계좌',
-                                accountType: 'IRP',
-                                holdings: [
-                                    { id: 'yh-004', name: 'KODEX 200', ticker: '069500.KS', market: 'KR', quantity: 80, avgPrice: 35500, currency: 'KRW', category: '국내ETF' },
-                                    { id: 'yh-005', name: 'TIGER 미국나스닥100', ticker: '133690.KS', market: 'KR', quantity: 30, avgPrice: 82000, currency: 'KRW', category: '국내ETF' },
-                                ]
-                            }
-                        ],
-                        debts: []
-                    }
-                },
-                lastPriceUpdate: null,
-                priceCache: {}
-            };
             
             return data;
         };
@@ -655,37 +215,32 @@
             EXPENSE: { label: 'Expenses', type: 'expense', bg: 'bg-rose-500/10',  text: 'text-rose-400' },        
         };
 
-        // Stock Profit Categories (Category 1)
+        // 주식실현손익 카테고리 (항목1)
         const STOCK_PROFIT_CATEGORIES = {
             DIVIDEND:     { label: 'Dividend',   color: '#10B981', bg: 'bg-emerald-500/10',  text: 'text-emerald-400' },
             STOCK_PROFIT: { label: 'Stock Profit', color: '#6366F1', bg: 'bg-indigo-500/10',   text: 'text-indigo-400' },
         };
 
-        const LOAN_CATEGORIES = {
-            DEBT:  { label: 'Debt',   bg: 'bg-rose-500/10',  text: 'text-rose-400' },
-            LEASE: { label: 'Lease',  bg: 'bg-amber-500/10', text: 'text-amber-400' },
-        };
-
-        // Stock Profit Persons (Category 2)
-        const STOCK_PROFIT_PERSONS = ['Yungki', 'Sua'];
+        // 주식실현손익 항목2 (사람)
+        const STOCK_PROFIT_PERSONS = ['융기', '수아'];
 
         const normalizeCategory = (cat, type) => {
             const upper = String(cat || '').toUpperCase().trim();
             if (type === 'assets') {
-                if (['SAVING', 'SAVINGS', 'Savings', 'Cash', 'Deposit', 'Bank', 'BANK', 'DEPOSIT', 'CASH'].some(k => upper.includes(k))) return 'SAVINGS';
-                if (['INVEST', 'STOCK', 'Stock', 'Investment', 'Fund', 'STOCKS', 'EQUITY', 'PORTFOLIO'].some(k => upper.includes(k))) return 'INVESTMENT';
-                if (['COIN', 'CRYPTO', 'Coin', 'Bitcoin', 'BTC', 'ETH'].some(k => upper.includes(k))) return 'COIN';
-                if (['ESTATE', 'REAL', 'Property', 'Estate', 'Jeonse', 'Apartment', 'REALESTATE', 'PROPERTY', 'LAND'].some(k => upper.includes(k))) return 'REAL_ESTATE';
-                if (['PENSION', 'IRP', 'Retirement', 'Pension', 'RETIREMENT'].some(k => upper.includes(k))) return 'PENSION';
+                if (['SAVING', 'SAVINGS', '예적금', '현금', '적금', '예금', '저축', 'BANK', 'DEPOSIT', 'CASH'].some(k => upper.includes(k))) return 'SAVINGS';
+                if (['INVEST', 'STOCK', '주식', '증권', '펀드', 'STOCKS', 'EQUITY', 'PORTFOLIO'].some(k => upper.includes(k))) return 'INVESTMENT';
+                if (['COIN', 'CRYPTO', '코인', '비트코인', 'BTC', 'ETH'].some(k => upper.includes(k))) return 'COIN';
+                if (['ESTATE', 'REAL', '부동산', '전세', '보증금', '아파트', '주택', 'REALESTATE', 'PROPERTY', 'LAND'].some(k => upper.includes(k))) return 'REAL_ESTATE';
+                if (['PENSION', 'IRP', '퇴직연금', '연금', 'RETIREMENT'].some(k => upper.includes(k))) return 'PENSION';
                 return 'SAVINGS';
             } else if (type === 'budget') {
-                if (['INCOME', 'REVENUE', 'Income', 'Salary', 'Pay', 'SALARY', 'PAY'].some(k => upper.includes(k))) return 'INCOME';
-                if (['SAVING', 'Saving', 'SAVINGS'].some(k => upper.includes(k)))          return 'SAVING';
-                if (['INVEST', 'Investment', 'INVESTMENT'].some(k => upper.includes(k)))                  return 'INVEST';
-                if (['EXPENSE', 'EXPENSES', 'Expense', 'Spend', 'Card', 'OUTFLOW'].some(k => upper.includes(k))) return 'EXPENSE';
+                if (['INCOME', 'REVENUE', '수입', '급여', '월급', 'SALARY', 'PAY'].some(k => upper.includes(k))) return 'INCOME';
+                if (['SAVING', '저축', '적금', 'SAVINGS'].some(k => upper.includes(k)))          return 'SAVING';
+                if (['INVEST', '투자', 'INVESTMENT'].some(k => upper.includes(k)))                  return 'INVEST';
+                if (['EXPENSE', 'EXPENSES', '지출', '소비', '카드', 'OUTFLOW'].some(k => upper.includes(k))) return 'EXPENSE';
                 return 'EXPENSE';
             } else if (type === 'loans') {
-                if (upper === 'LEASE' || upper.includes('JEONSE')) return 'LEASE';
+                if (upper === 'LEASE' || upper.includes('전세') || upper.includes('JEONSE')) return 'LEASE';
                 return 'DEBT';
             }
             return upper;
@@ -699,7 +254,7 @@
             } else if (type === 'budget') {
                 normalizedCat = BUDGET_CATEGORIES[item.category] ? item.category : Object.keys(BUDGET_CATEGORIES)[0];
             } else if (type === 'loans') {
-                normalizedCat = LOAN_CATEGORIES[item.category] ? item.category : 'DEBT';
+                normalizedCat = 'ALL';
             } else if (type === 'stockProfit') {
                 normalizedCat = STOCK_PROFIT_CATEGORIES[item.category] ? item.category : Object.keys(STOCK_PROFIT_CATEGORIES)[0];
             } else {
@@ -783,7 +338,7 @@
                     if (row.length < 2) continue;
                     let category = '', category2 = '', name = '';
                     if (type === 'stockProfit' && isNewTripleFormat) {
-                        // 새 포맷: 항목1(배당금/주식손익), 항목2(Yungki/Sua), 항목3(항목명)
+                        // 새 포맷: 항목1(배당금/주식손익), 항목2(융기/수아), 항목3(항목명)
                         const catLabel = (row[col1Idx] || '').trim();
                         category2 = (row[col2Idx] || '').trim();
                         name = (row[col3Idx] || '').trim();
@@ -1116,7 +671,7 @@
                                 {Icon ? <Icon className="w-3.5 h-3.5" /> : <Icons.Wallet className="w-3.5 h-3.5"/>}
                             </div>
                             <span className={`text-[10px] font-bold uppercase tracking-widest ${title === 'Total Assets' ? 'text-cyan-400 font-grotesk' : 'text-slate-400'}`}>
-                                {title === 'Total Assets' ? 'PORTFOLIO_WORTH' : title}
+                                {title === 'Total Assets' ? 'PORTFOLIO_AGGREGATED_WORTH' : title}
                             </span>
                             {(tooltip || breakdown) && !isNoHover && (
                                 <div className="group/tip relative flex items-center">
@@ -1242,13 +797,13 @@
         const MonthlyAssetAllocationCard = ({ date, data, isWrapped }) => {
             const allocationPlan = [
                 { label: 'Stocks', targetRatio: 37, color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
-                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['Yungki','Sua','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.toLowerCase().includes('toss stock') || b.name.includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['융기','수아','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.toLowerCase().includes('toss stock') || b.name.includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Crypto', targetRatio: 3, color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && (b.name.replace(/\s/g,'').includes('코인') || b.name.toLowerCase().includes('coin') || b.name.toLowerCase().includes('crypto'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Loan Repayment', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && ['대출상환', 'loanrepayment', 'loanrepay'].includes(b.name.replace(/\s/g, '').toLowerCase())).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Credit Cards', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['Yungki','Sua','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('신용카드') || b.name.toLowerCase().includes('creditcard') || b.name.toLowerCase().includes('credit card'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['융기','수아','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('신용카드') || b.name.toLowerCase().includes('creditcard') || b.name.toLowerCase().includes('credit card'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
             ];
             const stats = useMemo(() => {
                 const budget = data[date]?.budget || [];
@@ -1512,13 +1067,9 @@
             if (yoy > 0) { trendColor = 'text-cyan-400'; trendBg = 'bg-cyan-500/10'; TrendIcon = Icons.TrendingUp; } 
             else if (yoy < 0) { trendColor = 'text-blue-400'; trendBg = 'bg-blue-500/10'; TrendIcon = Icons.TrendingDown; }
 
-            const formatFullValue = (val) => {
-                if (typeof val !== 'number' || isNaN(val)) return '₩ 0';
-                return new Intl.NumberFormat('ko-KR', { 
-                    style: 'currency', 
-                    currency: 'KRW', 
-                    maximumFractionDigits: 0 
-                }).format(val);
+            const formatAbbr = (val) => {
+                if (typeof val !== 'number' || isNaN(val)) return '₩ 0.0M';
+                return `₩ ${(val / 1000000).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}M`;
             };
 
             return (
@@ -1535,7 +1086,7 @@
                     <div className="relative z-10 space-y-4">
                         <div className="flex justify-between items-center">
                             <span className="text-[10px] font-bold text-cyan-400 tracking-[0.2em] font-grotesk uppercase">
-                                PORTFOLIO_WORTH
+                                PORTFOLIO_AGGREGATED_WORTH
                             </span>
                             {yoy !== 0 && (
                                 <div className={`inline-flex items-center text-[9px] font-bold px-2 py-0.5 rounded-full ${trendBg} ${trendColor} border border-current/10 font-mono`}>
@@ -1556,20 +1107,20 @@
                         <div className="grid grid-cols-3 gap-4 pt-1">
                             <div>
                                 <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-grotesk">Liquid Value</span>
-                                <span className="text-base sm:text-lg font-black text-slate-200 mt-1 font-grotesk block">
-                                    {formatFullValue(liquidAssets)}
+                                <span className="text-base sm:text-lg font-black text-slate-200 mt-1 font-grotesk block truncate">
+                                    {formatAbbr(liquidAssets)}
                                 </span>
                             </div>
                             <div>
                                 <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-grotesk">Staked Assets</span>
-                                <span className="text-base sm:text-lg font-black text-slate-200 mt-1 font-grotesk block">
-                                    {formatFullValue(stakedAssets)}
+                                <span className="text-base sm:text-lg font-black text-slate-200 mt-1 font-grotesk block truncate">
+                                    {formatAbbr(stakedAssets)}
                                 </span>
                             </div>
                             <div>
                                 <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-grotesk">Active Debt</span>
-                                <span className="text-base sm:text-lg font-black text-rose-400 mt-1 font-grotesk block">
-                                    {formatFullValue(liabilities)}
+                                <span className="text-base sm:text-lg font-black text-rose-400 mt-1 font-grotesk block truncate">
+                                    {formatAbbr(liabilities)}
                                 </span>
                             </div>
                         </div>
@@ -1760,7 +1311,7 @@
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div className="lg:col-span-2">
-                            <CollapsibleCard title="Asset Flow" icon={Icons.Activity} className="h-[500px]">
+                            <CollapsibleCard title="Asset Flow Telemetry" icon={Icons.Activity} className="h-[500px]">
                                 <div className="flex-1">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <ComposedChart data={fullGrowthData}>
@@ -2456,22 +2007,12 @@
                                                                     <select className="w-full bg-slate-900 border border-white/10 text-white rounded focus:outline-none p-0.5 focus:border-cyan-400" value={editingItemOption.cat1} onChange={(e) => setEditingItemOption({...editingItemOption, cat1: e.target.value})}>
                                                                         {Object.entries(categories).map(([k, v]) => (<option key={k} value={k}>{v.label}</option>))}
                                                                     </select>
-                                                                ) : (
-                                                                    <span className={`block truncate w-full cursor-pointer hover:text-cyan-400 transition-colors ${!isFirstCat1 ? 'opacity-0' : ''}`} 
-                                                                          onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || catKey, cat2: item.category2 || '', oldCat1: item.category || catKey, oldCat2: item.category2 || '' })}>
-                                                                        {categories[catKey].label}
-                                                                    </span>
-                                                                )}
+                                                                ) : isFirstCat1 ? <span className="block truncate w-full">{categories[catKey].label}</span> : ''}
                                                             </td>
                                                             <td className="sticky-c2 p-2 text-center text-xs font-medium text-slate-400 overflow-hidden" style={{ left: colWidths.c1, width: colWidths.c2, minWidth: colWidths.c2, maxWidth: colWidths.c2 }}>
                                                                 {isEditing ? (
                                                                     <input type="text" className="w-full bg-slate-900 border border-white/10 text-white rounded focus:outline-none p-0.5 text-center focus:border-cyan-400" value={editingItemOption.cat2} onChange={(e) => setEditingItemOption({...editingItemOption, cat2: e.target.value})} onKeyDown={(e) => e.key === 'Enter' && handleSaveRowEdit()} />
-                                                                ) : (
-                                                                    <span className={`block truncate w-full cursor-pointer hover:text-cyan-400 transition-colors min-h-[1.25rem] ${!isFirstCat2 ? 'opacity-0' : ''}`} 
-                                                                          onClick={() => setEditingItemOption({ oldName: item.name, newName: item.name, cat1: item.category || catKey, cat2: item.category2 || '', oldCat1: item.category || catKey, oldCat2: item.category2 || '' })}>
-                                                                        {item.category2 || '-'}
-                                                                    </span>
-                                                                )}
+                                                                ) : isFirstCat2 ? <span className="block truncate w-full">{item.category2 || ''}</span> : ''}
                                                             </td>
                                                             <td className="sticky-c3 p-2 overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2, width: colWidths.c3, minWidth: colWidths.c3, maxWidth: colWidths.c3 }}>
                                                                 {isEditing ? (
@@ -2783,7 +2324,7 @@
         };
 
                 const SalarySheet = ({ data, onUpdate }) => {
-            const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: 'Yungki', values: {} }, { id: 2, name: 'Sua', values: {} }] };
+            const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: '융기', values: {} }, { id: 2, name: '수아', values: {} }] };
             const [years, setYears] = useState(salaryData.years);
             const fileInputRef = useRef(null);
             const containerRef = useRef(null);
@@ -2828,7 +2369,7 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {itemTotals.map(it => { 
                             const lv = getLevel(it.total); 
-                            const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
+                            const displayName = it.name === '융기' ? 'Yungki' : it.name === '수아' ? 'Sua' : it.name;
                             return (
                                 <GlassCard key={it.id} className="p-6">
                                     <div className="flex justify-between items-start mb-4">
@@ -2856,8 +2397,8 @@
                                     <YAxis fontSize={12} width={60} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
                                     <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
                                     <Legend iconType="circle" />
-                                    <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#06b6d4" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
-                                    <Line type="monotone" dataKey="Sua" name="Sua" stroke="#ec4899" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
+                                    <Line type="monotone" dataKey="융기" name="Yungki" stroke="#06b6d4" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
+                                    <Line type="monotone" dataKey="수아" name="Sua" stroke="#ec4899" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
@@ -2891,7 +2432,7 @@
                                     const totalRow = salaryData.items.reduce((acc, item) => acc + Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0), 0);
                                     let csvRows = 'Name,Total,' + years.join(',') + '\n';
                                     salaryData.items.forEach(item => {
-                                        const displayName = item.name === 'Yungki' ? 'Yungki' : item.name === 'Sua' ? 'Sua' : item.name;
+                                        const displayName = item.name === '융기' ? 'Yungki' : item.name === '수아' ? 'Sua' : item.name;
                                         const itemTotal = Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0);
                                         csvRows += `"${displayName}",${itemTotal},` + years.map(y => item.values[y] || 0).join(',') + '\n';
                                     });
@@ -2926,7 +2467,7 @@
                                 <tbody className="divide-y divide-white/5">
                                     {salaryData.items.map((item, idx) => {
                                         const itemTotal = Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0);
-                                        const displayName = item.name === 'Yungki' ? 'Yungki' : item.name === 'Sua' ? 'Sua' : item.name;
+                                        const displayName = item.name === '융기' ? 'Yungki' : item.name === '수아' ? 'Sua' : item.name;
                                         return (
                                             <tr key={item.id} className={`hover:bg-white/5 transition-colors group/tr ${idx % 2 === 0 ? 'bg-[var(--ss-cell-bg)]' : 'bg-[var(--ss-cell-bg-alt)]'}`}>
                                                 <td className="p-4 text-left font-extrabold text-slate-300 bg-[var(--ss-sticky-bg)] sticky left-0 border-r border-white/5 z-10 group-hover/tr:bg-white/5 transition-colors">{displayName}</td>
@@ -3245,7 +2786,7 @@
                     <div className="grid grid-cols-1 gap-6">
                         <LoanTrendGraph data={data} />
                     </div>
-                    <GenericSpreadsheet data={data} type="loans" onUpdate={onUpdate} categories={LOAN_CATEGORIES} hasCategory={true} />
+                    <GenericSpreadsheet data={data} type="loans" onUpdate={onUpdate} hasCategory={false} />
                     <div className="grid grid-cols-1 gap-6">
                         <LoanCalculator />
                     </div>
@@ -3310,987 +2851,6 @@
             return { newData, migrated };
         };
 
-        // ============================================================
-        // ============== INVESTMENT PORTFOLIO COMPONENT ===============
-        // ============================================================
-
-        const PORTFOLIO_CHART_COLORS = ['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899', '#EF4444', '#06B6D4', '#6366F1'];
-
-        const getHoldingCurrentPrice = (holding, priceCache) => {
-            if (priceCache && priceCache[holding.ticker]) return priceCache[holding.ticker];
-            return null;
-        };
-
-        const calcHoldingValue = (holding, priceCache, exchangeRate) => {
-            const currentPrice = getHoldingCurrentPrice(holding, priceCache);
-            const price = currentPrice || holding.avgPrice;
-            const rawValue = price * holding.quantity;
-            return holding.currency === 'USD' ? rawValue * exchangeRate : rawValue;
-        };
-
-        const calcHoldingCost = (holding, exchangeRate) => {
-            const rawCost = holding.avgPrice * holding.quantity;
-            return holding.currency === 'USD' ? rawCost * exchangeRate : rawCost;
-        };
-
-        const calcHoldingPnL = (holding, priceCache, exchangeRate) => {
-            const value = calcHoldingValue(holding, priceCache, exchangeRate);
-            const cost = calcHoldingCost(holding, exchangeRate);
-            return value - cost;
-        };
-
-        const calcHoldingPnLPercent = (holding, priceCache) => {
-            const currentPrice = getHoldingCurrentPrice(holding, priceCache) || holding.avgPrice;
-            if (holding.avgPrice === 0) return 0;
-            return ((currentPrice - holding.avgPrice) / holding.avgPrice) * 100;
-        };
-
-        const getAllTickers = (portfolio) => {
-            const tickers = new Set();
-            if (!portfolio || !portfolio.persons) return [];
-            Object.values(portfolio.persons).forEach(person => {
-                (person.accounts || []).forEach(account => {
-                    (account.holdings || []).forEach(h => {
-                        if (h.ticker && h.ticker.trim() !== '') {
-                            tickers.add(h.ticker.trim());
-                        }
-                    });
-                });
-            });
-            return [...tickers];
-        };
-
-        const getPersonTotalValue = (person, priceCache, exchangeRate) => {
-            let total = 0;
-            (person.accounts || []).forEach(account => {
-                (account.holdings || []).forEach(h => {
-                    total += calcHoldingValue(h, priceCache, exchangeRate);
-                });
-            });
-            return total;
-        };
-
-        const getPersonTotalCost = (person, exchangeRate) => {
-            let total = 0;
-            (person.accounts || []).forEach(account => {
-                (account.holdings || []).forEach(h => {
-                    total += calcHoldingCost(h, exchangeRate);
-                });
-            });
-            return total;
-        };
-
-        const getPersonTotalDebt = (person) => {
-            return (person.debts || []).reduce((sum, d) => sum + (d.amount || 0), 0);
-        };
-
-        const getPersonCategoryBreakdown = (person, priceCache, exchangeRate) => {
-            const map = {};
-            (person.accounts || []).forEach(account => {
-                (account.holdings || []).forEach(h => {
-                    const cat = h.category || 'etc';
-                    if (!map[cat]) map[cat] = 0;
-                    map[cat] += calcHoldingValue(h, priceCache, exchangeRate);
-                });
-            });
-            return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-        };
-
-        const getPersonHoldingsList = (person, priceCache, exchangeRate) => {
-            const list = [];
-            (person.accounts || []).forEach(account => {
-                (account.holdings || []).forEach(h => {
-                    list.push({ ...h, accountName: account.accountName, broker: account.broker, evalValue: calcHoldingValue(h, priceCache, exchangeRate) });
-                });
-            });
-            return list.sort((a, b) => b.evalValue - a.evalValue);
-        };
-
-        // --- Sub-components ---
-
-        const PortfolioDoughnutChart = ({ data, personColor }) => {
-            const total = data.reduce((s, d) => s + d.value, 0);
-            const [activeIdx, setActiveIdx] = useState(null);
-            if (data.length === 0) return <div className="flex items-center justify-center h-[180px] text-slate-500 text-xs">보유 종목 없음</div>;
-            return (
-                <div className="flex items-center gap-4 h-[180px]">
-                    <div className="w-36 h-36 shrink-0">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2} dataKey="value" stroke="none"
-                                    onMouseEnter={(_, idx) => setActiveIdx(idx)} onMouseLeave={() => setActiveIdx(null)}>
-                                    {data.map((entry, idx) => (
-                                        <Cell key={idx} fill={PORTFOLIO_CHART_COLORS[idx % PORTFOLIO_CHART_COLORS.length]}
-                                            opacity={activeIdx !== null && activeIdx !== idx ? 0.4 : 1}
-                                            style={{ transition: 'opacity 0.2s ease', cursor: 'pointer' }} />
-                                    ))}
-                                </Pie>
-                                <RechartsTooltip content={({ active, payload }) => {
-                                    if (!active || !payload || !payload[0]) return null;
-                                    const d = payload[0].payload;
-                                    return (
-                                        <div className="quantum-card rounded-lg p-2 text-xs border border-white/10 shadow-xl">
-                                            <div className="font-bold text-white">{d.name}</div>
-                                            <div className="text-slate-300 font-grotesk">₩{formatCurrency(d.value)}</div>
-                                            <div className="text-slate-400">{total > 0 ? ((d.value / total) * 100).toFixed(1) : 0}%</div>
-                                        </div>
-                                    );
-                                }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="flex flex-col gap-1.5 min-w-0 flex-1 overflow-y-auto custom-scrollbar pr-2 h-full py-2">
-                        {data.map((d, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs">
-                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: PORTFOLIO_CHART_COLORS[idx % PORTFOLIO_CHART_COLORS.length] }} />
-                                <span className="text-slate-300 truncate">{d.name}</span>
-                                <span className="ml-auto font-grotesk text-slate-400 shrink-0">{total > 0 ? ((d.value / total) * 100).toFixed(1) : 0}%</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        const PortfolioBarChart = ({ holdings, personColor }) => {
-            if (holdings.length === 0) return <div className="flex items-center justify-center h-[180px] text-slate-500 text-xs">보유 종목 없음</div>;
-            const top8 = holdings.slice(0, 8);
-            return (
-                <div className="h-[180px] w-full mt-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={top8} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
-                            <XAxis type="number" hide />
-                            <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                            <RechartsTooltip content={({ active, payload }) => {
-                                if (!active || !payload || !payload[0]) return null;
-                                return (
-                                    <div className="quantum-card rounded-lg p-2 text-xs border border-white/10">
-                                        <div className="font-bold text-white">{payload[0].payload.name}</div>
-                                        <div className="text-slate-300 font-grotesk">₩{formatCurrency(payload[0].value)}</div>
-                                    </div>
-                                );
-                            }} />
-                            <Bar dataKey="evalValue" radius={[0, 4, 4, 0]} barSize={12}>
-                                {top8.map((_, idx) => (
-                                    <Cell key={idx} fill={PORTFOLIO_CHART_COLORS[idx % PORTFOLIO_CHART_COLORS.length]} opacity={0.85} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            );
-        };
-
-        const HoldingRowComponent = ({ h, accountId, priceCache, exchangeRate, onDeleteHolding, onEditHolding }) => {
-            const currentPrice = getHoldingCurrentPrice(h, priceCache);
-            const pnlPercent = calcHoldingPnLPercent(h, priceCache);
-            const evalVal = calcHoldingValue(h, priceCache, exchangeRate);
-            const pnl = calcHoldingPnL(h, priceCache, exchangeRate);
-            const isPositive = pnl >= 0;
-
-            return (
-                <tr className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors group">
-                    <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-[9px] font-black text-white/70 border border-white/10 shrink-0">
-                                {h.ticker ? h.ticker.slice(0, 2) : h.name.slice(0, 2)}
-                            </div>
-                            <div className="min-w-0">
-                                <div className="text-xs font-bold text-slate-200 truncate">{h.name}</div>
-                                <div className="text-[10px] text-slate-500 font-grotesk">{h.ticker || '직접입력'}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td className="py-2.5 px-2 text-right">
-                        <span className="text-xs font-grotesk text-slate-300">{h.quantity}</span>
-                    </td>
-                    <td className="py-2.5 px-2 text-right">
-                        <span className="text-xs font-grotesk text-slate-400">{h.currency === 'USD' ? '$' : '₩'}{h.currency === 'USD' ? h.avgPrice.toFixed(2) : formatCurrency(h.avgPrice)}</span>
-                    </td>
-                    <td className="py-2.5 px-2 text-right">
-                        {currentPrice ? (
-                            <span className="text-xs font-grotesk text-white font-semibold">{h.currency === 'USD' ? '$' : '₩'}{h.currency === 'USD' ? currentPrice.toFixed(2) : formatCurrency(currentPrice)}</span>
-                        ) : (
-                            <span className="text-[10px] text-slate-600 italic">—</span>
-                        )}
-                    </td>
-                    <td className="py-2.5 px-2 text-right">
-                        <span className="text-xs font-grotesk text-slate-200 font-semibold">₩{formatCurrency(evalVal)}</span>
-                    </td>
-                    <td className="py-2.5 px-2 text-right flex items-center justify-end gap-2">
-                        <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-grotesk ${isPositive ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>
-                            {isPositive ? '▲' : '▼'} {Math.abs(pnlPercent).toFixed(2)}%
-                        </div>
-                        <button onClick={() => onEditHolding(accountId, h)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-cyan-500/20 text-cyan-400 rounded transition-all shrink-0">
-                            <Icons.Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => onDeleteHolding(accountId, h.id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/20 text-rose-400 rounded transition-all shrink-0">
-                            <Icons.Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                    </td>
-                </tr>
-            );
-        };
-
-        const AccountCardComponent = ({ account, priceCache, exchangeRate, personColor, onDeleteAccount, onDeleteHolding, onEditHolding }) => {
-            const accountValue = (account.holdings || []).reduce((s, h) => s + calcHoldingValue(h, priceCache, exchangeRate), 0);
-            return (
-                <GlassCard className="overflow-hidden group/account">
-                    <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black" style={{ background: `${personColor}15`, color: personColor, border: `1px solid ${personColor}30` }}>
-                                {account.broker.charAt(0)}
-                            </div>
-                            <div>
-                                <div className="text-xs font-bold text-slate-200">{account.accountName}</div>
-                                <div className="text-[10px] text-slate-500">{account.broker} · {account.accountType}</div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <div className="text-sm font-black font-grotesk text-white">₩{formatCurrency(accountValue)}</div>
-                            </div>
-                            <button onClick={() => onDeleteAccount(account.id)} className="opacity-0 group-hover/account:opacity-100 p-1.5 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all shrink-0" title="계좌 삭제">
-                                <Icons.Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                    {(account.holdings || []).length > 0 ? (
-                        <div className="overflow-x-auto custom-scrollbar">
-                            <table className="w-full min-w-[520px]">
-                                <thead>
-                                    <tr className="text-[10px] text-slate-500 uppercase tracking-wider font-grotesk border-b border-white/[0.06]">
-                                        <th className="py-2 px-3 text-left font-semibold">종목</th>
-                                        <th className="py-2 px-2 text-right font-semibold">수량</th>
-                                        <th className="py-2 px-2 text-right font-semibold">평단가</th>
-                                        <th className="py-2 px-2 text-right font-semibold">현재가</th>
-                                        <th className="py-2 px-2 text-right font-semibold">평가액</th>
-                                        <th className="py-2 px-2 text-right font-semibold">수익률</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {account.holdings.map(h => (
-                                        <HoldingRowComponent key={h.id} accountId={account.id} h={h} priceCache={priceCache} exchangeRate={exchangeRate} onDeleteHolding={onDeleteHolding} onEditHolding={onEditHolding} />
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="p-6 text-center text-slate-600 text-xs flex flex-col items-center">
-                            <div className="mb-2">보유 종목이 없습니다</div>
-                            <div className="text-[10px] text-slate-500">종목 추가 버튼을 눌러 자산을 등록하세요</div>
-                        </div>
-                    )}
-                </GlassCard>
-            );
-        };
-
-        const AddAccountModal = ({ isOpen, onClose, onSave }) => {
-            const [form, setForm] = useState({ accountName: '', broker: '', accountType: '주식계좌' });
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
-                        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
-                            <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                <Icons.Wallet className="w-4 h-4 text-cyan-400" /> 새 계좌 추가
-                            </h3>
-                            <button onClick={onClose} className="text-slate-500 hover:text-white"><Icons.X className="w-5 h-5" /></button>
-                        </div>
-                        <div className="p-5 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 mb-1.5">증권사/은행명</label>
-                                <input type="text" value={form.broker} onChange={e => setForm({...form, broker: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none transition-colors"
-                                    placeholder="예: 토스증권, 미래에셋, 국민은행" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 mb-1.5">계좌 별칭</label>
-                                <input type="text" value={form.accountName} onChange={e => setForm({...form, accountName: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none transition-colors"
-                                    placeholder="예: 메인 투자계좌, 연금저축펀드" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 mb-1.5">계좌 유형</label>
-                                <select value={form.accountType} onChange={e => setForm({...form, accountType: e.target.value})}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none transition-colors">
-                                    <option value="주식계좌">주식계좌 (일반)</option>
-                                    <option value="연금계좌">연금계좌 (IRP/연금저축)</option>
-                                    <option value="CMA">CMA/파킹통장</option>
-                                    <option value="기타">기타</option>
-                                </select>
-                            </div>
-                            <button onClick={() => { onSave(form); setForm({ accountName: '', broker: '', accountType: '주식계좌' }); onClose(); }}
-                                disabled={!form.broker || !form.accountName}
-                                className="w-full py-3 mt-2 rounded-xl text-sm font-bold bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 disabled:opacity-50 transition-all border border-cyan-500/30">
-                                계좌 생성하기
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const AddHoldingModal = ({ isOpen, onClose, onSave, editData, accounts = [] }) => {
-            const [form, setForm] = useState({ accountId: '', name: '', ticker: '', market: 'US', quantity: 0, avgPrice: 0, currency: 'USD', category: '미국주식' });
-            useEffect(() => {
-                if (editData) setForm(editData);
-                else setForm({ accountId: accounts?.[0]?.id || '', name: '', ticker: '', market: 'US', quantity: 0, avgPrice: 0, currency: 'USD', category: '미국주식' });
-            }, [editData, isOpen, accounts]);
-
-            if (!isOpen) return null;
-            const categories = ['미국주식', '국내주식', '미국ETF', '국내ETF', '코인', '기타'];
-            return (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-                    <div className="quantum-card rounded-2xl p-6 w-full max-w-md space-y-4 border border-white/10" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-sm font-bold text-white font-grotesk">{editData ? '종목 편집' : '종목 추가'}</h3>
-                            <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><Icons.X className="w-4 h-4" /></button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-2">
-                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">추가할 계좌</label>
-                                <select value={form.accountId} onChange={e => setForm({...form, accountId: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors">
-                                    {accounts.map(a => <option key={a.id} value={a.id} className="bg-slate-900">{a.accountName} ({a.broker})</option>)}
-                                </select>
-                            </div>
-                            <div className="col-span-2 sm:col-span-1">
-                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">종목명</label>
-                                <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors" placeholder="NVIDIA" />
-                            </div>
-                            <div className="col-span-2 sm:col-span-1">
-                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">티커</label>
-                                <input value={form.ticker} onChange={e => setForm({...form, ticker: e.target.value.toUpperCase()})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors" placeholder="NVDA" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">수량</label>
-                                <input type="number" value={form.quantity} onChange={e => setForm({...form, quantity: parseFloat(e.target.value) || 0})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">평균단가</label>
-                                <input type="number" step="0.01" value={form.avgPrice} onChange={e => setForm({...form, avgPrice: parseFloat(e.target.value) || 0})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors" />
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">통화</label>
-                                <select value={form.currency} onChange={e => setForm({...form, currency: e.target.value, market: e.target.value === 'USD' ? 'US' : 'KR'})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors">
-                                    <option value="USD" className="bg-slate-900">USD</option>
-                                    <option value="KRW" className="bg-slate-900">KRW</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">자산군</label>
-                                <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors">
-                                    {categories.map(c => <option key={c} value={c} className="bg-slate-900">{c}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                        <button onClick={() => { onSave(form); onClose(); }} disabled={!form.name}
-                            className="w-full py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed">
-                            {editData ? '수정 완료' : '종목 추가'}
-                        </button>
-                    </div>
-                </div>
-            );
-        };
-
-        const AIDiagnosticsModal = ({ isOpen, onClose, result, isLoading }) => {
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-                    <div className="quantum-card rounded-2xl p-6 w-full max-w-lg space-y-4 border border-white/10" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30">
-                                    <Icons.Bot className="w-4 h-4 text-violet-400" />
-                                </div>
-                                <h3 className="text-sm font-bold text-white font-grotesk">AI 포트폴리오 진단</h3>
-                            </div>
-                            <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><Icons.X className="w-4 h-4" /></button>
-                        </div>
-                        {isLoading ? (
-                            <div className="flex flex-col items-center justify-center py-10 gap-3">
-                                <div className="w-10 h-10 border-2 border-violet-500/30 border-t-violet-400 rounded-full animate-spin" />
-                                <span className="text-xs text-slate-400">포트폴리오를 분석하고 있습니다...</span>
-                            </div>
-                        ) : result ? (
-                            <div className="space-y-3">
-                                {result.split('\n').filter(l => l.trim()).map((line, idx) => (
-                                    <div key={idx} className="flex items-start gap-2.5 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 flex items-center justify-center text-[10px] font-black text-violet-300 shrink-0 mt-0.5">{idx + 1}</span>
-                                        <p className="text-xs text-slate-300 leading-relaxed">{line}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 text-slate-500 text-xs">진단 결과가 없습니다. 다시 시도해주세요.</div>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        const PersonPanel = ({ personKey, person, priceCache, exchangeRate, portfolio, onUpdate, data }) => {
-            const [showAddModal, setShowAddModal] = useState(false);
-            const [showAddAccountModal, setShowAddAccountModal] = useState(false);
-            const [editingHolding, setEditingHolding] = useState(null);
-
-            const totalValue = getPersonTotalValue(person, priceCache, exchangeRate);
-            const totalCost = getPersonTotalCost(person, exchangeRate);
-            const totalDebt = getPersonTotalDebt(person);
-            const netValue = totalValue - totalDebt;
-            const totalPnL = totalValue - totalCost;
-            const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
-            const categoryData = getPersonCategoryBreakdown(person, priceCache, exchangeRate);
-            const holdingsList = getPersonHoldingsList(person, priceCache, exchangeRate);
-            const isPositive = totalPnL >= 0;
-
-            const handleAddAccount = (form) => {
-                if (!portfolio) return;
-                const newPortfolio = JSON.parse(JSON.stringify(portfolio));
-                const personData = newPortfolio.persons[personKey];
-                personData.accounts.push({
-                    id: `a-${Date.now()}`,
-                    accountName: form.accountName,
-                    broker: form.broker,
-                    accountType: form.accountType,
-                    holdings: []
-                });
-                onUpdate({ ...data, portfolio: newPortfolio });
-            };
-
-            const handleDeleteAccount = (accountId) => {
-                if (!confirm('이 계좌와 포함된 모든 종목을 삭제하시겠습니까?')) return;
-                const newPortfolio = JSON.parse(JSON.stringify(portfolio));
-                const personData = newPortfolio.persons[personKey];
-                personData.accounts = personData.accounts.filter(a => a.id !== accountId);
-                onUpdate({ ...data, portfolio: newPortfolio });
-            };
-
-            const handleAddHolding = (form) => {
-                if (!form.accountId || !portfolio) return;
-                const newPortfolio = JSON.parse(JSON.stringify(portfolio));
-                const personData = newPortfolio.persons[personKey];
-                
-                // 만약 수정(Edit) 모드라면, 기존 종목을 삭제(계좌 이동 가능성 대비 전체 검색)
-                if (form.id) {
-                    personData.accounts.forEach(a => {
-                        a.holdings = a.holdings.filter(h => h.id !== form.id);
-                    });
-                }
-                
-                const account = personData.accounts.find(a => a.id === form.accountId);
-                if (!account) return;
-                
-                const newHolding = { ...form, id: form.id || `h-${Date.now()}` };
-                delete newHolding.accountId;
-                account.holdings.push(newHolding);
-                onUpdate({ ...data, portfolio: newPortfolio });
-            };
-
-            const handleEditClick = (accountId, h) => {
-                setEditingHolding({ ...h, accountId });
-                setShowAddModal(true);
-            };
-
-            const handleDeleteHolding = (accountId, holdingId) => {
-                if (!confirm('해당 종목을 삭제하시겠습니까?')) return;
-                const newPortfolio = JSON.parse(JSON.stringify(portfolio));
-                const personData = newPortfolio.persons[personKey];
-                const account = personData.accounts.find(a => a.id === accountId);
-                if (!account) return;
-                account.holdings = account.holdings.filter(h => h.id !== holdingId);
-                onUpdate({ ...data, portfolio: newPortfolio });
-            };
-
-            return (
-                <div className="flex-1 min-w-0 flex flex-col space-y-4">
-                    {/* Person Header */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0"
-                            style={{ background: `${person.color}15`, color: person.color, border: `1px solid ${person.color}40`, boxShadow: `0 0 20px ${person.color}15` }}>
-                            {person.name.charAt(0)}
-                        </div>
-                        <div className="min-w-0 flex-1 flex items-center justify-between">
-                            <div>
-                                <div className="text-sm font-bold text-white font-grotesk">{person.name}</div>
-                                <div className="text-[10px] text-slate-500">{(person.accounts || []).length}개 계좌 · {holdingsList.length}개 종목</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Summary Stats (Fixed Height approx 120px) */}
-                    <GlassCard className="p-4 flex flex-col justify-center h-[120px]">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">총 평가액</div>
-                                <div className="text-lg font-black font-grotesk text-white leading-none">₩{formatCurrency(totalValue)}</div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">총 수익/손실</div>
-                                <div className={`text-lg font-black font-grotesk leading-none ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {isPositive ? '+' : ''}{totalPnLPercent.toFixed(2)}%
-                                </div>
-                                <div className={`text-[10px] font-grotesk mt-0.5 ${isPositive ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
-                                    {isPositive ? '+' : ''}₩{formatCurrency(totalPnL)}
-                                </div>
-                            </div>
-                        </div>
-                        {totalDebt > 0 && (
-                            <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between">
-                                <span className="text-[10px] text-rose-400/80 uppercase tracking-wider">부채 차감</span>
-                                <span className="text-[11px] font-grotesk text-rose-400 font-bold">-₩{formatCurrency(totalDebt)}</span>
-                            </div>
-                        )}
-                        {totalDebt > 0 && (
-                            <div className="flex items-center justify-between mt-0.5">
-                                <span className="text-[10px] text-slate-400 uppercase tracking-wider">순자산</span>
-                                <span className="text-xs font-grotesk text-white font-black">₩{formatCurrency(netValue)}</span>
-                            </div>
-                        )}
-                    </GlassCard>
-
-                    {/* Doughnut Chart (Fixed Height) */}
-                    <GlassCard className="p-4 h-[240px] flex flex-col justify-center">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-grotesk flex items-center gap-1.5 shrink-0">
-                            <Icons.PieChart className="w-3 h-3" /> 자산군 비중
-                        </div>
-                        <PortfolioDoughnutChart data={categoryData} personColor={person.color} />
-                    </GlassCard>
-
-                    {/* Bar Chart (Fixed Height) */}
-                    <GlassCard className="p-4 h-[240px] flex flex-col justify-center">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-grotesk flex items-center gap-1.5 shrink-0">
-                            <Icons.Activity className="w-3 h-3" /> 종목별 평가금액
-                        </div>
-                        <PortfolioBarChart holdings={holdingsList} personColor={person.color} />
-                    </GlassCard>
-
-                    {/* Account Cards */}
-                    <div className="flex-1">
-                        <div className="flex items-center justify-between mb-3 mt-1">
-                            <div className="text-[10px] text-slate-500 uppercase tracking-wider font-grotesk flex items-center gap-1.5">
-                                <Icons.Wallet className="w-3 h-3" /> 계좌별 보유현황
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => setShowAddAccountModal(true)} className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10">
-                                    <Icons.Plus className="w-3 h-3" /> 계좌 추가
-                                </button>
-                                <button onClick={() => {
-                                    if (person.accounts && person.accounts.length > 0) {
-                                        setEditingHolding(null);
-                                        setShowAddModal(true);
-                                    } else {
-                                        alert('먼저 계좌를 추가해주세요.');
-                                    }
-                                }} className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-cyan-500/10">
-                                    <Icons.Plus className="w-3 h-3" /> 종목 추가
-                                </button>
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            {(person.accounts || []).map(account => (
-                                <AccountCardComponent key={account.id} account={account} priceCache={priceCache} exchangeRate={exchangeRate} personColor={person.color} onDeleteAccount={handleDeleteAccount} onDeleteHolding={handleDeleteHolding} onEditHolding={handleEditClick} />
-                            ))}
-                        </div>
-                    </div>
-
-                    <AddHoldingModal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setEditingHolding(null); }} onSave={handleAddHolding} accounts={person.accounts || []} editData={editingHolding} />
-                    <AddAccountModal isOpen={showAddAccountModal} onClose={() => setShowAddAccountModal(false)} onSave={handleAddAccount} />
-
-                </div>
-            );
-        };
-
-        const InvestmentPortfolio = ({ data, onUpdate }) => {
-            const portfolio = data.portfolio || generateInitialData().portfolio;
-            const priceCache = portfolio.priceCache || {};
-            const exchangeRate = portfolio.exchangeRate || 1380;
-            const [isRefreshing, setIsRefreshing] = useState(false);
-            const [refreshError, setRefreshError] = useState(null);
-            const [showAIModal, setShowAIModal] = useState(false);
-            const [aiResult, setAiResult] = useState(null);
-            const [aiLoading, setAiLoading] = useState(false);
-            const [showSettings, setShowSettings] = useState(false);
-            const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('portfolio_gemini_key') || '');
-            const [keyInput, setKeyInput] = useState(geminiKey);
-
-            const sua = portfolio.persons?.sua || { name: '수아', color: '#ec4899', accounts: [], debts: [] };
-            const yungki = portfolio.persons?.yungki || { name: '융기', color: '#06b6d4', accounts: [], debts: [] };
-
-            const suaTotalValue = getPersonTotalValue(sua, priceCache, exchangeRate);
-            const yungkiTotalValue = getPersonTotalValue(yungki, priceCache, exchangeRate);
-            const combinedTotalValue = suaTotalValue + yungkiTotalValue;
-            const combinedTotalCost = getPersonTotalCost(sua, exchangeRate) + getPersonTotalCost(yungki, exchangeRate);
-            const combinedDebt = getPersonTotalDebt(sua) + getPersonTotalDebt(yungki);
-            const combinedNetValue = combinedTotalValue - combinedDebt;
-            const combinedPnL = combinedTotalValue - combinedTotalCost;
-            const combinedPnLPercent = combinedTotalCost > 0 ? (combinedPnL / combinedTotalCost) * 100 : 0;
-            const isPositive = combinedPnL >= 0;
-
-            // --- Real-time exchange rate ---
-            const fetchExchangeRate = async () => {
-                try {
-                    const url = `https://api.allorigins.win/get?url=${encodeURIComponent('https://open.er-api.com/v6/latest/USD')}`;
-                    const res = await fetch(url);
-                    const json = await res.json();
-                    const parsed = JSON.parse(json.contents);
-                    if (parsed && parsed.rates && parsed.rates.KRW) return parsed.rates.KRW;
-                    return null;
-                } catch (e) {
-                    console.warn('Exchange rate fetch failed:', e);
-                    return null;
-                }
-            };
-
-            // --- Real-time price fetching ---
-            const fetchPrice = async (ticker) => {
-                try {
-                    let queryTicker = ticker.trim().toUpperCase();
-                    const isKoreanCode = /^\d{6}(?:\.KS|\.KQ)?$/.test(queryTicker);
-                    
-                    if (/^\d{6}$/.test(queryTicker)) {
-                        queryTicker += '.KS';
-                    }
-
-                    const attemptFetchYahoo = async (tckr) => {
-                        const cb = Date.now();
-                        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${tckr}?interval=1d&range=1d&_=${cb}`;
-                        
-                        try {
-                            const res1 = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`);
-                            if (res1.ok) {
-                                const json1 = await res1.json();
-                                if (json1.chart && json1.chart.result) {
-                                    return json1.chart.result[0].meta.regularMarketPrice;
-                                }
-                            }
-                        } catch(e) {}
-
-                        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                        const res = await fetch(url);
-                        const json = await res.json();
-                        if (!json.contents) throw new Error('Invalid response from allorigins');
-                        const parsed = JSON.parse(json.contents);
-                        return parsed.chart.result[0].meta.regularMarketPrice;
-                    };
-
-                    const attemptFetchNaver = async (tckr) => {
-                        const code = tckr.replace('.KS', '').replace('.KQ', '');
-                        const naverUrl = `https://m.stock.naver.com/api/stock/${code}/integration`;
-                        
-                        try {
-                            const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(naverUrl)}`);
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (data && data.dealTrendInfos && data.dealTrendInfos.length > 0) {
-                                    return parseFloat(data.dealTrendInfos[0].closePrice.replace(/,/g, ''));
-                                }
-                            }
-                        } catch(e) {}
-
-                        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(naverUrl)}`;
-                        const res = await fetch(url);
-                        const json = await res.json();
-                        if (!json.contents) throw new Error('Invalid response from allorigins naver');
-                        const parsed = JSON.parse(json.contents);
-                        if (parsed && parsed.dealTrendInfos && parsed.dealTrendInfos.length > 0) {
-                            return parseFloat(parsed.dealTrendInfos[0].closePrice.replace(/,/g, ''));
-                        }
-                        throw new Error('Naver fetch failed');
-                    };
-
-                    try {
-                        if (isKoreanCode) {
-                            try {
-                                return await attemptFetchNaver(queryTicker);
-                            } catch (e) {
-                                return await attemptFetchYahoo(queryTicker);
-                            }
-                        } else {
-                            return await attemptFetchYahoo(queryTicker);
-                        }
-                    } catch (err) {
-                        if (isKoreanCode && queryTicker.endsWith('.KS')) {
-                            return await attemptFetchYahoo(queryTicker.replace('.KS', '.KQ'));
-                        }
-                        throw err;
-                    }
-                } catch (e) {
-                    console.warn(`Price fetch failed for ${ticker}:`, e);
-                    return null;
-                }
-            };
-
-            const refreshAllPrices = async () => {
-                setIsRefreshing(true);
-                setRefreshError(null);
-                try {
-                    // Fetch live exchange rate first
-                    const liveRate = await fetchExchangeRate();
-                    const newRate = liveRate || exchangeRate;
-
-                    const tickers = getAllTickers(portfolio);
-                    const newCache = { ...priceCache };
-                    let successCount = 0;
-                    for (const ticker of tickers) {
-                        const price = await fetchPrice(ticker);
-                        if (price !== null) {
-                            newCache[ticker] = price;
-                            successCount++;
-                        }
-                        await new Promise(r => setTimeout(r, 400));
-                    }
-                    const newPortfolio = { ...portfolio, priceCache: newCache, exchangeRate: newRate, lastPriceUpdate: new Date().toISOString() };
-                    onUpdate({ ...data, portfolio: newPortfolio });
-                    if (successCount < tickers.length) {
-                        setRefreshError(`${tickers.length - successCount}개 종목 시세 갱신 실패`);
-                    }
-                } catch (err) {
-                    setRefreshError('시세 갱신 중 오류가 발생했습니다');
-                    console.error(err);
-                } finally {
-                    setIsRefreshing(false);
-                }
-            };
-
-            // --- Portfolio reset ---
-            const handleResetPortfolio = () => {
-                if (confirm('포트폴리오 데이터를 초기화하시겠습니까? 모든 종목 데이터가 샘플로 대체됩니다.')) {
-                    const freshPortfolio = generateInitialData().portfolio;
-                    onUpdate({ ...data, portfolio: freshPortfolio });
-                }
-            };
-
-            // --- Save Gemini key ---
-            const handleSaveKey = () => {
-                localStorage.setItem('portfolio_gemini_key', keyInput);
-                setGeminiKey(keyInput);
-                setShowSettings(false);
-            };
-
-            // --- AI Diagnostics (Gemini API with local fallback) ---
-            const runAIDiagnostics = async () => {
-                setAiLoading(true);
-                setShowAIModal(true);
-                setAiResult(null);
-                try {
-                    const suaHoldings = getPersonHoldingsList(sua, priceCache, exchangeRate);
-                    const yungkiHoldings = getPersonHoldingsList(yungki, priceCache, exchangeRate);
-                    const suaCats = getPersonCategoryBreakdown(sua, priceCache, exchangeRate);
-                    const yungkiCats = getPersonCategoryBreakdown(yungki, priceCache, exchangeRate);
-
-                    const activeKey = geminiKey || localStorage.getItem('portfolio_gemini_key');
-
-                    if (activeKey) {
-                        // --- Gemini API call ---
-                        try {
-                            const prompt = `당신은 금융 자산 배분 전문가입니다. 아래 부부 포트폴리오를 분석하고, 장단점 및 자산 배분 조언을 정확히 3줄로 요약해주세요. 각 줄 앞에 이모지를 붙여주세요.\n\n[수아 포트폴리오 (총 ₩${formatCurrency(suaTotalValue)})]\n자산군: ${suaCats.map(c => `${c.name} ${((c.value/(suaTotalValue||1))*100).toFixed(1)}%`).join(', ')}\n종목: ${suaHoldings.map(h => `${h.name}(${h.ticker})`).join(', ')}\n\n[융기 포트폴리오 (총 ₩${formatCurrency(yungkiTotalValue)})]\n자산군: ${yungkiCats.map(c => `${c.name} ${((c.value/(yungkiTotalValue||1))*100).toFixed(1)}%`).join(', ')}\n종목: ${yungkiHoldings.map(h => `${h.name}(${h.ticker})`).join(', ')}\n\n분석 포인트: 기술주 편중도, 섹터 분산도, 환 리스크, 종목 중복 리스크, 채권/대체자산 부재 여부\n반드시 한국어로 3줄만 출력하세요.`;
-
-                            const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                            });
-                            const geminiData = await geminiRes.json();
-                            const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if (text) {
-                                setAiResult(text.trim());
-                                setAiLoading(false);
-                                return;
-                            }
-                        } catch (apiErr) {
-                            console.warn('Gemini API failed, falling back to local analysis:', apiErr);
-                        }
-                    }
-
-                    // --- Local fallback analysis ---
-                    const suaTechRatio = suaCats.filter(c => c.name.includes('미국')).reduce((s, c) => s + c.value, 0) / (suaTotalValue || 1) * 100;
-                    const yungkiTechRatio = yungkiCats.filter(c => c.name.includes('미국')).reduce((s, c) => s + c.value, 0) / (yungkiTotalValue || 1) * 100;
-                    const combinedTechRatio = (suaTechRatio + yungkiTechRatio) / 2;
-                    let analysis = [];
-
-                    if (combinedTechRatio > 70) {
-                        analysis.push(`⚠️ 가구 전체 포트폴리오의 미국주식 비중이 ${combinedTechRatio.toFixed(0)}%로 높습니다. 글로벌 분산과 채권/리츠 비중 확대를 권장합니다.`);
-                    } else if (combinedTechRatio > 50) {
-                        analysis.push(`📊 미국주식 비중이 ${combinedTechRatio.toFixed(0)}%로 양호한 수준이나, 신흥국 및 대체자산(금, 리츠) 편입을 통해 리스크를 더 줄일 수 있습니다.`);
-                    } else {
-                        analysis.push(`✅ 자산군이 비교적 잘 분산되어 있습니다. 미국주식 ${combinedTechRatio.toFixed(0)}%, 다양한 자산군 보유로 안정적 포트폴리오를 구축했습니다.`);
-                    }
-
-                    const suaUnique = new Set(suaHoldings.map(h => h.ticker));
-                    const yungkiUnique = new Set(yungkiHoldings.map(h => h.ticker));
-                    const overlap = [...suaUnique].filter(t => yungkiUnique.has(t));
-                    if (overlap.length > 0) {
-                        analysis.push(`🔄 수아와 융기가 공통 보유한 종목(${overlap.join(', ')})이 있어 가구 차원 집중 리스크가 존재합니다. 한쪽은 다른 섹터로 분산을 고려해보세요.`);
-                    } else {
-                        analysis.push(`👍 수아와 융기의 종목이 겹치지 않아 가구 차원의 분산이 잘 되어 있습니다.`);
-                    }
-
-                    const hasETF = [...suaHoldings, ...yungkiHoldings].some(h => h.category?.includes('ETF'));
-                    const hasBonds = [...suaHoldings, ...yungkiHoldings].some(h => h.name?.includes('채권') || h.name?.includes('Bond'));
-                    if (!hasBonds) {
-                        analysis.push(`💡 채권형 자산이 없습니다. 국채 ETF(TLT, KODEX 국채 등)를 5~15% 비중으로 편입하면 변동성을 효과적으로 줄일 수 있습니다.`);
-                    } else if (!hasETF) {
-                        analysis.push(`💡 개별 종목 리스크를 낮추기 위해 S&P500 또는 글로벌 ETF 편입을 추천합니다.`);
-                    } else {
-                        analysis.push(`💡 ETF와 개별 종목을 적절히 혼합하고 있습니다. 정기적인 리밸런싱(분기 1회)으로 목표 비중을 유지하세요.`);
-                    }
-
-                    if (!activeKey) {
-                        analysis.push('\n⚙️ Gemini API 키를 설정하면 AI가 더 정밀한 분석을 제공합니다.');
-                    }
-                    setAiResult(analysis.join('\n'));
-                } catch (err) {
-                    setAiResult('분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-                    console.error(err);
-                } finally {
-                    setAiLoading(false);
-                }
-            };
-
-            const lastUpdate = portfolio.lastPriceUpdate ? new Date(portfolio.lastPriceUpdate).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    {/* Header */}
-                    <GlassCard className="p-5">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center shadow-lg shadow-violet-500/10">
-                                    <Icons.PieChart className="w-6 h-6 text-violet-400" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-black text-white font-grotesk tracking-tight">Investment Portfolio</h2>
-                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Dual Portfolio Comparison Engine</div>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {lastUpdate && (
-                                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1.5">
-                                        <Icons.History className="w-3 h-3" />
-                                        시세: {lastUpdate}
-                                    </div>
-                                )}
-                                <div className="text-[10px] font-grotesk flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-lg px-2.5 py-1.5">
-                                    <Icons.Globe className="w-3 h-3 text-slate-500" />
-                                    <span className="text-emerald-400 font-bold">$1 = ₩{formatCurrency(exchangeRate)}</span>
-                                </div>
-                                <button onClick={refreshAllPrices} disabled={isRefreshing}
-                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${isRefreshing ? 'bg-cyan-500/5 border-cyan-500/20 text-cyan-500/50' : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 hover:shadow-lg hover:shadow-cyan-500/10'}`}>
-                                    <Icons.RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                                    {isRefreshing ? '갱신 중...' : '시세 갱신'}
-                                </button>
-                                <button onClick={runAIDiagnostics}
-                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 text-violet-300 hover:from-violet-500/30 hover:to-fuchsia-500/30 hover:shadow-lg hover:shadow-violet-500/10 transition-all">
-                                    <Icons.Bot className="w-3.5 h-3.5" />
-                                    AI 진단
-                                </button>
-                                <button onClick={() => setShowSettings(!showSettings)}
-                                    className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all">
-                                    <Icons.Settings className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Settings Panel */}
-                        {showSettings && (
-                            <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-3 animate-fade-in">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-grotesk font-bold">⚙️ Portfolio Settings</span>
-                                    <button onClick={() => setShowSettings(false)} className="text-slate-500 hover:text-white"><Icons.X className="w-3.5 h-3.5" /></button>
-                                </div>
-                                <div className="flex items-end gap-2">
-                                    <div className="flex-1">
-                                        <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Gemini API Key</label>
-                                        <input type="password" value={keyInput} onChange={e => setKeyInput(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-violet-500/50 focus:outline-none transition-colors font-mono"
-                                            placeholder="AIzaSy..." />
-                                    </div>
-                                    <button onClick={handleSaveKey}
-                                        className="px-3 py-2 rounded-lg text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all shrink-0">
-                                        {geminiKey ? '업데이트' : '저장'}
-                                    </button>
-                                </div>
-                                {geminiKey && <div className="text-[10px] text-emerald-400 flex items-center gap-1"><Icons.CheckCircle2 className="w-3 h-3" /> Gemini API 키가 설정되어 있습니다</div>}
-                                <div className="pt-2 border-t border-white/[0.06]">
-                                    <button onClick={handleResetPortfolio}
-                                        className="text-[10px] font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-rose-500/10 transition-all">
-                                        <Icons.RefreshCw className="w-3 h-3" /> 포트폴리오 데이터 초기화 (샘플 데이터로 복원)
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {refreshError && (
-                            <div className="mt-3 flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-                                <Icons.AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                                {refreshError}
-                            </div>
-                        )}
-
-                        {/* Combined Summary Bar */}
-                        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
-                            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                                <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-1 font-grotesk">합산 평가액</div>
-                                <div className="text-md font-black font-grotesk text-white">₩{formatCurrency(combinedTotalValue)}</div>
-                            </div>
-                            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                                <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-1 font-grotesk">합산 수익률</div>
-                                <div className={`text-md font-black font-grotesk ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {isPositive ? '+' : ''}{combinedPnLPercent.toFixed(2)}%
-                                </div>
-                            </div>
-                            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                                <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-1 font-grotesk">합산 부채</div>
-                                <div className="text-md font-black font-grotesk text-rose-400">₩{formatCurrency(combinedDebt)}</div>
-                            </div>
-                            <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                                <div className="text-[9px] text-slate-500 uppercase tracking-wider mb-1 font-grotesk">순자산</div>
-                                <div className="text-md font-black font-grotesk text-white">₩{formatCurrency(combinedNetValue)}</div>
-                            </div>
-                        </div>
-
-                        {/* Share Bar */}
-                        <div className="mt-3">
-                            <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1.5">
-                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{background: sua.color}} /> {sua.name}</span>
-                                <span className="flex items-center gap-1">{yungki.name} <span className="w-2 h-2 rounded-full" style={{background: yungki.color}} /></span>
-                            </div>
-                            <div className="w-full h-2 rounded-full overflow-hidden flex bg-white/[0.05]">
-                                <div className="h-full rounded-l-full transition-all duration-500" style={{ width: `${combinedTotalValue > 0 ? (suaTotalValue / combinedTotalValue * 100) : 50}%`, background: `linear-gradient(90deg, ${sua.color}, ${sua.color}aa)` }} />
-                                <div className="h-full rounded-r-full transition-all duration-500" style={{ width: `${combinedTotalValue > 0 ? (yungkiTotalValue / combinedTotalValue * 100) : 50}%`, background: `linear-gradient(90deg, ${yungki.color}aa, ${yungki.color})` }} />
-                            </div>
-                            <div className="flex items-center justify-between text-[10px] font-grotesk text-slate-400 mt-1">
-                                <span>{combinedTotalValue > 0 ? (suaTotalValue / combinedTotalValue * 100).toFixed(1) : 50}%</span>
-                                <span>{combinedTotalValue > 0 ? (yungkiTotalValue / combinedTotalValue * 100).toFixed(1) : 50}%</span>
-                            </div>
-                        </div>
-                    </GlassCard>
-
-                    {/* 1:1 Split Layout */}
-                    <div className="flex flex-col lg:flex-row gap-6">
-                        <PersonPanel personKey="sua" person={sua} priceCache={priceCache} exchangeRate={exchangeRate} portfolio={portfolio} onUpdate={onUpdate} data={data} />
-                        
-                        {/* Center Divider */}
-                        <div className="hidden lg:flex flex-col items-center gap-2 py-8">
-                            <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                            <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.08] flex items-center justify-center">
-                                <Icons.ArrowLeftRight className="w-3.5 h-3.5 text-slate-600" />
-                            </div>
-                            <div className="w-px flex-1 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                        </div>
-                        <div className="lg:hidden w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-
-                        <PersonPanel personKey="yungki" person={yungki} priceCache={priceCache} exchangeRate={exchangeRate} portfolio={portfolio} onUpdate={onUpdate} data={data} />
-                    </div>
-
-                    {/* AI Modal */}
-                    <AIDiagnosticsModal isOpen={showAIModal} onClose={() => setShowAIModal(false)} result={aiResult} isLoading={aiLoading} />
-                </div>
-            );
-        };
-
         function App() {
             const [user, setUser] = useState(null);
             const [dashboardViewDate, setDashboardViewDate] = useState(() => {
@@ -4306,7 +2866,6 @@
                 const saved = localStorage.getItem('financialData');
                 const parsed = saved ? JSON.parse(saved) : generateInitialData();
                 if (!parsed.salary) parsed.salary = generateInitialData().salary;
-                if (!parsed.portfolio) parsed.portfolio = generateInitialData().portfolio;
                 if (!parsed.meta) parsed.meta = {}; if (!parsed.meta.goals) parsed.meta.goals = { loan: 30, invest: 30, netWorth: 1000000000 }; if (!parsed.meta.hiddenRows) parsed.meta.hiddenRows = {};
                 return parsed;
             });
@@ -4333,7 +2892,6 @@
             const handleResetData = () => { if (confirm("Are you sure you want to reset all data? This cannot be undone.")) { const initial = generateInitialData(); setFinancialData(initial); localStorage.removeItem('financialData'); } };
             const TABS = [
                 {id: 'dashboard', label: 'Dashboard', icon: Icons.LayoutDashboard}, 
-                {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart},
                 {id: 'assets', label: 'Asset Sheets', icon: Icons.Table2}, 
                 {id: 'budget', label: 'Income & Expenses', icon: Icons.Banknote}, 
                 {id: 'loans', label: 'Loans & Debt', icon: Icons.CreditCard}, 
@@ -4372,7 +2930,7 @@
                                             </div>
                                         </div>
                                         <div>
-                                            <h1 className="text-md font-bold tracking-tight font-grotesk text-white leading-none">Our-Vault</h1>
+                                            <h1 className="text-md font-bold tracking-tight font-grotesk text-white leading-none">QuantumVault</h1>
                                             <p className="text-[8px] text-white/40 uppercase tracking-widest mt-0.5 leading-none">Holographic Telemetry Console</p>
                                         </div>
                                     </div>
@@ -4473,7 +3031,6 @@
                                     {activeTab === 'loans' && <LoanManagement data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
                                     {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} categories={STOCK_PROFIT_CATEGORIES} hasCategory={true} darkMode={darkMode} />}
                                     {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
-                                    {activeTab === 'portfolio' && <InvestmentPortfolio data={financialData} onUpdate={updateFinancialData} />}
                                 </div>
                             </main>
                         </div>
@@ -4484,21 +3041,4 @@
 
                 const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-    </script>
-    <script>
-        (function () {
-            try {
-                var src = document.getElementById('app-jsx').textContent;
-                var compiled = Babel.transform(src, {
-                    presets: ['react', ['env', { targets: { browsers: ['last 2 versions'] } }]],
-                    plugins: ['proposal-class-properties', 'proposal-optional-chaining', 'proposal-nullish-coalescing-operator']
-                }).code;
-                eval(compiled);
-            } catch (e) {
-                showError('Babel / JS Error', e.message + '\n\nStack:\n' + (e.stack || ''));
-            }
-        })();
-    </script>
-</body>
-
-</html>
+    

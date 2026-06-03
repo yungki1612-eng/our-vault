@@ -1,0 +1,243 @@
+355:                if (confirm("데이터를 초기화하고 복구하시겠습니까?")) {
+366:                            <h2 className="text-2xl font-bold text-slate-800 mb-2">시스템 오류 발생</h2>
+367:                            <p className="text-slate-600 mb-6">오류 내용: {this.state.error?.message || "알 수 없는 오류"}</p>
+368:                            <button onClick={this.handleReset} className="bg-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-700 transition-colors shadow-lg">데이터 초기화 및 복구</button>
+421:                    { id: 1, name: '융기', values: {} },
+422:                    { id: 2, name: '수아', values: {} }
+433:            SAVINGS:       { label: '예적금',   color: '#3B82F6', bg: 'bg-blue-50',    text: 'text-blue-700' }, 
+434:            INVESTMENT:    { label: '주식',     color: '#8B5CF6', bg: 'bg-violet-50',  text: 'text-violet-700' }, 
+435:            COIN:          { label: '코인',     color: '#F59E0B', bg: 'bg-amber-50',   text: 'text-amber-700' }, 
+436:            REAL_ESTATE:   { label: '부동산',   color: '#10B981', bg: 'bg-emerald-50', text: 'text-emerald-700' }, 
+437:            PENSION:       { label: '연금',     color: '#EC4899', bg: 'bg-pink-50',    text: 'text-pink-700' }  
+441:            APARTMENT: { label: '아파트', bg: 'bg-indigo-50', text: 'text-indigo-700' },
+442:            OFFICETEL: { label: '오피스텔', bg: 'bg-blue-50', text: 'text-blue-700' },
+443:            COMMERCIAL: { label: '상가/사무실', bg: 'bg-emerald-50', text: 'text-emerald-700' },
+444:            LAND: { label: '토지', bg: 'bg-amber-50', text: 'text-amber-700' },
+445:            OTHER: { label: '기타', bg: 'bg-slate-50', text: 'text-slate-700' }
+449:            INCOME:  { label: '수입', type: 'income',  bg: 'bg-sky-100',  text: 'text-sky-900' },
+450:            SAVING:  { label: '저축', type: 'expense', bg: 'bg-teal-50',  text: 'text-teal-700' }, 
+451:            INVEST:  { label: '투자', type: 'expense', bg: 'bg-indigo-50', text: 'text-indigo-700' }, 
+452:            EXPENSE: { label: '지출', type: 'expense', bg: 'bg-rose-50',  text: 'text-rose-700' },        
+455:        // 주식실현손익 카테고리 (항목1)
+457:            DIVIDEND:     { label: '배당금',   color: '#10B981', bg: 'bg-emerald-50',  text: 'text-emerald-700' },
+458:            STOCK_PROFIT: { label: '주식손익', color: '#6366F1', bg: 'bg-indigo-50',   text: 'text-indigo-700' },
+461:        // 주식실현손익 항목2 (사람)
+462:        const STOCK_PROFIT_PERSONS = ['융기', '수아'];
+467:                if (['SAVING', 'SAVINGS', '예적금', '현금', '적금', '예금', '저축', 'BANK', 'DEPOSIT'].some(k => upper.includes(k))) return 'SAVINGS';
+468:                if (['INVEST', 'STOCK', '주식', '증권', '펀드'].some(k => upper.includes(k))) return 'INVESTMENT';
+469:                if (['COIN', 'CRYPTO', '코인', '비트코인'].some(k => upper.includes(k))) return 'COIN';
+470:                if (['ESTATE', 'REAL', '부동산', '전세', '보증금', '아파트', '주택', 'REALESTATE'].some(k => upper.includes(k))) return 'REAL_ESTATE';
+471:                if (['PENSION', 'IRP', '퇴직연금', '연금'].some(k => upper.includes(k))) return 'PENSION';
+476:                if (['수입', '급여', '월급'].some(k => upper.includes(k))) return 'INCOME';
+477:                if (['저축', '적금'].some(k => upper.includes(k)))          return 'SAVING';
+478:                if (['투자'].some(k => upper.includes(k)))                  return 'INVEST';
+479:                if (['지출', '소비', '카드'].some(k => upper.includes(k))) return 'EXPENSE';
+484:                if (upper === 'LEASE' || upper.includes('전세')) return 'LEASE';
+528:            const matchKorean = cleanHeader.match(/^(\d{4})년\s*(\d{1,2})월$/);
+556:                if (lines.length < 2) return { success: false, message: "데이터가 부족합니다." };
+563:                if (Object.keys(monthIndices).length === 0) return { success: false, message: "날짜 컬럼을 찾을 수 없습니다." };
+570:                const col1Idx = hLower.indexOf('항목1');
+571:                const col2Idx = hLower.indexOf('항목2');
+572:                const col3Idx = hLower.indexOf('항목3');
+573:                const colNameIdx = hLower.indexOf('항목명');
+574:                const colTypeIdx = hLower.indexOf('구분');
+582:                        // 새 포맷: 항목1(배당금/주식손익), 항목2(융기/수아), 항목3(항목명)
+587:                        category = matchedKey ? matchedKey[0] : (catLabel.includes('배당') ? 'DIVIDEND' : 'STOCK_PROFIT');
+589:                        // 구형 포맷 호환: 항목명,구분 or 구분,항목명
+656:                if (result.success) { onUpdate(result.data); alert('데이터 업로드 완료!'); setIsUploading(false); }
+660:                        if (result.success) { onUpdate(result.data); alert('데이터 업로드 완료! (EUC-KR)'); }
+661:                        else { alert(`오류: ${result.message}\n(지원 형식: 2024-01, 24.01, 2024년 1월 등)`); }
+663:                    }).catch(() => { alert(`오류: ${result.message}\n(지원 형식: 2024-01, 24.01, 2024년 1월 등)`); setIsUploading(false); });
+665:            }).catch(err => { console.error(err); alert("파일 읽기 실패"); setIsUploading(false); });
+669:            assets: '자산관리',
+670:            budget: '수입지출',
+671:            loans: '대출관리',
+672:            stockProfit: '주식실현손익',
+699:                // Header: 항목1, 항목2, 항목3, YYYY-MM, ...
+701:                csvContent += '항목1,항목2,항목3,' + months.join(',') + '\n';
+717:                // Header: 항목명, YYYY-MM, ...
+718:                csvContent += '항목명,' + months.join(',') + '\n';
+728:                // 새 포맷: 항목1(배당금/주식손익), 항목2(융기/수아), 항목3(항목명), 날짜...
+729:                csvContent += '항목1,항목2,항목3,' + months.join(',') + '\n';
+739:                        // 배당금 카테고리면 dividend, 주식손익이면 profit
+806:                    // 간단한 사칙연산 수식 계산
+891:            if (title.includes('손익') || title.includes('수익')) { if (value > 0) valueColor = 'text-rose-400'; else if (value < 0) valueColor = 'text-blue-400'; }
+892:            if (title === '부채 (전세제외)') valueColor = 'text-rose-400';
+894:            const isNoHover = title === "총 자산" || title === "순자산";
+897:                <GlassCard className={`p-3 flex flex-col justify-between h-full min-h-[90px] relative overflow-visible ${isNoHover ? '' : 'group hover:-translate-y-1 transition-transform'} ${title === '총 자산' ? 'neon-border-cyan' : ''}`}>
+898:                    {title === '총 자산' && (
+911:                            <span className={`text-[10px] font-bold uppercase tracking-widest ${title === '총 자산' ? 'text-cyan-400 font-grotesk' : 'text-slate-400'}`}>
+912:                                {title === '총 자산' ? 'PORTFOLIO_AGGREGATED_WORTH' : title}
+959:                    <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500">실현손익</span><span className={`font-mono font-bold ${profit >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>{formatCurrency(profit)}</span></div>
+960:                    <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-slate-500">배당금</span><span className="font-mono font-bold text-emerald-400">{formatCurrency(dividend)}</span></div>
+962:                    <div className="flex justify-between items-center"><span className="text-[10px] font-bold text-indigo-400">합계</span><span className={`font-mono font-black ${profit + dividend >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>{formatCurrency(profit + dividend)}</span></div>
+971:            let assetStatus = "안정", assetColor = "text-emerald-500", assetBg = "bg-emerald-500";
+972:            if (isCapitalImpairment || debtRatio > 40) { assetStatus = "위험"; assetColor = "text-rose-500"; assetBg = "bg-rose-500"; } else if (debtRatio > 20) { assetStatus = "주의"; assetColor = "text-amber-500"; assetBg = "bg-amber-500"; }
+973:            let budgetStatus = "양호", budgetColor = "text-emerald-500", budgetBg = "bg-emerald-500";
+974:            if (income === 0) { budgetStatus = "정보 없음"; budgetColor = "text-slate-400"; budgetBg = "bg-slate-400"; } else if (savingsRate < 0) { budgetStatus = "적자"; budgetColor = "text-rose-500"; budgetBg = "bg-rose-500"; } else if (savingsRate < 20) { budgetStatus = "부족"; budgetColor = "text-amber-500"; budgetBg = "bg-amber-500"; }
+975:            let adviceTitle = "안정적인 자산 관리 중입니다.";
+976:            let adviceDetail = "부채 비율과 저축률이 건전합니다. 현재 기조를 유지하며 투자를 늘려보세요.";
+977:            if (assetStatus === "위험") { adviceTitle = "재무 구조 개선이 시급합니다."; adviceDetail = "부채 비율이 위험 수준입니다. 고정 지출을 줄이고 부채 상환을 최우선으로 하세요."; }
+978:            else if (budgetStatus === "적자") { adviceTitle = "지출 통제가 필요합니다."; adviceDetail = "수입보다 지출이 많습니다. 불필요한 소비를 점검하고 예산을 다시 세우세요."; }
+979:            else if (assetStatus === "주의" || budgetStatus === "부족") { adviceTitle = "조금 더 노력이 필요합니다."; adviceDetail = "저축률을 높이거나 부채를 조금 더 줄이면 훨씬 안정적인 상태가 될 것입니다."; }
+993:                            <div className={`${isWrapped ? 'bg-slate-50' : 'bg-black/20'} rounded-lg p-2 backdrop-blur-sm border ${isWrapped ? 'border-slate-100' : 'border-white/5'}`}><div className="flex justify-between items-center mb-1"><span className={`text-[8px] ${isWrapped ? 'text-slate-400' : 'text-indigo-200'} font-bold uppercase tracking-wider`}>Debt Ratio</span><span className={`text-[8px] font-bold px-1 py-0.5 rounded ${assetStatus === "안정" ? "bg-emerald-500/20 text-emerald-600" : assetStatus === "주의" ? "bg-amber-500/20 text-amber-600" : "bg-rose-500/20 text-rose-600"}`}>{assetStatus}</span></div><div className="flex items-end gap-1.5"><span className={`text-sm font-bold ${isWrapped ? 'text-slate-700' : 'text-white'} leading-tight`}>{isCapitalImpairment ? '자본잠식' : debtRatio.toFixed(1) + '%'}</span></div><div className={`${isWrapped ? 'bg-slate-200' : 'bg-white/10'} w-full h-1 rounded-full mt-1.5 overflow-hidden`}><div className={`h-full rounded-full transition-all duration-1000 ${assetBg}`} style={{ width: `${Math.min(debtRatio, 100)}%` }} /></div></div>
+994:                            <div className={`${isWrapped ? 'bg-slate-50' : 'bg-black/20'} rounded-lg p-2 backdrop-blur-sm border ${isWrapped ? 'border-slate-100' : 'border-white/5'}`}><div className="flex justify-between items-center mb-1"><span className={`text-[8px] ${isWrapped ? 'text-slate-400' : 'text-indigo-200'} font-bold uppercase tracking-wider`}>Savings</span><span className={`text-[8px] font-bold px-1 py-0.5 rounded ${budgetStatus === "양호" ? "bg-emerald-500/20 text-emerald-600" : budgetStatus === "적자" ? "bg-rose-500/20 text-rose-600" : "bg-amber-500/20 text-amber-600"}`}>{budgetStatus}</span></div><div className="flex items-end gap-1.5"><span className={`text-sm font-bold ${isWrapped ? 'text-slate-700' : 'text-white'} leading-tight`}>{savingsRate.toFixed(1)}%</span></div><div className={`${isWrapped ? 'bg-slate-200' : 'bg-white/10'} w-full h-1 rounded-full mt-1.5 overflow-hidden`}><div className={`h-full rounded-full transition-all duration-1000 ${budgetBg}`} style={{ width: `${Math.min(Math.max(0, savingsRate), 100)}%` }} /></div></div>
+1008:                    {!isWrapped && <div className="flex items-center gap-2 mb-3 text-slate-500 font-bold text-sm"><Icons.Edit2 className="w-4 h-4"/> 메모</div>}
+1011:                        placeholder="자유롭게 메모를 남기세요..." 
+1023:                { label: '주식', targetRatio: 37, color: '#818cf8', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200',
+1024:                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+1025:                { label: '코인', targetRatio: 3, color: '#f59e0b', bgColor: 'bg-amber-50', textColor: 'text-amber-600', borderColor: 'border-amber-200',
+1026:                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'').includes('코인')).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+1027:                { label: '대출상환', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-50', textColor: 'text-rose-600', borderColor: 'border-rose-200',
+1028:                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.replace(/\s/g,'') === '대출상환').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+1029:                { label: '신용카드', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-50', textColor: 'text-cyan-600', borderColor: 'border-cyan-200',
+1030:                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['융기','수아'].includes((b.category2||'').trim()) && b.name && b.name.includes('신용카드')).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+1061:                    {/* 수입 합계 헤더 */}
+1065:                            <span className="text-[11px] font-bold text-slate-500">이번 달 수입 합계</span>
+1069:                    {/* 배분 항목 테이블 */}
+1077:                                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${item.textColor} bg-white/70`}>목표 {item.targetRatio}%</span>
+1081:                                            <><svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>달성</>
+1083:                                            <>{item.isLimit ? '초과' : '진행중'}</>
+1095:                                        <span className="text-[8px] text-slate-400">목표</span>
+1099:                                        <span className="text-[8px] text-slate-400">실제</span>
+1107:                    {/* 연간 월별 달성 트래커 - 1줄 12박스 */}
+1110:                            <span className="text-[9px] font-bold text-slate-500">{stats.year}년 달성 현황</span>
+1111:                            <span className="text-[8px] text-slate-400">{stats.yearlyAchieved.filter(m => m.achieved).length} / 12개월</span>
+1117:                                    <div key={m.month} title={`${m.month}월${m.achieved ? ' ✓ 달성' : m.hasData ? ' 미달성' : ' 데이터 없음'}`}
+1135:                            <div><h4 className="text-sm font-bold text-slate-700">자산 배분 전략</h4><p className="text-[10px] text-slate-500 font-medium">{date} 기준</p></div>
+1157:                        const repaymentItem = monthData.budget.find(b => b.name.replace(/\s/g, '') === '대출상환' && !isItemHidden(b, 'budget', data.meta));
+1189:                            <h4 className="text-lg font-bold text-slate-800">{year}년 주요 재무 목표 달성 현황</h4>
+1197:                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">대출 상환 현황</span>
+1202:                                        {loanStats.actual >= loanStats.required ? '달성 완료' : '진행 중'}
+1204:                                    <button onClick={() => { const val = prompt("대출 상환 목표 비율(%)", loanGoal); if (val) onGoalChange('loan', Number(val)); }} className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors bg-slate-50 rounded-lg hover:bg-indigo-50"><Icons.Settings className="w-4 h-4"/></button>
+1211:                                <span className="text-slate-400">보너스 대비 상환 목표 {loanGoal}% ({formatCurrency(loanStats.required)})</span>
+1220:                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">누적 투자 현황</span>
+1225:                                        {investStats.actual >= investStats.target ? '달성 완료' : '진행 중'}
+1227:                                    <button onClick={() => { const val = prompt("투자 목표 비율(%)", investGoal); if (val) onGoalChange('invest', Number(val)); }} className="p-1.5 text-slate-300 hover:text-indigo-600 transition-colors bg-slate-50 rounded-lg hover:bg-indigo-50"><Icons.Settings className="w-4 h-4"/></button>
+1234:                                <span className="text-slate-400">수입 대비 투자 목표 {investGoal}% ({formatCurrency(investStats.target)})</span>
+1249:                    <div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><div className={`p-2 rounded-lg ${isSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}><Icons.Flag className="w-5 h-5" /></div><div><h4 className="text-sm font-bold text-slate-700">순자산 목표 (FIRE)</h4></div></div><button onClick={() => { const newGoal = prompt("목표 순자산 금액을 입력하세요 (원):", targetAmount); if (newGoal !== null && !isNaN(newGoal)) onGoalChange(Number(newGoal)); }} className="text-slate-400 hover:text-indigo-600"><Icons.Settings className="w-4 h-4" /></button></div>
+1251:                    <div className="flex justify-between items-center text-sm mt-auto"><div className="flex flex-col"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">목표 달성률</span><span className="font-bold text-slate-700">{progress.toFixed(1)}%</span></div><div className="flex flex-col items-end"><span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">목표 금액</span><span className="font-bold text-indigo-600">{formatCurrency(targetAmount)}</span></div></div>
+1271:            const items = [ { label: '지출', value: stats.totalExpense, color: '#fb7185', percent: getPercent(stats.totalExpense) }, { label: '저축', value: stats.totalSaving, color: '#34d399', percent: getPercent(stats.totalSaving) }, { label: '투자', value: stats.totalInvest, color: '#818cf8', percent: getPercent(stats.totalInvest) } ];
+1280:                    <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><div className="p-2 rounded-lg bg-indigo-100 text-indigo-600"><Icons.PieChart className="w-5 h-5" /></div><div><h4 className="text-sm font-bold text-slate-700">{year}년 누적 비율</h4><p className="text-[10px] text-slate-500 font-medium">Annual Total</p></div></div></div>
+1697:                        const cat2 = b.category2 || '기타';
+1720:                const hubNode = "총 수입";
+1722:                if (totalExpense > 0) addLink(hubNode, "총 지출", totalExpense);
+1723:                if (totalSaving > 0) addLink(hubNode, "총 저축", totalSaving);
+1724:                if (totalInvest > 0) addLink(hubNode, "총 투자", totalInvest);
+1725:                if (balance > 0) addLink(hubNode, "미분류", balance);
+1727:                const THRESHOLD = 1000000; // 100만원 미만 필터링
+1728:                Object.entries(expenseByDst).forEach(([dst, val]) => { if (val >= THRESHOLD) addLink("총 지출", dst, val); });
+1729:                Object.entries(savingByDst).forEach(([dst, val]) => { if (val >= THRESHOLD) addLink("총 저축", dst, val); });
+1730:                Object.entries(investByDst).forEach(([dst, val]) => { if (val >= THRESHOLD) addLink("총 투자", dst, val); });
+1737:                const isHub = name === "총 수입";
+1739:                const isMidLvl = name === '총 지출' || name === '총 저축' || name === '총 투자' || name === '미분류';
+1743:                else if (name.includes('지출')) fill = '#f43f5e'; // rose-500
+1744:                else if (name.includes('저축')) fill = '#10b981'; // emerald-500
+1745:                else if (name.includes('투자')) fill = '#8b5cf6'; // violet-500
+1773:                            <p className="font-bold text-slate-500 mb-1 uppercase tracking-wider">{isNode ? '항목' : '자금 흐름'}</p>
+1777:                                <span className="text-slate-400 font-bold text-[9px]">원</span>
+1805:                            <button onClick={() => setViewMode('year')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'year' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>연도별</button>
+1806:                            <button onClick={() => setViewMode('month')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewMode === 'month' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>월별</button>
+1811:                                <p className="font-bold text-indigo-400 mb-1">시각화 기준</p>
+1812:                                <p className="text-slate-300">항목2 기준 <span className="text-white font-bold">100만원 미만</span>의 소액 흐름은 차트의 가독성을 위해 표시되지 않습니다.</p>
+1821:                            {viewMode === 'year' ? `${selectedYear}년 누적` : selectedMonth}
+1853:                            표시할 자금 흐름 데이터가 없습니다.
+1874:                                <h3 className="text-lg font-bold text-slate-800">자금 흐름 파이프라인</h3>
+1968:                    if(confirm(`'${fromName}' 항목을 '${categories[sourceCat]?.label}'에서 '${categories[targetCat]?.label}'(으)로 이동하시겠습니까?`)) {
+1984:                if (!confirm(`'${label}' 항목을 정말 삭제하시겠습니까?`)) return; 
+2043:                if (conflict) { alert('이미 존재하는 항목입니다.'); return; }
+2066:            const handleDeleteMonth = (month) => { if (!confirm(`${month} 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return; const newData = JSON.parse(JSON.stringify(safeData)); delete newData[month]; onUpdate(newData); };
+2074:                                    <input type="text" placeholder="항목2" className="px-2 py-1.5 border border-[var(--ss-hdr-border)] bg-white w-24 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 text-xs rounded" value={targetCategory2} onChange={(e) => setTargetCategory2(e.target.value)} />
+2077:                            <input type="text" placeholder="항목명" className="px-2 py-1.5 border border-[var(--ss-hdr-border)] bg-white w-32 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/30 text-xs rounded" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} />
+2078:                            <button onClick={handleAddRow} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-semibold transition-colors rounded"><Icons.Plus className="w-3.5 h-3.5"/> 추가</button>
+2081:                            <label className="flex items-center gap-1.5 text-slate-500 cursor-pointer select-none px-2 py-1 hover:bg-indigo-50 hover:text-indigo-600 transition-colors rounded"><input type="checkbox" checked={showHidden} onChange={e => setShowHidden(e.target.checked)} className="text-indigo-600"/> 숨김 항목</label>
+2082:                            <label className="flex items-center gap-1.5 text-slate-500 cursor-pointer select-none px-2 py-1 hover:bg-indigo-50 hover:text-indigo-600 transition-colors rounded"><input type="checkbox" checked={showHiddenMonths} onChange={e => setShowHiddenMonths(e.target.checked)} className="text-indigo-600"/> 숨김 열</label>
+2083:                            <button onClick={handleAddMonth} className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors rounded"><Icons.CalendarPlus className="w-3.5 h-3.5"/> 월 추가</button>
+2085:                            <button onClick={() => fileInputRef.current.click()} disabled={isUploading} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-[var(--ss-hdr-border)] hover:bg-indigo-50 text-slate-500 text-xs font-medium transition-colors disabled:opacity-50 rounded">{isUploading ? <Icons.Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Icons.Upload className="w-3.5 h-3.5"/>} CSV 업로드</button>
+2086:                            <button onClick={() => downloadCSV(safeData, type)} className="flex items-center gap-1 px-3 py-1.5 bg-white border border-[var(--ss-hdr-border)] hover:bg-indigo-50 text-slate-500 text-xs font-medium transition-colors rounded"><Icons.Download className="w-3.5 h-3.5"/> CSV 다운로드</button>
+2109:                                            <th className="sticky-c1-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] border-r border-[var(--ss-hdr-border)] overflow-hidden" style={{ left: 0, width: colWidths.c1, minWidth: colWidths.c1, maxWidth: colWidths.c1 }}>항목1<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c1', startX: e.clientX, startW: colWidths.c1 })}/></th>
+2110:                                            <th className="sticky-c2-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] border-r border-[var(--ss-hdr-border)] overflow-hidden" style={{ left: colWidths.c1, width: colWidths.c2, minWidth: colWidths.c2, maxWidth: colWidths.c2 }}>항목2<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c2', startX: e.clientX, startW: colWidths.c2 })}/></th>
+2111:                                            <th className="sticky-c3-hdr p-2 text-center font-bold text-xs text-[var(--ss-hdr-text)] border-r-2 border-[var(--ss-hdr-border-strong)] overflow-hidden" style={{ left: colWidths.c1 + colWidths.c2, width: colWidths.c3, minWidth: colWidths.c3, maxWidth: colWidths.c3 }}>항목3<div className="absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-indigo-300 z-50 opacity-50" onMouseDown={(e) => setResizing({ col: 'c3', startX: e.clientX, startW: colWidths.c3 })}/></th>
+2114:                                        <th className="sticky-col-header p-2 text-left pl-3 font-bold text-xs text-[var(--ss-hdr-text)]" style={{ left: 0, width: colWidths.c1 + colWidths.c2 + colWidths.c3, minWidth: colWidths.c1 + colWidths.c2 + colWidths.c3, maxWidth: colWidths.c1 + colWidths.c2 + colWidths.c3 }}>항목명</th>
+2121:                                                    <span className="text-xs font-bold text-slate-600">{m.split('-')[1]}월</span>
+2122:                                                    <button onClick={(e) => { e.stopPropagation(); toggleHideMonth(m); }} className={`p-0.5 transition-colors ${hiddenMonths.has(m) ? 'text-emerald-500' : 'text-slate-300 hover:text-indigo-400'}`} title={hiddenMonths.has(m) ? "열 보이기" : "열 숨기기"}>
+2126:                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteMonth(m); }} className="opacity-0 group-hover/th:opacity-100 p-0.5 text-slate-300 hover:text-rose-400 transition-all absolute top-0.5 right-0.5" title="열 삭제"><Icons.X className="w-2.5 h-2.5"/></button>
+2242:                                                <td className="sticky-c-sum p-2 text-right text-xs text-indigo-700" colSpan={3} style={{ left: 0, paddingRight: '0.75rem' }}>{categories[catKey].label} 합계</td>
+2277:            OWN: { label: '자가', color: 'bg-indigo-500', text: 'text-indigo-500', light: 'bg-indigo-50' },
+2278:            JEONSE: { label: '전세', color: 'bg-emerald-500', text: 'text-emerald-500', light: 'bg-emerald-50' },
+2279:            RENT: { label: '월세', color: 'bg-amber-500', text: 'text-amber-500', light: 'bg-amber-50' }
+2312:                if (!confirm("이 부동산 항목을 삭제하시겠습니까?")) return;
+2323:                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">총 부동산 평가액</span>
+2327:                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">부동산 순자산</span>
+2331:                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">대출 및 보증금 합계</span>
+2335:                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">월 임대 수익 (Total)</span>
+2341:                    <CollapsibleCard title="신규 부동산 등록" icon={Icons.Plus} initialOpen={false}>
+2344:                                <label className="text-[10px] font-bold text-slate-400 ml-1">자산명</label>
+2345:                                <input type="text" placeholder="예: 래미안 84A" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} />
+2348:                                <label className="text-[10px] font-bold text-slate-400 ml-1">부동산 형태</label>
+2354:                                <label className="text-[10px] font-bold text-slate-400 ml-1">거주 형태</label>
+2368:                                <label className="text-[10px] font-bold text-slate-400 ml-1">취득일 (또는 계약일)</label>
+2372:                                <label className="text-[10px] font-bold text-slate-400 ml-1">{newItem.ownershipType === 'OWN' ? '취득가액' : '계약금액'}</label>
+2376:                                <label className="text-[10px] font-bold text-slate-400 ml-1">현재가액 (시세)</label>
+2380:                                <label className="text-[10px] font-bold text-slate-400 ml-1">대출금</label>
+2384:                                <label className="text-[10px] font-bold text-slate-400 ml-1">보증금 (받은/준)</label>
+2388:                                <label className="text-[10px] font-bold text-slate-400 ml-1">월세</label>
+2391:                                    <button onClick={handleAddItem} className="bg-indigo-600 text-white px-6 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100">등록</button>
+2418:                                                <p className="text-[10px] text-slate-400 font-medium">계약일: {item.purchaseDate || '-'}</p>
+2425:                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">현재 가치</p>
+2432:                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">대출 잔액</p>
+2436:                                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">보증금 / 월세</p>
+2441:                                                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1 rounded">연 {yieldRate}%</span>
+2447:                                        <span className="text-[10px] font-bold text-slate-400">{item.ownershipType === 'OWN' ? '취득가액' : '계약금액'}: {formatCurrency(item.purchasePrice)}</span>
+2449:                                            <span className="text-[10px] font-bold text-slate-400">실투자금: {formatCurrency(investment)}</span>
+2451:                                            <span className="text-[10px] font-bold text-slate-600 uppercase">순자산: {formatCurrency(item.currentValue - item.loan - item.deposit)}</span>
+2460:                                <p className="font-bold">등록된 부동산 자산이 없습니다.</p>
+2461:                                <p className="text-xs mt-1">상단의 등록 폼을 통해 새로운 자산을 추가해보세요.</p>
+2470:            const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: '융기', values: {} }, { id: 2, name: '수아', values: {} }] };
+2486:                if (!confirm(`${yearToDelete}년 데이터를 삭제하시겠습니까?`)) return;
+2495:                if (total > 2000000000) return { label: '전생에 나라를 구한 재벌', color: 'text-amber-600', emoji: '🏰' };
+2496:                if (total > 1000000000) return { label: '자산가 꿈나무', color: 'text-emerald-600', emoji: '🏙️' };
+2497:                if (total > 500000000) return { label: '프로 일잘러', color: 'text-indigo-600', emoji: '☕' };
+2498:                if (total > 100000000) return { label: '성실한 개미', color: 'text-blue-600', emoji: '🐜' };
+2499:                return { label: '열정 가득 새내기', color: 'text-slate-500', emoji: '🥚' };
+2509:                            <p className="mt-4 text-slate-400 text-sm font-medium">"열심히 번 당신, 고기 사 드세요! 🥩 우리는 오늘보다 내일 더 부자가 될 거예요."</p>
+2512:                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{itemTotals.map(it => { const lv = getLevel(it.total); return (<GlassCard key={it.id} className="p-6"><div className="flex justify-between items-start mb-4"><div><span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{it.name} 님의 누적 수령액</span><h3 className="text-3xl font-black text-white tracking-tight mt-1 font-grotesk">{formatCurrency(it.total)}</h3></div><div className="text-2xl">{lv.emoji}</div></div><div className={`text-xs font-bold ${lv.color} bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block font-grotesk`}>Level: {lv.label}</div></GlassCard>); })}</div>
+2513:                    <GlassCard className="p-6"><div className="flex items-center justify-between mb-6"><h3 className="text-md font-bold text-white flex items-center gap-2 font-grotesk"><Icons.TrendingUp className="w-5 h-5 text-cyan-400"/> 우리가 걸어온 '부'의 발자취</h3><div className="text-[10px] text-slate-500 font-bold uppercase font-grotesk">Income History Chart</div></div><div className="h-72"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" /><XAxis dataKey="year" fontSize={12} stroke="#64748b" axisLine={false} tickLine={false} /><YAxis fontSize={12} width={60} stroke="#64748b" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} /><RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} /><Legend iconType="circle" /><Line type="monotone" dataKey="융기" stroke="#06b6d4" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} /><Line type="monotone" dataKey="수아" stroke="#ec4899" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} /></LineChart></ResponsiveContainer></div></GlassCard>
+2515:                        <div className="p-5 bg-[#191b32]/40 border-b border-white/5 flex justify-between items-center backdrop-blur-md"><div className="flex flex-col"><span className="font-bold text-white text-sm font-grotesk">연도별 연봉 상세 데이터</span><span className="text-[10px] text-slate-500 font-medium mt-0.5 font-grotesk">단위: 원 (원천징수 영수증 기준 권장)</span></div><div className="flex gap-2">
+2516:                            <button onClick={addYear} className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-cyan-500/20 transition-all font-bold text-xs shadow-none active:scale-95"><Icons.Plus className="w-4 h-4"/> 연도 추가</button>
+2530:                                    onUpdate(newData); alert("데이터가 성공적으로 불러와졌습니다! 🚀");
+2533:                            <GlassButton onClick={() => fileInputRef.current.click()}><Icons.Upload className="w-3.5 h-3.5"/> 업로드</GlassButton>
+2536:                                let csvRows = '이름,합계,' + years.join(',') + '\n';
+2545:                                link.setAttribute('download', '연봉관리.csv');
+2548:                            }}><Icons.Download className="w-3.5 h-3.5"/> 다운로드</GlassButton>
+2554:                                        <th className="p-4 text-left w-28 font-bold border-r border-white/5 sticky left-0 bg-[#191b32]/95 backdrop-blur-sm z-20 font-grotesk">이름</th>
+2555:                                        <th className="p-4 w-32 font-black text-cyan-400 border-r border-white/10 sticky left-28 bg-[#1a2d42]/95 backdrop-blur-sm z-20 font-grotesk">합계</th>
+2556:                                        {years.map(year => (<th key={year} data-year={year} className="p-4 min-w-[97px] font-bold border-r border-white/5 last:border-0 group/th relative font-grotesk"><div className="flex items-center justify-center gap-1">{year}<button onClick={(e) => { e.stopPropagation(); handleDeleteYear(year); }} className="opacity-0 group-hover/th:opacity-100 p-1.5 hover:bg-rose-500/20 rounded-lg text-rose-400 transition-all absolute right-1 top-1/2 -translate-y-1/2" title="연도 삭제"><Icons.X className="w-3 h-3"/></button></div></th>))}
+2590:                                기기 연동 (Data Sync)
+2596:                                <label className="block text-xs font-bold text-slate-400 uppercase mb-2 font-grotesk">현재 기기 연동 키</label>
+2599:                                    <button onClick={() => { navigator.clipboard.writeText(currentId); alert('복사되었습니다!'); }} className="p-3 bg-white/5 border border-white/10 rounded-lg text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-colors"><Icons.Copy className="w-4 h-4"/></button>
+2601:                                <p className="text-[10px] text-slate-500 mt-2">* 이 키를 복사하여 다른 기기의 "불러오기"에 입력하면 데이터가 연동됩니다.</p>
+2604:                                <label className="block text-sm font-bold text-slate-300 mb-2 font-grotesk">다른 기기의 데이터 불러오기</label>
+2606:                                    <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="연동 키 입력" className="flex-1 bg-black/25 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/20"/>
+2607:                                    <button onClick={() => { if(confirm('데이터를 불러오시겠습니까? 기존 데이터는 덮어씌워질 수 있습니다.')) { onSyncIdChange(inputValue.trim()); onClose(); } }} disabled={!inputValue.trim()} className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-4 py-2 rounded-xl text-sm font-bold hover:bg-cyan-500/20 disabled:opacity-50 transition-colors">불러오기</button>
+2698:                        name: `${year}년`,
+2699:                        원금: Math.round(yearPrincipal),
+2700:                        이자: Math.round(yearInterest)
+2730:                            <h4 className="text-lg font-bold text-slate-800">대출 시뮬레이터</h4>
+2739:                                    {t === 'level' ? '원리금균등' : t === 'principal' ? '원금균등' : '만기일시'}
+2748:                                label="매매 가격" value={purchasePrice} min={50000000} max={2000000000} step={10000000} unit="원" 
+2749:                                formatter={(v) => (v / 100000000).toFixed(1) + '억'} onChange={setPurchasePrice} 
+2752:                                label="자기자본 비율" value={equityRatio} min={0} max={100} unit="%" 
+2756:                                label="대출 금리" value={rate} min={1} max={15} step={0.1} unit="%" 
+2761:                                    label="대출 기간" value={term} min={1} max={50} unit="년" 
+2765:                                    label="거치 기간" value={gracePeriod} min={0} max={Math.min(term, 10)} unit="년" 
+2774:                                        <p className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest opacity-80 mb-1">예상 대출 금액</p>
+2779:                                            <p className="text-[10px] font-bold text-indigo-100 opacity-80">월 상환액{type === 'principal' ? '(최대)' : ''}</p>
+2783:                                            <p className="text-[10px] font-bold text-indigo-100 opacity-80">총 이자 지출</p>
+2792:                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-4">연도별 원금/이자 납입 비중</p>
+2798:                                        <YAxis fontSize={10} stroke="#94a3b8" axisLine={false} tickLine={false} tickFormatter={(v) => (v / 10000).toFixed(0) + '만'} />
+2805:                                        <Bar dataKey="원금" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
+2806:                                        <Bar dataKey="이자" stackId="a" fill="#fb7185" radius={[4, 4, 0, 0]} />
+2844:                            <h4 className="text-lg font-bold text-slate-800">대출별 잔액 추이</h4>
+2853:                                <YAxis fontSize={10} width={60} stroke="#94a3b8" tickFormatter={(val) => `${(val/10000).toFixed(0)}만`} axisLine={false} tickLine={false} />
+2987:            const handleResetData = () => { if (confirm("모든 데이터를 초기화하시겠습니까?")) { const initial = generateInitialData(); setFinancialData(initial); localStorage.removeItem('financialData'); } };
