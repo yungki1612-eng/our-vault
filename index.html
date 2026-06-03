@@ -3947,35 +3947,9 @@
             const fetchPrice = async (ticker) => {
                 try {
                     let queryTicker = ticker.trim().toUpperCase();
-                    const isKoreanCode = /^\d{6}(?:\.KS|\.KQ)?$/.test(queryTicker);
+                    const isKoreanCode = /^\d{6}(?:\.KS|\.KQ)?$/.test(queryTicker) || queryTicker.endsWith('.KS') || queryTicker.endsWith('.KQ');
                     
-                    if (/^\d{6}$/.test(queryTicker)) {
-                        queryTicker += '.KS';
-                    }
-
-                    const attemptFetchYahoo = async (tckr) => {
-                        const cb = Date.now();
-                        const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${tckr}?interval=1d&range=1d&_=${cb}`;
-                        
-                        try {
-                            const res1 = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`);
-                            if (res1.ok) {
-                                const json1 = await res1.json();
-                                if (json1.chart && json1.chart.result) {
-                                    return json1.chart.result[0].meta.regularMarketPrice;
-                                }
-                            }
-                        } catch(e) {}
-
-                        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                        const res = await fetch(url);
-                        const json = await res.json();
-                        if (!json.contents) throw new Error('Invalid response from allorigins');
-                        const parsed = JSON.parse(json.contents);
-                        return parsed.chart.result[0].meta.regularMarketPrice;
-                    };
-
-                    const attemptFetchNaver = async (tckr) => {
+                    const attemptFetchNaverDomestic = async (tckr) => {
                         const code = tckr.replace('.KS', '').replace('.KQ', '');
                         const naverUrl = `https://m.stock.naver.com/api/stock/${code}/integration`;
                         
@@ -3983,37 +3957,67 @@
                             const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(naverUrl)}`);
                             if (res.ok) {
                                 const data = await res.json();
-                                if (data && data.dealTrendInfos && data.dealTrendInfos.length > 0) {
+                                if (data?.dealTrendInfos?.length > 0) {
                                     return parseFloat(data.dealTrendInfos[0].closePrice.replace(/,/g, ''));
                                 }
                             }
                         } catch(e) {}
 
-                        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(naverUrl)}`;
-                        const res = await fetch(url);
-                        const json = await res.json();
-                        if (!json.contents) throw new Error('Invalid response from allorigins naver');
-                        const parsed = JSON.parse(json.contents);
-                        if (parsed && parsed.dealTrendInfos && parsed.dealTrendInfos.length > 0) {
-                            return parseFloat(parsed.dealTrendInfos[0].closePrice.replace(/,/g, ''));
+                        try {
+                            const url = `https://api.allorigins.win/get?url=${encodeURIComponent(naverUrl)}`;
+                            const res = await fetch(url);
+                            const json = await res.json();
+                            if (json.contents) {
+                                const parsed = JSON.parse(json.contents);
+                                if (parsed?.dealTrendInfos?.length > 0) {
+                                    return parseFloat(parsed.dealTrendInfos[0].closePrice.replace(/,/g, ''));
+                                }
+                            }
+                        } catch(e) {}
+                        throw new Error('Naver domestic fetch failed');
+                    };
+
+                    const attemptFetchNaverOverseas = async (tckr) => {
+                        // For overseas stocks, Naver usually requires suffix like .O, .N, .A
+                        const baseTckr = tckr.split('.')[0];
+                        const suffixes = tckr.includes('.') ? [tckr.replace(baseTckr, '')] : ['.O', '', '.N', '.A'];
+                        
+                        for (const suffix of suffixes) {
+                            const tryCode = baseTckr + suffix;
+                            const naverUrl = `https://api.stock.naver.com/stock/${tryCode}/basic`;
+                            
+                            try {
+                                const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(naverUrl)}`);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    if (data && data.closePrice) {
+                                        return parseFloat(data.closePrice.replace(/,/g, ''));
+                                    }
+                                }
+                            } catch(e) {}
+                            
+                            try {
+                                const url = `https://api.allorigins.win/get?url=${encodeURIComponent(naverUrl)}`;
+                                const res = await fetch(url);
+                                const json = await res.json();
+                                if (json.contents) {
+                                    const parsed = JSON.parse(json.contents);
+                                    if (parsed && parsed.closePrice) {
+                                        return parseFloat(parsed.closePrice.replace(/,/g, ''));
+                                    }
+                                }
+                            } catch(e) {}
                         }
-                        throw new Error('Naver fetch failed');
+                        throw new Error('Naver overseas fetch failed');
                     };
 
                     try {
                         if (isKoreanCode) {
-                            try {
-                                return await attemptFetchNaver(queryTicker);
-                            } catch (e) {
-                                return await attemptFetchYahoo(queryTicker);
-                            }
+                            return await attemptFetchNaverDomestic(queryTicker);
                         } else {
-                            return await attemptFetchYahoo(queryTicker);
+                            return await attemptFetchNaverOverseas(queryTicker);
                         }
                     } catch (err) {
-                        if (isKoreanCode && queryTicker.endsWith('.KS')) {
-                            return await attemptFetchYahoo(queryTicker.replace('.KS', '.KQ'));
-                        }
                         throw err;
                     }
                 } catch (e) {
@@ -4308,6 +4312,12 @@
                 if (!parsed.salary) parsed.salary = generateInitialData().salary;
                 if (!parsed.portfolio) parsed.portfolio = generateInitialData().portfolio;
                 if (!parsed.meta) parsed.meta = {}; if (!parsed.meta.goals) parsed.meta.goals = { loan: 30, invest: 30, netWorth: 1000000000 }; if (!parsed.meta.hiddenRows) parsed.meta.hiddenRows = {};
+                
+                // Cleanup Sua's default debt if it exists so user doesn't need to reset
+                if (parsed.portfolio?.persons?.sua?.debts) {
+                    parsed.portfolio.persons.sua.debts = parsed.portfolio.persons.sua.debts.filter(d => d.id !== 'sd-001');
+                }
+                
                 return parsed;
             });
             const [lastUpdated, setLastUpdated] = useState(Date.now());
