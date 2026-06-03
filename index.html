@@ -3408,13 +3408,13 @@
         const PortfolioDoughnutChart = ({ data, personColor }) => {
             const total = data.reduce((s, d) => s + d.value, 0);
             const [activeIdx, setActiveIdx] = useState(null);
-            if (data.length === 0) return <div className="flex items-center justify-center h-48 text-slate-500 text-xs">보유 종목 없음</div>;
+            if (data.length === 0) return <div className="flex items-center justify-center h-[180px] text-slate-500 text-xs">보유 종목 없음</div>;
             return (
-                <div className="flex items-center gap-4">
-                    <div className="w-40 h-40 shrink-0">
+                <div className="flex items-center gap-4 h-[180px]">
+                    <div className="w-36 h-36 shrink-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                                <Pie data={data} cx="50%" cy="50%" innerRadius={40} outerRadius={68} paddingAngle={2} dataKey="value" stroke="none"
+                                <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2} dataKey="value" stroke="none"
                                     onMouseEnter={(_, idx) => setActiveIdx(idx)} onMouseLeave={() => setActiveIdx(null)}>
                                     {data.map((entry, idx) => (
                                         <Cell key={idx} fill={PORTFOLIO_CHART_COLORS[idx % PORTFOLIO_CHART_COLORS.length]}
@@ -3436,7 +3436,7 @@
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    <div className="flex flex-col gap-1.5 min-w-0 flex-1 overflow-y-auto custom-scrollbar pr-2 h-full py-2">
                         {data.map((d, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-xs">
                                 <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: PORTFOLIO_CHART_COLORS[idx % PORTFOLIO_CHART_COLORS.length] }} />
@@ -3450,10 +3450,10 @@
         };
 
         const PortfolioBarChart = ({ holdings, personColor }) => {
-            if (holdings.length === 0) return null;
+            if (holdings.length === 0) return <div className="flex items-center justify-center h-[180px] text-slate-500 text-xs">보유 종목 없음</div>;
             const top8 = holdings.slice(0, 8);
             return (
-                <div className="h-44 w-full mt-2">
+                <div className="h-[180px] w-full mt-2">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={top8} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" horizontal={false} />
@@ -3468,7 +3468,7 @@
                                     </div>
                                 );
                             }} />
-                            <Bar dataKey="evalValue" radius={[0, 4, 4, 0]} barSize={14}>
+                            <Bar dataKey="evalValue" radius={[0, 4, 4, 0]} barSize={12}>
                                 {top8.map((_, idx) => (
                                     <Cell key={idx} fill={PORTFOLIO_CHART_COLORS[idx % PORTFOLIO_CHART_COLORS.length]} opacity={0.85} />
                                 ))}
@@ -3479,7 +3479,7 @@
             );
         };
 
-        const HoldingRowComponent = ({ h, priceCache, exchangeRate }) => {
+        const HoldingRowComponent = ({ h, accountId, priceCache, exchangeRate, onDeleteHolding }) => {
             const currentPrice = getHoldingCurrentPrice(h, priceCache);
             const pnlPercent = calcHoldingPnLPercent(h, priceCache);
             const evalVal = calcHoldingValue(h, priceCache, exchangeRate);
@@ -3515,19 +3515,22 @@
                     <td className="py-2.5 px-2 text-right">
                         <span className="text-xs font-grotesk text-slate-200 font-semibold">₩{formatCurrency(evalVal)}</span>
                     </td>
-                    <td className="py-2.5 px-2 text-right">
+                    <td className="py-2.5 px-2 text-right flex items-center justify-end gap-2">
                         <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold font-grotesk ${isPositive ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>
                             {isPositive ? '▲' : '▼'} {Math.abs(pnlPercent).toFixed(2)}%
                         </div>
+                        <button onClick={() => onDeleteHolding(accountId, h.id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/20 text-rose-400 rounded transition-all shrink-0">
+                            <Icons.Trash2 className="w-3.5 h-3.5" />
+                        </button>
                     </td>
                 </tr>
             );
         };
 
-        const AccountCardComponent = ({ account, priceCache, exchangeRate, personColor, onEditHolding, onDeleteHolding }) => {
+        const AccountCardComponent = ({ account, priceCache, exchangeRate, personColor, onDeleteAccount, onDeleteHolding }) => {
             const accountValue = (account.holdings || []).reduce((s, h) => s + calcHoldingValue(h, priceCache, exchangeRate), 0);
             return (
-                <GlassCard className="overflow-hidden">
+                <GlassCard className="overflow-hidden group/account">
                     <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
                         <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black" style={{ background: `${personColor}15`, color: personColor, border: `1px solid ${personColor}30` }}>
@@ -3538,8 +3541,13 @@
                                 <div className="text-[10px] text-slate-500">{account.broker} · {account.accountType}</div>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <div className="text-sm font-black font-grotesk text-white">₩{formatCurrency(accountValue)}</div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <div className="text-sm font-black font-grotesk text-white">₩{formatCurrency(accountValue)}</div>
+                            </div>
+                            <button onClick={() => onDeleteAccount(account.id)} className="opacity-0 group-hover/account:opacity-100 p-1.5 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all shrink-0" title="계좌 삭제">
+                                <Icons.Trash2 className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                     {(account.holdings || []).length > 0 ? (
@@ -3557,15 +3565,64 @@
                                 </thead>
                                 <tbody>
                                     {account.holdings.map(h => (
-                                        <HoldingRowComponent key={h.id} h={h} priceCache={priceCache} exchangeRate={exchangeRate} />
+                                        <HoldingRowComponent key={h.id} accountId={account.id} h={h} priceCache={priceCache} exchangeRate={exchangeRate} onDeleteHolding={onDeleteHolding} />
                                     ))}
                                 </tbody>
                             </table>
                         </div>
                     ) : (
-                        <div className="p-6 text-center text-slate-600 text-xs">보유 종목이 없습니다</div>
+                        <div className="p-6 text-center text-slate-600 text-xs flex flex-col items-center">
+                            <div className="mb-2">보유 종목이 없습니다</div>
+                            <div className="text-[10px] text-slate-500">종목 추가 버튼을 눌러 자산을 등록하세요</div>
+                        </div>
                     )}
                 </GlassCard>
+            );
+        };
+
+        const AddAccountModal = ({ isOpen, onClose, onSave }) => {
+            const [form, setForm] = useState({ accountName: '', broker: '', accountType: '주식계좌' });
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+                        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+                            <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                <Icons.Wallet className="w-4 h-4 text-cyan-400" /> 새 계좌 추가
+                            </h3>
+                            <button onClick={onClose} className="text-slate-500 hover:text-white"><Icons.X className="w-5 h-5" /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1.5">증권사/은행명</label>
+                                <input type="text" value={form.broker} onChange={e => setForm({...form, broker: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none transition-colors"
+                                    placeholder="예: 토스증권, 미래에셋, 국민은행" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1.5">계좌 별칭</label>
+                                <input type="text" value={form.accountName} onChange={e => setForm({...form, accountName: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none transition-colors"
+                                    placeholder="예: 메인 투자계좌, 연금저축펀드" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1.5">계좌 유형</label>
+                                <select value={form.accountType} onChange={e => setForm({...form, accountType: e.target.value})}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none transition-colors">
+                                    <option value="주식계좌">주식계좌 (일반)</option>
+                                    <option value="연금계좌">연금계좌 (IRP/연금저축)</option>
+                                    <option value="CMA">CMA/파킹통장</option>
+                                    <option value="기타">기타</option>
+                                </select>
+                            </div>
+                            <button onClick={() => { onSave(form); setForm({ accountName: '', broker: '', accountType: '주식계좌' }); onClose(); }}
+                                disabled={!form.broker || !form.accountName}
+                                className="w-full py-3 mt-2 rounded-xl text-sm font-bold bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 disabled:opacity-50 transition-all border border-cyan-500/30">
+                                계좌 생성하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
             );
         };
 
@@ -3663,6 +3720,7 @@
 
         const PersonPanel = ({ personKey, person, priceCache, exchangeRate, portfolio, onUpdate, data }) => {
             const [showAddModal, setShowAddModal] = useState(false);
+            const [showAddAccountModal, setShowAddAccountModal] = useState(false);
             const [selectedAccountId, setSelectedAccountId] = useState(null);
 
             const totalValue = getPersonTotalValue(person, priceCache, exchangeRate);
@@ -3675,6 +3733,28 @@
             const holdingsList = getPersonHoldingsList(person, priceCache, exchangeRate);
             const isPositive = totalPnL >= 0;
 
+            const handleAddAccount = (form) => {
+                if (!portfolio) return;
+                const newPortfolio = JSON.parse(JSON.stringify(portfolio));
+                const personData = newPortfolio.persons[personKey];
+                personData.accounts.push({
+                    id: `a-${Date.now()}`,
+                    accountName: form.accountName,
+                    broker: form.broker,
+                    accountType: form.accountType,
+                    holdings: []
+                });
+                onUpdate({ ...data, portfolio: newPortfolio });
+            };
+
+            const handleDeleteAccount = (accountId) => {
+                if (!confirm('이 계좌와 포함된 모든 종목을 삭제하시겠습니까?')) return;
+                const newPortfolio = JSON.parse(JSON.stringify(portfolio));
+                const personData = newPortfolio.persons[personKey];
+                personData.accounts = personData.accounts.filter(a => a.id !== accountId);
+                onUpdate({ ...data, portfolio: newPortfolio });
+            };
+
             const handleAddHolding = (form) => {
                 if (!selectedAccountId || !portfolio) return;
                 const newPortfolio = JSON.parse(JSON.stringify(portfolio));
@@ -3682,26 +3762,37 @@
                 const account = personData.accounts.find(a => a.id === selectedAccountId);
                 if (!account) return;
                 account.holdings.push({ ...form, id: `h-${Date.now()}` });
-                const newData = { ...data, portfolio: newPortfolio };
-                onUpdate(newData);
+                onUpdate({ ...data, portfolio: newPortfolio });
+            };
+
+            const handleDeleteHolding = (accountId, holdingId) => {
+                if (!confirm('해당 종목을 삭제하시겠습니까?')) return;
+                const newPortfolio = JSON.parse(JSON.stringify(portfolio));
+                const personData = newPortfolio.persons[personKey];
+                const account = personData.accounts.find(a => a.id === accountId);
+                if (!account) return;
+                account.holdings = account.holdings.filter(h => h.id !== holdingId);
+                onUpdate({ ...data, portfolio: newPortfolio });
             };
 
             return (
-                <div className="flex-1 min-w-0 space-y-4">
+                <div className="flex-1 min-w-0 flex flex-col space-y-4">
                     {/* Person Header */}
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black"
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0"
                             style={{ background: `${person.color}15`, color: person.color, border: `1px solid ${person.color}40`, boxShadow: `0 0 20px ${person.color}15` }}>
                             {person.name.charAt(0)}
                         </div>
-                        <div className="min-w-0">
-                            <div className="text-sm font-bold text-white font-grotesk">{person.name}</div>
-                            <div className="text-[10px] text-slate-500">{(person.accounts || []).length}개 계좌 · {holdingsList.length}개 종목</div>
+                        <div className="min-w-0 flex-1 flex items-center justify-between">
+                            <div>
+                                <div className="text-sm font-bold text-white font-grotesk">{person.name}</div>
+                                <div className="text-[10px] text-slate-500">{(person.accounts || []).length}개 계좌 · {holdingsList.length}개 종목</div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Summary Stats */}
-                    <GlassCard className="p-4">
+                    {/* Summary Stats (Fixed Height approx 120px) */}
+                    <GlassCard className="p-4 flex flex-col justify-center h-[120px]">
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">총 평가액</div>
@@ -3718,58 +3809,67 @@
                             </div>
                         </div>
                         {totalDebt > 0 && (
-                            <div className="mt-3 pt-3 border-t border-white/[0.06] flex items-center justify-between">
+                            <div className="mt-2 pt-2 border-t border-white/[0.06] flex items-center justify-between">
                                 <span className="text-[10px] text-rose-400/80 uppercase tracking-wider">부채 차감</span>
-                                <span className="text-xs font-grotesk text-rose-400 font-bold">-₩{formatCurrency(totalDebt)}</span>
+                                <span className="text-[11px] font-grotesk text-rose-400 font-bold">-₩{formatCurrency(totalDebt)}</span>
                             </div>
                         )}
                         {totalDebt > 0 && (
-                            <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center justify-between mt-0.5">
                                 <span className="text-[10px] text-slate-400 uppercase tracking-wider">순자산</span>
-                                <span className="text-sm font-grotesk text-white font-black">₩{formatCurrency(netValue)}</span>
+                                <span className="text-xs font-grotesk text-white font-black">₩{formatCurrency(netValue)}</span>
                             </div>
                         )}
                     </GlassCard>
 
-                    {/* Doughnut Chart */}
-                    <GlassCard className="p-4">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-grotesk flex items-center gap-1.5">
+                    {/* Doughnut Chart (Fixed Height) */}
+                    <GlassCard className="p-4 h-[240px] flex flex-col justify-center">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-grotesk flex items-center gap-1.5 shrink-0">
                             <Icons.PieChart className="w-3 h-3" /> 자산군 비중
                         </div>
                         <PortfolioDoughnutChart data={categoryData} personColor={person.color} />
                     </GlassCard>
 
-                    {/* Bar Chart */}
-                    {holdingsList.length > 0 && (
-                        <GlassCard className="p-4">
-                            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-grotesk flex items-center gap-1.5">
-                                <Icons.Activity className="w-3 h-3" /> 종목별 평가금액
-                            </div>
-                            <PortfolioBarChart holdings={holdingsList} personColor={person.color} />
-                        </GlassCard>
-                    )}
+                    {/* Bar Chart (Fixed Height) */}
+                    <GlassCard className="p-4 h-[240px] flex flex-col justify-center">
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-2 font-grotesk flex items-center gap-1.5 shrink-0">
+                            <Icons.Activity className="w-3 h-3" /> 종목별 평가금액
+                        </div>
+                        <PortfolioBarChart holdings={holdingsList} personColor={person.color} />
+                    </GlassCard>
 
                     {/* Account Cards */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                        <div className="flex items-center justify-between mb-3 mt-1">
                             <div className="text-[10px] text-slate-500 uppercase tracking-wider font-grotesk flex items-center gap-1.5">
                                 <Icons.Wallet className="w-3 h-3" /> 계좌별 보유현황
                             </div>
-                            <button onClick={() => {
-                                if (person.accounts && person.accounts.length > 0) {
-                                    setSelectedAccountId(person.accounts[0].id);
-                                    setShowAddModal(true);
-                                }
-                            }} className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-cyan-500/10">
-                                <Icons.Plus className="w-3 h-3" /> 종목 추가
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setShowAddAccountModal(true)} className="text-[10px] font-bold text-slate-400 hover:text-white transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10">
+                                    <Icons.Plus className="w-3 h-3" /> 계좌 추가
+                                </button>
+                                <button onClick={() => {
+                                    if (person.accounts && person.accounts.length > 0) {
+                                        setSelectedAccountId(person.accounts[0].id);
+                                        setShowAddModal(true);
+                                    } else {
+                                        alert('먼저 계좌를 추가해주세요.');
+                                    }
+                                }} className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-cyan-500/10">
+                                    <Icons.Plus className="w-3 h-3" /> 종목 추가
+                                </button>
+                            </div>
                         </div>
-                        {(person.accounts || []).map(account => (
-                            <AccountCardComponent key={account.id} account={account} priceCache={priceCache} exchangeRate={exchangeRate} personColor={person.color} />
-                        ))}
+                        <div className="space-y-3">
+                            {(person.accounts || []).map(account => (
+                                <AccountCardComponent key={account.id} account={account} priceCache={priceCache} exchangeRate={exchangeRate} personColor={person.color} onDeleteAccount={handleDeleteAccount} onDeleteHolding={handleDeleteHolding} />
+                            ))}
+                        </div>
                     </div>
 
                     <AddHoldingModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSave={handleAddHolding} />
+                    <AddAccountModal isOpen={showAddAccountModal} onClose={() => setShowAddAccountModal(false)} onSave={handleAddAccount} />
+
                 </div>
             );
         };
