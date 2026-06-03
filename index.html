@@ -3626,12 +3626,12 @@
             );
         };
 
-        const AddHoldingModal = ({ isOpen, onClose, onSave, editData }) => {
-            const [form, setForm] = useState({ name: '', ticker: '', market: 'US', quantity: 0, avgPrice: 0, currency: 'USD', category: '미국주식' });
+        const AddHoldingModal = ({ isOpen, onClose, onSave, editData, accounts = [] }) => {
+            const [form, setForm] = useState({ accountId: '', name: '', ticker: '', market: 'US', quantity: 0, avgPrice: 0, currency: 'USD', category: '미국주식' });
             useEffect(() => {
                 if (editData) setForm(editData);
-                else setForm({ name: '', ticker: '', market: 'US', quantity: 0, avgPrice: 0, currency: 'USD', category: '미국주식' });
-            }, [editData, isOpen]);
+                else setForm({ accountId: accounts?.[0]?.id || '', name: '', ticker: '', market: 'US', quantity: 0, avgPrice: 0, currency: 'USD', category: '미국주식' });
+            }, [editData, isOpen, accounts]);
 
             if (!isOpen) return null;
             const categories = ['미국주식', '국내주식', '미국ETF', '국내ETF', '코인', '기타'];
@@ -3643,6 +3643,12 @@
                             <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><Icons.X className="w-4 h-4" /></button>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
+                            <div className="col-span-2">
+                                <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">추가할 계좌</label>
+                                <select value={form.accountId} onChange={e => setForm({...form, accountId: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors">
+                                    {accounts.map(a => <option key={a.id} value={a.id} className="bg-slate-900">{a.accountName} ({a.broker})</option>)}
+                                </select>
+                            </div>
                             <div className="col-span-2 sm:col-span-1">
                                 <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">종목명</label>
                                 <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500/50 focus:outline-none transition-colors" placeholder="NVIDIA" />
@@ -3721,7 +3727,6 @@
         const PersonPanel = ({ personKey, person, priceCache, exchangeRate, portfolio, onUpdate, data }) => {
             const [showAddModal, setShowAddModal] = useState(false);
             const [showAddAccountModal, setShowAddAccountModal] = useState(false);
-            const [selectedAccountId, setSelectedAccountId] = useState(null);
 
             const totalValue = getPersonTotalValue(person, priceCache, exchangeRate);
             const totalCost = getPersonTotalCost(person, exchangeRate);
@@ -3756,12 +3761,15 @@
             };
 
             const handleAddHolding = (form) => {
-                if (!selectedAccountId || !portfolio) return;
+                if (!form.accountId || !portfolio) return;
                 const newPortfolio = JSON.parse(JSON.stringify(portfolio));
                 const personData = newPortfolio.persons[personKey];
-                const account = personData.accounts.find(a => a.id === selectedAccountId);
+                const account = personData.accounts.find(a => a.id === form.accountId);
                 if (!account) return;
-                account.holdings.push({ ...form, id: `h-${Date.now()}` });
+                
+                const newHolding = { ...form, id: `h-${Date.now()}` };
+                delete newHolding.accountId;
+                account.holdings.push(newHolding);
                 onUpdate({ ...data, portfolio: newPortfolio });
             };
 
@@ -3850,7 +3858,6 @@
                                 </button>
                                 <button onClick={() => {
                                     if (person.accounts && person.accounts.length > 0) {
-                                        setSelectedAccountId(person.accounts[0].id);
                                         setShowAddModal(true);
                                     } else {
                                         alert('먼저 계좌를 추가해주세요.');
@@ -3867,7 +3874,7 @@
                         </div>
                     </div>
 
-                    <AddHoldingModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSave={handleAddHolding} />
+                    <AddHoldingModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSave={handleAddHolding} accounts={person.accounts || []} />
                     <AddAccountModal isOpen={showAddAccountModal} onClose={() => setShowAddAccountModal(false)} onSave={handleAddAccount} />
 
                 </div>
@@ -4240,13 +4247,13 @@
             const handleResetData = () => { if (confirm("Are you sure you want to reset all data? This cannot be undone.")) { const initial = generateInitialData(); setFinancialData(initial); localStorage.removeItem('financialData'); } };
             const TABS = [
                 {id: 'dashboard', label: 'Dashboard', icon: Icons.LayoutDashboard}, 
+                {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart},
                 {id: 'assets', label: 'Asset Sheets', icon: Icons.Table2}, 
                 {id: 'budget', label: 'Income & Expenses', icon: Icons.Banknote}, 
                 {id: 'loans', label: 'Loans & Debt', icon: Icons.CreditCard}, 
                 {id: 'realestate', label: 'Real Estate', icon: Icons.Home}, 
                 {id: 'stocks', label: 'Stock Profits', icon: Icons.CandlestickChart}, 
-                {id: 'salary', label: 'Salary Sheets', icon: Icons.TrendingUp},
-                {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart}
+                {id: 'salary', label: 'Salary Sheets', icon: Icons.TrendingUp}
             ];
             const [activeTab, setActiveTab] = useState('dashboard');
             const dashboardAllMonths = Object.keys(financialData).filter(isMonthKey).sort();
