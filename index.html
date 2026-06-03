@@ -3958,9 +3958,23 @@
                     const attemptFetch = async (tckr) => {
                         const cb = Date.now();
                         const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${tckr}?interval=1d&range=1d&_=${cb}`;
+                        
+                        // 1. Try corsproxy.io (usually faster and more reliable in browsers)
+                        try {
+                            const res1 = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`);
+                            if (res1.ok) {
+                                const json1 = await res1.json();
+                                if (json1.chart && json1.chart.result) {
+                                    return json1.chart.result[0].meta.regularMarketPrice;
+                                }
+                            }
+                        } catch(e) { console.warn('corsproxy failed, falling back...'); }
+
+                        // 2. Fallback to allorigins.win
                         const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
                         const res = await fetch(url);
                         const json = await res.json();
+                        if (!json.contents) throw new Error('Invalid response from allorigins');
                         const parsed = JSON.parse(json.contents);
                         return parsed.chart.result[0].meta.regularMarketPrice;
                     };
