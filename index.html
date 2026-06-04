@@ -3953,16 +3953,6 @@
                         const naverUrl = `https://m.stock.naver.com/api/stock/${code}/integration`;
                         
                         try {
-                            const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(naverUrl)}`);
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (data?.dealTrendInfos?.length > 0) {
-                                    return parseFloat(data.dealTrendInfos[0].closePrice.replace(/,/g, ''));
-                                }
-                            }
-                        } catch(e) {}
-
-                        try {
                             const url = `https://api.allorigins.win/get?url=${encodeURIComponent(naverUrl)}`;
                             const res = await fetch(url);
                             const json = await res.json();
@@ -3973,40 +3963,17 @@
                                 }
                             }
                         } catch(e) {}
-                        // Fallback to Yahoo Finance for Korean stocks
-                        try {
-                            const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${code}.KS`;
-                            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`);
-                            const json = await res.json();
-                            if (json.contents) {
-                                const parsed = JSON.parse(json.contents);
-                                const price = parsed?.quoteResponse?.result?.[0]?.regularMarketPrice;
-                                if (price !== undefined) {
-                                    return price;
-                                }
-                            }
-                        } catch(e) {}
+                        
                         throw new Error('Naver domestic fetch failed');
                     };
 
                     const attemptFetchNaverOverseas = async (tckr) => {
-                        // For overseas stocks, Naver usually requires suffix like .O, .N, .A
                         const baseTckr = tckr.split('.')[0];
                         const suffixes = tckr.includes('.') ? [tckr.replace(baseTckr, '')] : ['.O', '', '.N', '.A'];
                         
                         for (const suffix of suffixes) {
                             const tryCode = baseTckr + suffix;
                             const naverUrl = `https://api.stock.naver.com/stock/${tryCode}/basic`;
-                            
-                            try {
-                                const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(naverUrl)}`);
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    if (data && data.closePrice) {
-                                        return parseFloat(data.closePrice.replace(/,/g, ''));
-                                    }
-                                }
-                            } catch(e) {}
                             
                             try {
                                 const url = `https://api.allorigins.win/get?url=${encodeURIComponent(naverUrl)}`;
@@ -4019,30 +3986,10 @@
                                     }
                                 }
                             } catch(e) {}
-                        }
-                        
-                        // Fallback to Yahoo Finance for overseas stocks
-                        try {
-                            const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tckr}`;
-                            try {
-                                const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`);
-                                if (res.ok) {
-                                    const parsed = await res.json();
-                                    const price = parsed?.quoteResponse?.result?.[0]?.regularMarketPrice;
-                                    if (price !== undefined) return price;
-                                }
-                            } catch(e) {}
                             
-                            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`);
-                            const json = await res.json();
-                            if (json.contents) {
-                                const parsed = JSON.parse(json.contents);
-                                const price = parsed?.quoteResponse?.result?.[0]?.regularMarketPrice;
-                                if (price !== undefined) {
-                                    return price;
-                                }
-                            }
-                        } catch(e) {}
+                            // Sleep to avoid 429 Too Many Requests on allorigins
+                            await new Promise(r => setTimeout(r, 600));
+                        }
                         
                         throw new Error('Naver overseas fetch failed');
                     };
@@ -4079,7 +4026,7 @@
                             newCache[ticker] = price;
                             successCount++;
                         }
-                        await new Promise(r => setTimeout(r, 400));
+                        await new Promise(r => setTimeout(r, 1200));
                     }
                     const newPortfolio = { ...portfolio, priceCache: newCache, exchangeRate: newRate, lastPriceUpdate: new Date().toISOString() };
                     onUpdate({ ...data, portfolio: newPortfolio });
