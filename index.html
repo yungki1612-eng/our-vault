@@ -3947,7 +3947,7 @@
             const fetchPrice = async (ticker) => {
                 try {
                     let queryTicker = ticker.trim().toUpperCase();
-                    const isKoreanCode = /^\d{6}(?:\.KS|\.KQ)?$/.test(queryTicker) || queryTicker.endsWith('.KS') || queryTicker.endsWith('.KQ');
+                    const isKoreanCode = /^[A-Z0-9]{6}(?:\.KS|\.KQ)?$/i.test(queryTicker) || queryTicker.endsWith('.KS') || queryTicker.endsWith('.KQ');
                     
                     const attemptFetchNaverDomestic = async (tckr) => {
                         const code = tckr.replace('.KS', '').replace('.KQ', '');
@@ -4022,7 +4022,7 @@
                     }
                 } catch (e) {
                     console.warn(`Price fetch failed for ${ticker}:`, e);
-                    return null;
+                    return 0;
                 }
             };
 
