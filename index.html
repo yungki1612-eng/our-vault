@@ -348,6 +348,10 @@
             /* Firefox */
         }
     </style>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Google API Client -->
+    <script src="https://apis.google.com/js/api.js" async defer></script>
 </head>
 
 <body class="bg-slate-200/60 text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
@@ -464,6 +468,7 @@
             Check: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
             RefreshCw: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
             Info: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            Database: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>,
             Calculator: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
             Sparkles: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M3 7V3"/><path d="M7 5h-4"/></svg>,
             AlertOctagon: (p) => <svg {...p} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
@@ -958,6 +963,533 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
+        };
+
+        // --- Google Sheets Service ---
+        const DEFAULT_SPREADSHEET_ID = '1jINVTkUif3YjgUiS3K_Qx3rTDK-bs1SZF3N0oKLguzU';
+        const SHEET_RANGES = [
+            'Asset_Raw',
+            'IncomeExpense_Raw',
+            'Loan_Raw',
+            'Profit_Raw',
+            'Salary_Raw'
+        ];
+
+        const normalizePersonName = (name) => {
+            const clean = String(name || '').trim();
+            if (['용기', '융기', 'yungki', '융'].some(k => clean.toLowerCase().includes(k))) return 'Yungki';
+            if (['수아', 'sua', '수'].some(k => clean.toLowerCase().includes(k))) return 'Sua';
+            if (['공동', 'joint', 'both', '공'].some(k => clean.toLowerCase().includes(k))) return 'Joint';
+            return clean;
+        };
+
+        const parseSalarySheet = (rows) => {
+            if (!rows || rows.length < 2) return null;
+            const header = rows[0].map(h => String(h || '').trim());
+            const yearIndices = {};
+            const yearsList = [];
+            header.forEach((col, idx) => {
+                if (/^\d{4}$/.test(col)) {
+                    yearIndices[col] = idx;
+                    yearsList.push(col);
+                }
+            });
+            yearsList.sort();
+            
+            const items = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length < 2) continue;
+                const rawName = String(row[0] || '').trim();
+                if (!rawName) continue;
+                const normalizedName = normalizePersonName(rawName);
+                
+                const values = {};
+                yearsList.forEach(year => {
+                    const colIdx = yearIndices[year];
+                    const rawVal = row[colIdx] ? String(row[colIdx]).replace(/,/g, '') : '0';
+                    values[year] = parseFloat(rawVal) || 0;
+                });
+                
+                items.push({
+                    id: i,
+                    name: normalizedName,
+                    values: values
+                });
+            }
+            
+            return {
+                years: yearsList,
+                items: items
+            };
+        };
+
+        const buildFinancialDataFromSheets = (sheetsData, currentData) => {
+            const newData = JSON.parse(JSON.stringify(currentData));
+            
+            // 1. Process Asset_Raw
+            const assetRows = sheetsData['Asset_Raw'] || [];
+            const assetMonths = {};
+            if (assetRows.length > 0) {
+                const header = assetRows[0];
+                const monthIndices = {};
+                header.forEach((col, idx) => {
+                    const parsedDate = parseDateHeader(col);
+                    if (parsedDate) monthIndices[parsedDate] = idx;
+                });
+                
+                for (let i = 1; i < assetRows.length; i++) {
+                    const row = assetRows[i];
+                    if (!row || row.length < 3) continue;
+                    const rawCat = String(row[0] || '').trim();
+                    const rawSubcat = String(row[1] || '').trim();
+                    const rawOwner = String(row[2] || '').trim();
+                    if (!rawCat && !rawSubcat && !rawOwner) continue;
+                    
+                    const category = normalizeCategory(rawCat, 'assets');
+                    const category2 = normalizePersonName(rawOwner);
+                    const name = rawSubcat;
+                    
+                    Object.entries(monthIndices).forEach(([month, colIdx]) => {
+                        const rawVal = row[colIdx] ? String(row[colIdx]).replace(/,/g, '') : '0';
+                        const val = parseFloat(rawVal) || 0;
+                        
+                        if (!assetMonths[month]) assetMonths[month] = [];
+                        assetMonths[month].push({
+                            id: `gasset-${i}-${month}`,
+                            name,
+                            category,
+                            category2,
+                            value: val
+                        });
+                    });
+                }
+            }
+            
+            // 2. Process IncomeExpense_Raw
+            const ieRows = sheetsData['IncomeExpense_Raw'] || [];
+            const ieMonths = {};
+            if (ieRows.length > 0) {
+                const header = ieRows[0];
+                const monthIndices = {};
+                header.forEach((col, idx) => {
+                    const parsedDate = parseDateHeader(col);
+                    if (parsedDate) monthIndices[parsedDate] = idx;
+                });
+                
+                for (let i = 1; i < ieRows.length; i++) {
+                    const row = ieRows[i];
+                    if (!row || row.length < 3) continue;
+                    const rawCat = String(row[0] || '').trim();
+                    const rawSubcat = String(row[1] || '').trim();
+                    const rawOwner = String(row[2] || '').trim();
+                    if (!rawCat && !rawSubcat && !rawOwner) continue;
+                    
+                    const category = normalizeCategory(rawCat, 'budget');
+                    const category2 = normalizePersonName(rawOwner);
+                    const name = rawSubcat;
+                    
+                    Object.entries(monthIndices).forEach(([month, colIdx]) => {
+                        const rawVal = row[colIdx] ? String(row[colIdx]).replace(/,/g, '') : '0';
+                        const val = parseFloat(rawVal) || 0;
+                        
+                        if (!ieMonths[month]) ieMonths[month] = [];
+                        ieMonths[month].push({
+                            id: `gie-${i}-${month}`,
+                            name,
+                            category,
+                            category2,
+                            amount: val
+                        });
+                    });
+                }
+            }
+            
+            // 3. Process Loan_Raw
+            const loanRows = sheetsData['Loan_Raw'] || [];
+            const loanMonths = {};
+            if (loanRows.length > 0) {
+                const header = loanRows[0];
+                const monthIndices = {};
+                header.forEach((col, idx) => {
+                    const parsedDate = parseDateHeader(col);
+                    if (parsedDate) monthIndices[parsedDate] = idx;
+                });
+                
+                for (let i = 1; i < loanRows.length; i++) {
+                    const row = loanRows[i];
+                    if (!row || row.length < 2) continue;
+                    const rawOwner = String(row[0] || '').trim();
+                    const rawBank = String(row[1] || '').trim();
+                    const rawDesc = String(row[2] || '').trim();
+                    if (!rawOwner && !rawBank) continue;
+                    
+                    const isLease = ['전세', 'lease', 'jeonse', '임대'].some(k => 
+                        rawOwner.toLowerCase().includes(k) || 
+                        rawBank.toLowerCase().includes(k) || 
+                        rawDesc.toLowerCase().includes(k)
+                    );
+                    const category = isLease ? 'LEASE' : 'DEBT';
+                    const category2 = normalizePersonName(rawOwner);
+                    const name = rawBank + (rawDesc ? ` (${rawDesc})` : '');
+                    
+                    Object.entries(monthIndices).forEach(([month, colIdx]) => {
+                        const rawVal = row[colIdx] ? String(row[colIdx]).replace(/,/g, '') : '0';
+                        const val = parseFloat(rawVal) || 0;
+                        
+                        if (!loanMonths[month]) loanMonths[month] = [];
+                        loanMonths[month].push({
+                            id: `gloan-${i}-${month}`,
+                            name,
+                            category,
+                            category2,
+                            amount: val
+                        });
+                    });
+                }
+            }
+            
+            // 4. Process Profit_Raw
+            const profitRows = sheetsData['Profit_Raw'] || [];
+            const profitMonths = {};
+            if (profitRows.length > 0) {
+                const header = profitRows[0];
+                const monthIndices = {};
+                header.forEach((col, idx) => {
+                    const parsedDate = parseDateHeader(col);
+                    if (parsedDate) monthIndices[parsedDate] = idx;
+                });
+                
+                for (let i = 1; i < profitRows.length; i++) {
+                    const row = profitRows[i];
+                    if (!row || row.length < 3) continue;
+                    const rawCat = String(row[0] || '').trim();
+                    const rawOwner = String(row[1] || '').trim();
+                    const rawBroker = String(row[2] || '').trim();
+                    if (!rawCat && !rawOwner && !rawBroker) continue;
+                    
+                    const isDiv = rawCat.includes('배당') || rawCat.toLowerCase().includes('dividend') || rawCat.toLowerCase().includes('div');
+                    const category = isDiv ? 'DIVIDEND' : 'STOCK_PROFIT';
+                    const category2 = normalizePersonName(rawOwner);
+                    const name = rawBroker;
+                    
+                    Object.entries(monthIndices).forEach(([month, colIdx]) => {
+                        const rawVal = row[colIdx] ? String(row[colIdx]).replace(/,/g, '') : '0';
+                        const val = parseFloat(rawVal) || 0;
+                        
+                        if (!profitMonths[month]) profitMonths[month] = [];
+                        profitMonths[month].push({
+                            id: `gprofit-${i}-${month}`,
+                            name,
+                            category,
+                            category2,
+                            profit: isDiv ? 0 : val,
+                            dividend: isDiv ? val : 0
+                        });
+                    });
+                }
+            }
+            
+            // 5. Process Salary_Raw
+            const salaryData = parseSalarySheet(sheetsData['Salary_Raw']);
+            if (salaryData) {
+                newData.salary = salaryData;
+            }
+            
+            // Merge month-by-month lists into newData
+            const allMonths = new Set([
+                ...Object.keys(assetMonths),
+                ...Object.keys(ieMonths),
+                ...Object.keys(loanMonths),
+                ...Object.keys(profitMonths)
+            ]);
+            
+            allMonths.forEach(month => {
+                if (!newData[month]) {
+                    newData[month] = { assets: [], loans: [], budget: [], stockProfit: [] };
+                }
+                newData[month].assets = assetMonths[month] || [];
+                newData[month].budget = ieMonths[month] || [];
+                newData[month].loans = loanMonths[month] || [];
+                newData[month].stockProfit = profitMonths[month] || [];
+            });
+            
+            return newData;
+        };
+
+        const fetchAllSheets = async (spreadsheetId, token) => {
+            if (!window.gapi || !window.gapi.client) {
+                throw new Error('Google API Client not loaded');
+            }
+            window.gapi.client.setToken({ access_token: token });
+            try {
+                const response = await window.gapi.client.sheets.spreadsheets.values.batchGet({
+                    spreadsheetId: spreadsheetId,
+                    ranges: SHEET_RANGES,
+                });
+                const valueRanges = response.result.valueRanges;
+                const sheetsData = {};
+                SHEET_RANGES.forEach((range, idx) => {
+                    sheetsData[range] = valueRanges[idx]?.values || [];
+                });
+                return sheetsData;
+            } catch (err) {
+                console.error('Error fetching sheets:', err);
+                throw err;
+            }
+        };
+
+        const initGapiAndGis = (clientId, onTokenReceived, onError) => {
+            let attempts = 0;
+            const check = setInterval(() => {
+                attempts++;
+                if (window.gapi && window.google && window.google.accounts && window.google.accounts.oauth2) {
+                    clearInterval(check);
+                    window.gapi.load('client', () => {
+                        window.gapi.client.init({
+                            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                        }).then(() => {
+                            const client = window.google.accounts.oauth2.initTokenClient({
+                                client_id: clientId,
+                                scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+                                callback: (resp) => {
+                                    if (resp.error) {
+                                        console.error('OAuth error:', resp);
+                                        if (onError) onError(resp.error_description || resp.error);
+                                    } else {
+                                        if (onTokenReceived) onTokenReceived(resp.access_token);
+                                    }
+                                }
+                            });
+                            window.tokenClient = client;
+                        }).catch(err => {
+                            console.error('GAPI init error:', err);
+                            if (onError) onError(err.message || String(err));
+                        });
+                    });
+                } else if (attempts > 50) {
+                    clearInterval(check);
+                    if (onError) onError('Google SDKs failed to load. Please check network connection.');
+                }
+            }, 100);
+        };
+
+        const DataSourceSettings = ({ 
+            financialData, 
+            onUpdate, 
+            googleClientId, 
+            setGoogleClientId, 
+            googleSpreadsheetId, 
+            setGoogleSpreadsheetId,
+            googleToken,
+            setGoogleToken,
+            sheetSyncStatus,
+            triggerSync,
+            autoRefreshInterval,
+            setAutoRefreshInterval
+        }) => {
+            const [localClientId, setLocalClientId] = useState(googleClientId || '');
+            const [localSpreadsheetId, setLocalSpreadsheetId] = useState(googleSpreadsheetId || DEFAULT_SPREADSHEET_ID);
+            const [sdkError, setSdkError] = useState(null);
+            
+            const handleSaveConfig = () => {
+                localStorage.setItem('google_client_id', localClientId);
+                localStorage.setItem('google_spreadsheet_id', localSpreadsheetId);
+                setGoogleClientId(localClientId);
+                setGoogleSpreadsheetId(localSpreadsheetId);
+                alert('Configuration saved successfully!');
+            };
+
+            const handleConnect = () => {
+                if (!localClientId.trim()) {
+                    alert('Please enter a valid Google Client ID.');
+                    return;
+                }
+                setSdkError(null);
+                initGapiAndGis(localClientId, (token) => {
+                    setGoogleToken(token);
+                    triggerSync(token, localSpreadsheetId);
+                }, (err) => {
+                    setSdkError(err);
+                });
+                setTimeout(() => {
+                    if (window.tokenClient) {
+                        window.tokenClient.requestAccessToken({ prompt: 'consent' });
+                    }
+                }, 500);
+            };
+
+            const handleDisconnect = () => {
+                if (googleToken) {
+                    try {
+                        window.google.accounts.oauth2.revoke(googleToken);
+                    } catch (e) {
+                        console.error('Error revoking token:', e);
+                    }
+                }
+                setGoogleToken(null);
+                alert('Disconnected from Google.');
+            };
+
+            const formatLastSync = (time) => {
+                if (!time) return 'Never';
+                return new Date(time).toLocaleString();
+            };
+
+            return (
+                <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+                    <div className="flex flex-col gap-1">
+                        <h2 className="text-xl font-bold tracking-tight text-white font-grotesk">Data Source Settings</h2>
+                        <p className="text-xs text-slate-400">Manage Google Sheets API integration and connection parameters.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Connection Card */}
+                        <GlassCard className="p-6 space-y-4">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-400 font-grotesk flex items-center gap-2">
+                                <Icons.Settings className="w-4 h-4"/> Connection Parameters
+                            </h3>
+                            
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Google Client ID</label>
+                                    <input 
+                                        type="text" 
+                                        value={localClientId}
+                                        onChange={(e) => setLocalClientId(e.target.value)}
+                                        placeholder="Enter your OAuth 2.0 Web Client ID"
+                                        className="w-full text-xs font-mono bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                                    />
+                                    <span className="text-[9px] text-slate-500 mt-1 block">Created in Google Cloud Console Credentials.</span>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Spreadsheet ID</label>
+                                    <input 
+                                        type="text" 
+                                        value={localSpreadsheetId}
+                                        onChange={(e) => setLocalSpreadsheetId(e.target.value)}
+                                        placeholder="Enter your Google Sheets Spreadsheet ID"
+                                        className="w-full text-xs font-mono bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                                    />
+                                    <span className="text-[9px] text-slate-500 mt-1 block">The unique alphanumeric string from your sheet's URL.</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-2">
+                                <GlassButton onClick={handleSaveConfig} className="flex-1 justify-center py-2 border-white/10 text-white">
+                                    Save Configuration
+                                </GlassButton>
+                                {googleToken ? (
+                                    <button onClick={handleDisconnect} className="px-4 py-2 text-xs font-bold bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-lg hover:bg-rose-500/20 transition-all">
+                                        Disconnect
+                                    </button>
+                                ) : (
+                                    <button onClick={handleConnect} className="px-4 py-2 text-xs font-bold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-cyan-500/20 transition-all">
+                                        Connect & Fetch
+                                    </button>
+                                )}
+                            </div>
+
+                            {sdkError && (
+                                <div className="text-xs text-rose-400 bg-rose-500/5 border border-rose-500/20 rounded-xl p-3 font-mono">
+                                    Error: {sdkError}
+                                </div>
+                            )}
+                        </GlassCard>
+
+                        {/* Integration Status Card */}
+                        <GlassCard className="p-6 space-y-4">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-fuchsia-400 font-grotesk flex items-center gap-2">
+                                <Icons.Activity className="w-4 h-4"/> Sync & Health Metrics
+                            </h3>
+
+                            <div className="space-y-3 text-xs font-mono">
+                                <div className="flex justify-between py-1.5 border-b border-white/5">
+                                    <span className="text-slate-400">Auth Status</span>
+                                    <span className={googleToken ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
+                                        {googleToken ? "AUTHORIZED" : "NOT AUTHORIZED"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between py-1.5 border-b border-white/5">
+                                    <span className="text-slate-400">Sync Status</span>
+                                    <span className={`font-bold ${sheetSyncStatus.status === 'success' ? 'text-emerald-400' : sheetSyncStatus.status === 'fetching' ? 'text-amber-400 animate-pulse' : 'text-slate-400'}`}>
+                                        {sheetSyncStatus.status.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between py-1.5 border-b border-white/5">
+                                    <span className="text-slate-400">Last Synced</span>
+                                    <span className="text-slate-200">{formatLastSync(sheetSyncStatus.lastSync)}</span>
+                                </div>
+                                <div className="flex justify-between py-1.5 border-b border-white/5">
+                                    <span className="text-slate-400">Auto Refresh</span>
+                                    <select 
+                                        value={autoRefreshInterval} 
+                                        onChange={(e) => {
+                                            const v = parseInt(e.target.value);
+                                            setAutoRefreshInterval(v);
+                                            localStorage.setItem('sheets_refresh_interval', String(v));
+                                        }}
+                                        className="bg-[#0f1026] text-slate-200 border border-white/10 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-cyan-500/50"
+                                    >
+                                        <option value={300000}>Every 5 min</option>
+                                        <option value={900000}>Every 15 min</option>
+                                        <option value={1800000}>Every 30 min</option>
+                                        <option value={0}>Manual Only</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {googleToken && (
+                                <div className="pt-2">
+                                    <GlassButton onClick={() => triggerSync(googleToken, googleSpreadsheetId)} disabled={sheetSyncStatus.status === 'fetching'} className="w-full justify-center py-2 text-cyan-400 border-cyan-500/20">
+                                        <Icons.RefreshCw className={`w-3.5 h-3.5 ${sheetSyncStatus.status === 'fetching' ? 'animate-spin' : ''}`} />
+                                        Refresh Data Now
+                                    </GlassButton>
+                                </div>
+                            )}
+                        </GlassCard>
+                    </div>
+
+                    {/* Sheet Rows Info Card */}
+                    <GlassCard className="p-6 space-y-4">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-400 font-grotesk flex items-center gap-2">
+                            <Icons.Table2 className="w-4 h-4"/> Loaded Sheets Summary
+                        </h3>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            {SHEET_RANGES.map(range => {
+                                const details = sheetSyncStatus.sheets?.[range];
+                                const hasData = details && details.rows > 0;
+                                return (
+                                    <div key={range} className="p-3 bg-white/5 rounded-xl border border-white/10 flex flex-col items-center justify-center text-center">
+                                        <div className="text-[10px] font-bold text-slate-400 mb-1">{range}</div>
+                                        <div className={`text-lg font-black font-grotesk ${hasData ? 'text-cyan-400' : 'text-slate-500'}`}>
+                                            {hasData ? `${details.rows} rows` : '0 rows'}
+                                        </div>
+                                        <div className={`text-[8px] font-mono mt-1 ${hasData ? 'text-emerald-400' : 'text-slate-500'}`}>
+                                            {hasData ? 'LOADED' : 'PENDING'}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </GlassCard>
+
+                    {/* How-to instructions */}
+                    <GlassCard className="p-6 space-y-3">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200 font-grotesk flex items-center gap-1.5">
+                            <Icons.Info className="w-4 h-4 text-cyan-400"/> Google Sheets API Integration Guide
+                        </h3>
+                        <div className="text-xs text-slate-400 space-y-2 leading-relaxed">
+                            <p>1. Go to <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-cyan-400 underline">Google Cloud Console</a>, search for <strong>Google Sheets API</strong>, and enable it.</p>
+                            <p>2. Configure the <strong>OAuth Consent Screen</strong> and add the <code>.../auth/spreadsheets.readonly</code> scope.</p>
+                            <p>3. Create <strong>OAuth 2.0 Client ID</strong> credentials for a <strong>Web Application</strong>. Add your dashboard's URL to the <strong>Authorized JavaScript origins</strong>.</p>
+                            <p>4. Copy the Client ID and paste it above, then click <strong>Connect & Fetch</strong> to grant access to your Google Sheets files.</p>
+                        </div>
+                    </GlassCard>
+                </div>
+            );
         };
 
         // --- Base UI Components ---
@@ -2869,24 +3401,6 @@
                                 <span className="text-[10px] text-slate-500 font-medium mt-0.5 font-grotesk">Unit: KRW (Gross income recommended)</span>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={addYear} className="bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-cyan-500/20 transition-all font-bold text-xs shadow-none active:scale-95"><Icons.Plus className="w-4 h-4"/> Add Year</button>
-                                <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={(e) => {
-                                    const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-                                    reader.onload = (ev) => {
-                                        const text = ev.target.result; const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim() !== ''); if (lines.length < 2) return;
-                                        const header = lines[0].split(',').map(s => s.trim().replace(/^"|"$/g, '')); const fileYears = header.slice(1);
-                                        const newData = JSON.parse(JSON.stringify(data)); if(!newData.salary) newData.salary = { years: [], items: [] };
-                                        const allYears = Array.from(new Set([...newData.salary.years, ...fileYears])).sort(); newData.salary.years = allYears;
-                                        for(let i=1; i<lines.length; i++) {
-                                            const row = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, '')); if(row.length < 2) continue;
-                                            const name = row[0]; let item = newData.salary.items.find(it => it.name === name);
-                                            if (!item) { item = { id: Date.now() + i, name: name, values: {} }; newData.salary.items.push(item); }
-                                            fileYears.forEach((year, idx) => { item.values[year] = parseFloat(row[idx+1] || 0); });
-                                        }
-                                        onUpdate(newData); alert("Data successfully imported! 🚀");
-                                    }; reader.readAsText(file);
-                                }} />
-                                <GlassButton onClick={() => fileInputRef.current.click()}><Icons.Upload className="w-3.5 h-3.5"/> Upload</GlassButton>
                                 <GlassButton onClick={() => {
                                     const totalRow = salaryData.items.reduce((acc, item) => acc + Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0), 0);
                                     let csvRows = 'Name,Total,' + years.join(',') + '\n';
@@ -2912,12 +3426,9 @@
                                         <th className="p-4 text-left w-28 font-bold border-r border-white/5 sticky left-0 bg-[#191b32]/95 backdrop-blur-sm z-20">Name</th>
                                         <th className="p-4 w-32 font-black text-cyan-400 border-r border-white/10 sticky left-28 bg-[#1a2d42]/95 backdrop-blur-sm z-20">Total</th>
                                         {years.map(year => (
-                                            <th key={year} data-year={year} className="p-4 min-w-[97px] font-bold border-r border-white/5 last:border-0 group/th relative">
+                                            <th key={year} data-year={year} className="p-4 min-w-[97px] font-bold border-r border-white/5 last:border-0 relative">
                                                 <div className="flex items-center justify-center gap-1">
                                                     {year}
-                                                    <button onClick={(e) => { e.stopPropagation(); handleDeleteYear(year); }} className="opacity-0 group-hover/th:opacity-100 p-1.5 hover:bg-rose-500/20 rounded-lg text-rose-400 transition-all absolute right-1 top-1/2 -translate-y-1/2" title="Delete Year">
-                                                        <Icons.X className="w-3 h-3"/>
-                                                    </button>
                                                 </div>
                                             </th>
                                         ))}
@@ -2932,8 +3443,8 @@
                                                 <td className="p-4 text-left font-extrabold text-slate-300 bg-[var(--ss-sticky-bg)] sticky left-0 border-r border-white/5 z-10 group-hover/tr:bg-white/5 transition-colors">{displayName}</td>
                                                 <td className="p-4 text-right font-black text-cyan-400 bg-[var(--ss-sum-bg)] sticky left-28 border-r border-white/10 z-10 group-hover/tr:bg-white/5 transition-colors">{formatCurrency(itemTotal)}</td>
                                                 {years.map(year => (
-                                                    <td key={year} className="p-0 border-r border-white/5">
-                                                        <CurrencyInput value={item.values[year] || 0} onChange={(val) => handleValueChange(item.id, year, val)} className="w-full h-full p-4 text-right bg-transparent focus:bg-cyan-500/10 outline-none text-xs font-mono text-slate-300 hover:bg-white/5 transition-all"/>
+                                                    <td key={year} className="p-4 border-r border-white/5 text-slate-300 font-mono text-xs">
+                                                        {formatCurrency(item.values[year] || 0)}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -4324,15 +4835,83 @@
             useEffect(() => { if (!user || !db) return; localStorage.setItem('fm_sync_id', syncId); const docRef = db.doc(`artifacts/${appId}/public/data/financial_sheets/${syncId}`); const unsubscribe = docRef.onSnapshot((docSnap) => { if (docSnap.exists) { const cloudData = docSnap.data(); setFinancialData(prev => { if (JSON.stringify(prev) !== JSON.stringify(cloudData)) return cloudData; return prev; }); setLastUpdated(Date.now()); } }); return () => unsubscribe(); }, [user, syncId]);
             useEffect(() => { if (!user || !db) return; setIsSyncing(true); const timeoutId = setTimeout(async () => { try { await db.doc(`artifacts/${appId}/public/data/financial_sheets/${syncId}`).set(financialData); setIsSyncing(false); } catch (err) { console.error(err); } }, 1500); return () => clearTimeout(timeoutId); }, [financialData, user, syncId]);
             const handleResetData = () => { if (confirm("Are you sure you want to reset all data? This cannot be undone.")) { const initial = generateInitialData(); setFinancialData(initial); localStorage.removeItem('financialData'); } };
+
+            // Google Sheets Integration State & Hooks
+            const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('google_client_id') || '');
+            const [googleSpreadsheetId, setGoogleSpreadsheetId] = useState(() => localStorage.getItem('google_spreadsheet_id') || DEFAULT_SPREADSHEET_ID);
+            const [googleToken, setGoogleToken] = useState(null);
+            const [sheetSyncStatus, setSheetSyncStatus] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('sheet_sync_status');
+                    return saved ? JSON.parse(saved) : { lastSync: null, status: 'idle', sheets: {} };
+                } catch(e) {
+                    return { lastSync: null, status: 'idle', sheets: {} };
+                }
+            });
+            const [autoRefreshInterval, setAutoRefreshInterval] = useState(() => {
+                return parseInt(localStorage.getItem('sheets_refresh_interval') || '300000');
+            });
+
+            const triggerSync = useCallback(async (token, spreadsheetId) => {
+                if (!token || !spreadsheetId) return;
+                setSheetSyncStatus(prev => ({ ...prev, status: 'fetching' }));
+                try {
+                    const sheetsData = await fetchAllSheets(spreadsheetId, token);
+                    
+                    const sheetDetails = {};
+                    Object.entries(sheetsData).forEach(([sheetName, rows]) => {
+                        sheetDetails[sheetName] = { rows: rows.length };
+                    });
+                    
+                    setFinancialData(prev => {
+                        const merged = buildFinancialDataFromSheets(sheetsData, prev);
+                        return merged;
+                    });
+                    
+                    const nextStatus = {
+                        lastSync: Date.now(),
+                        status: 'success',
+                        sheets: sheetDetails
+                    };
+                    setSheetSyncStatus(nextStatus);
+                    localStorage.setItem('sheet_sync_status', JSON.stringify(nextStatus));
+                } catch (err) {
+                    console.error('Sync error:', err);
+                    const isAuthError = err.status === 401 || (err.message && err.message.includes('401')) || (err.result && err.result.error && err.result.error.status === 'UNAUTHENTICATED');
+                    if (isAuthError) {
+                        setGoogleToken(null);
+                        setSheetSyncStatus(prev => ({ ...prev, status: 'error', error: 'Authentication expired. Please reconnect.' }));
+                    } else {
+                        setSheetSyncStatus(prev => ({ ...prev, status: 'error', error: err.message || String(err) }));
+                    }
+                }
+            }, []);
+
+            useEffect(() => {
+                if (googleClientId) {
+                    initGapiAndGis(googleClientId, (token) => {
+                        setGoogleToken(token);
+                        triggerSync(token, googleSpreadsheetId);
+                    }, (err) => {
+                        console.error('Google SDK init error:', err);
+                    });
+                }
+            }, [googleClientId, googleSpreadsheetId, triggerSync]);
+
+            useEffect(() => {
+                if (!googleToken || !googleSpreadsheetId || autoRefreshInterval <= 0) return;
+                const intervalId = setInterval(() => {
+                    triggerSync(googleToken, googleSpreadsheetId);
+                }, autoRefreshInterval);
+                return () => clearInterval(intervalId);
+            }, [googleToken, googleSpreadsheetId, autoRefreshInterval, triggerSync]);
+
             const TABS = [
                 {id: 'dashboard', label: 'Dashboard', icon: Icons.LayoutDashboard}, 
                 {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart},
-                {id: 'assets', label: 'Asset Sheets', icon: Icons.Table2}, 
-                {id: 'budget', label: 'Income & Expenses', icon: Icons.Banknote}, 
-                {id: 'loans', label: 'Loans & Debt', icon: Icons.CreditCard}, 
                 {id: 'realestate', label: 'Real Estate', icon: Icons.Home}, 
-                {id: 'stocks', label: 'Stock Profits', icon: Icons.CandlestickChart}, 
-                {id: 'salary', label: 'Salary Sheets', icon: Icons.TrendingUp}
+                {id: 'salary', label: 'Salary Sheets', icon: Icons.TrendingUp},
+                {id: 'datasource', label: 'Data Source', icon: Icons.Database}
             ];
             const [activeTab, setActiveTab] = useState('dashboard');
             const dashboardAllMonths = Object.keys(financialData).filter(isMonthKey).sort();
@@ -4460,13 +5039,25 @@
                             <main className="flex-1 overflow-auto p-4 lg:p-8 custom-scrollbar">
                                 <div className="max-w-[1600px] mx-auto space-y-6 pb-20">
                                     {activeTab === 'dashboard' && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} viewDate={dashboardViewDate} setViewDate={setDashboardViewDate} />}
-                                    {activeTab === 'assets' && <GenericSpreadsheet data={financialData} type="assets" onUpdate={updateFinancialData} categories={ASSET_CATEGORIES} hasCategory={true} darkMode={darkMode} />}
                                     {activeTab === 'realestate' && <RealEstateSheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
-                                    {activeTab === 'budget' && <GenericSpreadsheet data={financialData} type="budget" onUpdate={updateFinancialData} categories={BUDGET_CATEGORIES} hasCategory={true} darkMode={darkMode} />}
-                                    {activeTab === 'loans' && <LoanManagement data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
-                                    {activeTab === 'stocks' && <GenericSpreadsheet data={financialData} type="stockProfit" onUpdate={updateFinancialData} categories={STOCK_PROFIT_CATEGORIES} hasCategory={true} darkMode={darkMode} />}
                                     {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
                                     {activeTab === 'portfolio' && <InvestmentPortfolio data={financialData} onUpdate={updateFinancialData} />}
+                                    {activeTab === 'datasource' && (
+                                        <DataSourceSettings 
+                                            financialData={financialData}
+                                            onUpdate={updateFinancialData}
+                                            googleClientId={googleClientId}
+                                            setGoogleClientId={setGoogleClientId}
+                                            googleSpreadsheetId={googleSpreadsheetId}
+                                            setGoogleSpreadsheetId={setGoogleSpreadsheetId}
+                                            googleToken={googleToken}
+                                            setGoogleToken={setGoogleToken}
+                                            sheetSyncStatus={sheetSyncStatus}
+                                            triggerSync={triggerSync}
+                                            autoRefreshInterval={autoRefreshInterval}
+                                            setAutoRefreshInterval={setAutoRefreshInterval}
+                                        />
+                                    )}
                                 </div>
                             </main>
                         </div>
