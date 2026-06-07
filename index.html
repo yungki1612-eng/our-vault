@@ -2126,6 +2126,51 @@
             const prevYearDate = getPreviousMonth(viewDate);
             const prevYearData = safeData[prevYearDate] || null;
             
+            // Lifetime Earnings Calculations
+            const salaryData = useMemo(() => {
+                return safeData.salary || { 
+                    years: Array.from({length: 12}, (_, i) => String(2014 + i)), 
+                    items: [
+                        { id: 1, name: 'Yungki', values: {} }, 
+                        { id: 2, name: 'Sua', values: {} }
+                    ] 
+                };
+            }, [safeData.salary]);
+            
+            const salaryYears = salaryData.years || [];
+            
+            const salaryChartData = useMemo(() => {
+                return salaryYears.map(year => { 
+                    const point = { year }; 
+                    salaryData.items.forEach(item => point[item.name] = item.values[year] || 0); 
+                    return point; 
+                });
+            }, [salaryYears, salaryData.items]);
+            
+            const salaryItemTotals = useMemo(() => {
+                return salaryData.items.map(item => ({ 
+                    id: item.id, 
+                    name: item.name, 
+                    total: Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0) 
+                }));
+            }, [salaryData.items]);
+            
+            const salaryGrandTotal = useMemo(() => {
+                return salaryItemTotals.reduce((acc, curr) => acc + curr.total, 0);
+            }, [salaryItemTotals]);
+            
+            const getSalaryLevel = (total) => {
+                if (total > 2000000000) return { label: 'Generational Wealth Owner', color: 'text-amber-400', emoji: '🏰' };
+                if (total > 1000000000) return { label: 'Rising Capitalist', color: 'text-emerald-400', emoji: '🏙️' };
+                if (total > 500000000) return { label: 'Professional Earner', color: 'text-cyan-400', emoji: '☕' };
+                if (total > 100000000) return { label: 'Diligent Ant', color: 'text-blue-400', emoji: '🐜' };
+                return { label: 'Passion-Filled Rookie', color: 'text-slate-500', emoji: '🥚' };
+            };
+            
+            const salaryMainLevel = useMemo(() => {
+                return getSalaryLevel(salaryGrandTotal);
+            }, [salaryGrandTotal]);
+
             const reStats = useMemo(() => {
                 const list = safeData.realEstate || [];
                 return {
@@ -2464,8 +2509,63 @@
                             </div>
                         </CollapsibleCard>
                     </div>
-                    
- 
+
+                    <CollapsibleCard title="Lifetime Earnings & History" icon={Icons.TrendingUp} initialOpen={true}>
+                        <div className="space-y-6">
+                            <div className="bg-gradient-to-r from-cyan-950/60 to-fuchsia-950/60 border border-white/10 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                                <div className="relative z-10">
+                                    <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-2 font-grotesk">Our Lifetime Earnings</h2>
+                                    <div className="flex flex-col md:flex-row md:items-end gap-4">
+                                        <span className="text-5xl font-black tracking-tighter font-grotesk">{formatCurrency(salaryGrandTotal)}</span>
+                                        <span className={`text-sm font-bold bg-white/5 border border-white/10 px-4 py-1.5 rounded-full mb-1 flex items-center gap-2`}>
+                                            <span>{salaryMainLevel.emoji}</span>
+                                            <span className="font-grotesk">{salaryMainLevel.label}</span>
+                                        </span>
+                                    </div>
+                                    <p className="mt-4 text-slate-400 text-sm font-medium">"Hard work pays off! 🥩 We will be richer tomorrow than we are today."</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {salaryItemTotals.map(it => { 
+                                    const lv = getSalaryLevel(it.total); 
+                                    const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
+                                    return (
+                                        <GlassCard key={it.id} className="p-6">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cumulative Earnings ({displayName})</span>
+                                                    <h3 className="text-3xl font-black text-white tracking-tight mt-1 font-grotesk">{formatCurrency(it.total)}</h3>
+                                                </div>
+                                                <div className="text-2xl">{lv.emoji}</div>
+                                            </div>
+                                            <div className={`text-xs font-bold ${lv.color} bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block font-grotesk`}>Level: {lv.label}</div>
+                                        </GlassCard>
+                                    ); 
+                                })}
+                            </div>
+                            <GlassCard className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-md font-bold text-white flex items-center gap-2 font-grotesk"><Icons.TrendingUp className="w-5 h-5 text-cyan-400"/> Walkwise of Lifetime Earnings</h3>
+                                    <div className="text-[10px] text-slate-500 font-bold uppercase font-grotesk">Income History Chart</div>
+                                </div>
+                                <div className="h-72">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={salaryChartData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                            <XAxis dataKey="year" fontSize={12} stroke="#64748b" axisLine={false} tickLine={false} />
+                                            <YAxis fontSize={12} width={60} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+                                            <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
+                                            <Legend iconType="circle" />
+                                            <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#06b6d4" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
+                                            <Line type="monotone" dataKey="Sua" name="Sua" stroke="#ec4899" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </GlassCard>
+                        </div>
+                    </CollapsibleCard>
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                         <CollapsibleCard 
                             title="Savings Rate & Investment Share Trend" 
@@ -3314,149 +3414,6 @@
             );
         };
 
-                const SalarySheet = ({ data, onUpdate }) => {
-            const salaryData = data.salary || { years: Array.from({length: 12}, (_, i) => String(2014 + i)), items: [{ id: 1, name: 'Yungki', values: {} }, { id: 2, name: 'Sua', values: {} }] };
-            const [years, setYears] = useState(salaryData.years);
-            const fileInputRef = useRef(null);
-            const containerRef = useRef(null);
-            useEffect(() => { if (data.salary) setYears(data.salary.years); }, [data.salary]);
-            
-            const handleValueChange = (itemId, year, val) => {
-                const newData = JSON.parse(JSON.stringify(data)); if (!newData.salary) newData.salary = salaryData;
-                const item = newData.salary.items.find(i => i.id === itemId); if (item) { item.values[year] = val; onUpdate(newData); }
-            };
-            const addYear = () => {
-                const lastYear = parseInt(years[years.length - 1]); const newYear = String(lastYear + 1);
-                const newData = JSON.parse(JSON.stringify(data)); if (!newData.salary) newData.salary = salaryData;
-                newData.salary.years.push(newYear); newData.salary.items.forEach(item => item.values[newYear] = 0); onUpdate(newData);
-            };
-            const handleDeleteYear = (yearToDelete) => {
-                if (!confirm(`Delete data for ${yearToDelete}?`)) return;
-                const newData = JSON.parse(JSON.stringify(data)); if (!newData.salary) return;
-                newData.salary.years = newData.salary.years.filter(y => y !== yearToDelete);
-                newData.salary.items.forEach(item => { if (item.values) delete item.values[yearToDelete]; }); onUpdate(newData);
-            };
-            const chartData = years.map(year => { const point = { year }; salaryData.items.forEach(item => point[item.name] = item.values[year] || 0); return point; });
-            const itemTotals = salaryData.items.map(item => ({ id: item.id, name: item.name, total: Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0) }));
-            const grandTotal = itemTotals.reduce((acc, curr) => acc + curr.total, 0);
-            const getLevel = (total) => {
-                if (total > 2000000000) return { label: 'Generational Wealth Owner', color: 'text-amber-400', emoji: '🏰' };
-                if (total > 1000000000) return { label: 'Rising Capitalist', color: 'text-emerald-400', emoji: '🏙️' };
-                if (total > 500000000) return { label: 'Professional Earner', color: 'text-cyan-400', emoji: '☕' };
-                if (total > 100000000) return { label: 'Diligent Ant', color: 'text-blue-400', emoji: '🐜' };
-                return { label: 'Passion-Filled Rookie', color: 'text-slate-500', emoji: '🥚' };
-            };
-            const mainLevel = getLevel(grandTotal);
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="bg-gradient-to-r from-cyan-950/60 to-fuchsia-950/60 border border-white/10 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                        <div className="relative z-10">
-                            <h2 className="text-xs font-bold uppercase tracking-[0.2em] opacity-60 mb-2 font-grotesk">Our Lifetime Earnings</h2>
-                            <div className="flex flex-col md:flex-row md:items-end gap-4"><span className="text-5xl font-black tracking-tighter font-grotesk">{formatCurrency(grandTotal)}</span><span className={`text-sm font-bold bg-white/5 border border-white/10 px-4 py-1.5 rounded-full mb-1 flex items-center gap-2`}><span>{mainLevel.emoji}</span><span className="font-grotesk">{mainLevel.label}</span></span></div>
-                            <p className="mt-4 text-slate-400 text-sm font-medium">"Hard work pays off! 🥩 We will be richer tomorrow than we are today."</p>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {itemTotals.map(it => { 
-                            const lv = getLevel(it.total); 
-                            const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
-                            return (
-                                <GlassCard key={it.id} className="p-6">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cumulative Earnings ({displayName})</span>
-                                            <h3 className="text-3xl font-black text-white tracking-tight mt-1 font-grotesk">{formatCurrency(it.total)}</h3>
-                                        </div>
-                                        <div className="text-2xl">{lv.emoji}</div>
-                                    </div>
-                                    <div className={`text-xs font-bold ${lv.color} bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg inline-block font-grotesk`}>Level: {lv.label}</div>
-                                </GlassCard>
-                            ); 
-                        })}
-                    </div>
-                    <GlassCard className="p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-md font-bold text-white flex items-center gap-2 font-grotesk"><Icons.TrendingUp className="w-5 h-5 text-cyan-400"/> Walkwise of Lifetime Earnings</h3>
-                            <div className="text-[10px] text-slate-500 font-bold uppercase font-grotesk">Income History Chart</div>
-                        </div>
-                        <div className="h-72">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                    <XAxis dataKey="year" fontSize={12} stroke="#64748b" axisLine={false} tickLine={false} />
-                                    <YAxis fontSize={12} width={60} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
-                                    <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
-                                    <Legend iconType="circle" />
-                                    <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#06b6d4" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
-                                    <Line type="monotone" dataKey="Sua" name="Sua" stroke="#ec4899" strokeWidth={4} dot={{r: 4, strokeWidth: 2, fill: '#0f1026'}} activeDot={{r: 8, strokeWidth: 0}} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </GlassCard>
-                    <GlassCard className="flex flex-col overflow-hidden">
-                        <div className="p-5 bg-[#191b32]/40 border-b border-white/5 flex justify-between items-center backdrop-blur-md">
-                            <div className="flex flex-col">
-                                <span className="font-bold text-white text-sm font-grotesk">Yearly Salary Details</span>
-                                <span className="text-[10px] text-slate-500 font-medium mt-0.5 font-grotesk">Unit: KRW (Gross income recommended)</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <GlassButton onClick={() => {
-                                    const totalRow = salaryData.items.reduce((acc, item) => acc + Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0), 0);
-                                    let csvRows = 'Name,Total,' + years.join(',') + '\n';
-                                    salaryData.items.forEach(item => {
-                                        const displayName = item.name === 'Yungki' ? 'Yungki' : item.name === 'Sua' ? 'Sua' : item.name;
-                                        const itemTotal = Object.values(item.values).reduce((a,v) => a + (Number(v)||0), 0);
-                                        csvRows += `"${displayName}",${itemTotal},` + years.map(y => item.values[y] || 0).join(',') + '\n';
-                                    });
-                                    const blob = new Blob(['\uFEFF' + csvRows], { type: 'text/csv;charset=utf-8;' });
-                                    const url = URL.createObjectURL(blob);
-                                    const link = document.createElement('a');
-                                    link.setAttribute('href', url);
-                                    link.setAttribute('download', 'Salary_Management.csv');
-                                    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-                                    URL.revokeObjectURL(url);
-                                }}><Icons.Download className="w-3.5 h-3.5"/> Download</GlassButton>
-                            </div>
-                        </div>
-                        <div className="overflow-auto custom-scrollbar" ref={containerRef}>
-                            <table className="min-w-full text-sm text-right">
-                                <thead className="bg-[#191b32]/40 text-slate-400 font-grotesk">
-                                    <tr>
-                                        <th className="p-4 text-left w-28 font-bold border-r border-white/5 sticky left-0 bg-[#191b32]/95 backdrop-blur-sm z-20">Name</th>
-                                        <th className="p-4 w-32 font-black text-cyan-400 border-r border-white/10 sticky left-28 bg-[#1a2d42]/95 backdrop-blur-sm z-20">Total</th>
-                                        {years.map(year => (
-                                            <th key={year} data-year={year} className="p-4 min-w-[97px] font-bold border-r border-white/5 last:border-0 relative">
-                                                <div className="flex items-center justify-center gap-1">
-                                                    {year}
-                                                </div>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {salaryData.items.map((item, idx) => {
-                                        const itemTotal = Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0);
-                                        const displayName = item.name === 'Yungki' ? 'Yungki' : item.name === 'Sua' ? 'Sua' : item.name;
-                                        return (
-                                            <tr key={item.id} className={`hover:bg-white/5 transition-colors group/tr ${idx % 2 === 0 ? 'bg-[var(--ss-cell-bg)]' : 'bg-[var(--ss-cell-bg-alt)]'}`}>
-                                                <td className="p-4 text-left font-extrabold text-slate-300 bg-[var(--ss-sticky-bg)] sticky left-0 border-r border-white/5 z-10 group-hover/tr:bg-white/5 transition-colors">{displayName}</td>
-                                                <td className="p-4 text-right font-black text-cyan-400 bg-[var(--ss-sum-bg)] sticky left-28 border-r border-white/10 z-10 group-hover/tr:bg-white/5 transition-colors">{formatCurrency(itemTotal)}</td>
-                                                {years.map(year => (
-                                                    <td key={year} className="p-4 border-r border-white/5 text-slate-300 font-mono text-xs">
-                                                        {formatCurrency(item.values[year] || 0)}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </GlassCard>
-                </div>
-            );
-        };
 
                 const SyncModal = ({ isOpen, onClose, currentId, onSyncIdChange }) => {
             const [inputValue, setInputValue] = useState(''); if (!isOpen) return null;
@@ -4910,7 +4867,6 @@
                 {id: 'dashboard', label: 'Dashboard', icon: Icons.LayoutDashboard}, 
                 {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart},
                 {id: 'realestate', label: 'Real Estate', icon: Icons.Home}, 
-                {id: 'salary', label: 'Salary Sheets', icon: Icons.TrendingUp},
                 {id: 'datasource', label: 'Data Source', icon: Icons.Database}
             ];
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -5040,7 +4996,6 @@
                                 <div className="max-w-[1600px] mx-auto space-y-6 pb-20">
                                     {activeTab === 'dashboard' && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} viewDate={dashboardViewDate} setViewDate={setDashboardViewDate} />}
                                     {activeTab === 'realestate' && <RealEstateSheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
-                                    {activeTab === 'salary' && <SalarySheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
                                     {activeTab === 'portfolio' && <InvestmentPortfolio data={financialData} onUpdate={updateFinancialData} />}
                                     {activeTab === 'datasource' && (
                                         <DataSourceSettings 
