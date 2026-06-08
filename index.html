@@ -4432,7 +4432,7 @@
 
                         <GlassCard className="p-4 h-[240px] flex flex-col">
                             <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-grotesk flex items-center gap-1.5 shrink-0">
-                                <Icons.BarChart2 className="w-3 h-3" /> 산업별 비중
+                                <Icons.Activity className="w-3 h-3" /> 산업별 비중
                             </div>
                             {sectorData.length > 0 && sectorData.some(d => d.name !== categoryData.find(c => c.name === d.name)?.name || sectorData.length !== categoryData.length) ? (
                                 <PortfolioDoughnutChart data={sectorData} personColor={person.color} />
