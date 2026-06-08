@@ -1051,6 +1051,7 @@
                 const avgPrice = parseFloat(String(row[8]).replace(/,/g, '')) || 0;
                 const currency = String(row[9] || 'KRW').trim().toUpperCase();
                 const currentPrice = parseFloat(String(row[10]).replace(/,/g, '')) || avgPrice;
+                const sector = String(row[11] || '').trim() || category;
 
                 if (!rawOwner || !ticker) continue;
 
@@ -1082,7 +1083,8 @@
                     quantity: quantity,
                     avgPrice: avgPrice,
                     currency: currency,
-                    category: category
+                    category: category,
+                    sector: sector
                 });
 
                 // Cache the price
@@ -3961,6 +3963,18 @@
             return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
         };
 
+        const getPersonSectorBreakdown = (person, priceCache, exchangeRate) => {
+            const map = {};
+            (person.accounts || []).forEach(account => {
+                (account.holdings || []).forEach(h => {
+                    const sec = h.sector || h.category || '기타';
+                    if (!map[sec]) map[sec] = 0;
+                    map[sec] += calcHoldingValue(h, priceCache, exchangeRate);
+                });
+            });
+            return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+        };
+
         const getPersonHoldingsList = (person, priceCache, exchangeRate) => {
             const list = [];
             (person.accounts || []).forEach(account => {
@@ -4298,6 +4312,7 @@
             const totalPnL = totalValue - totalCost;
             const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
             const categoryData = getPersonCategoryBreakdown(person, priceCache, exchangeRate);
+            const sectorData = getPersonSectorBreakdown(person, priceCache, exchangeRate);
             const holdingsList = getPersonHoldingsList(person, priceCache, exchangeRate);
             const isPositive = totalPnL >= 0;
 
@@ -4406,13 +4421,29 @@
                         )}
                     </GlassCard>
 
-                    {/* Doughnut Chart (Fixed Height) */}
-                    <GlassCard className="p-4 h-[240px] flex flex-col justify-center">
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-grotesk flex items-center gap-1.5 shrink-0">
-                            <Icons.PieChart className="w-3 h-3" /> 자산군 비중
-                        </div>
-                        <PortfolioDoughnutChart data={categoryData} personColor={person.color} />
-                    </GlassCard>
+                    {/* Charts Row - 자산군 + 산업별 */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <GlassCard className="p-4 h-[240px] flex flex-col">
+                            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-grotesk flex items-center gap-1.5 shrink-0">
+                                <Icons.PieChart className="w-3 h-3" /> 자산군 비중
+                            </div>
+                            <PortfolioDoughnutChart data={categoryData} personColor={person.color} />
+                        </GlassCard>
+
+                        <GlassCard className="p-4 h-[240px] flex flex-col">
+                            <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-grotesk flex items-center gap-1.5 shrink-0">
+                                <Icons.BarChart2 className="w-3 h-3" /> 산업별 비중
+                            </div>
+                            {sectorData.length > 0 && sectorData.some(d => d.name !== categoryData.find(c => c.name === d.name)?.name || sectorData.length !== categoryData.length) ? (
+                                <PortfolioDoughnutChart data={sectorData} personColor={person.color} />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center flex-1 gap-2">
+                                    <PortfolioDoughnutChart data={sectorData} personColor={person.color} />
+                                    <div className="text-[9px] text-slate-600 text-center px-2">구글 시트 L열에 산업 분류를 입력하면 별도 차트로 표시됩니다</div>
+                                </div>
+                            )}
+                        </GlassCard>
+                    </div>
 
                     {/* Bar Chart (Fixed Height) */}
                     <GlassCard className="p-4 h-[240px] flex flex-col justify-center">
