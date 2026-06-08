@@ -4898,9 +4898,9 @@
 
                         <SyncModal isOpen={showSyncModal} onClose={() => setShowSyncModal(false)} currentId={syncId} onSyncIdChange={setSyncId} />
                         <div className="sticky top-0 z-50 backdrop-blur-xl border-b shrink-0 transition-all duration-300 bg-black/30 border-white/5">
-                            <div className="flex items-center h-16 max-w-[1600px] mx-auto px-6 lg:px-10 relative z-10">
-                                <div className="flex items-center gap-4 sm:gap-8 flex-1 min-w-0">
-                                    <div className="flex items-center gap-3 shrink-0">
+                            <div className="flex items-center h-16 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
+                                <div className="flex items-center gap-2 sm:gap-4 lg:gap-8 flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                                         <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-400 to-fuchsia-500 p-0.5">
                                             <div className="w-full h-full rounded-full bg-[#0a0b16] flex items-center justify-center">
                                                 <span className="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-400">V</span>
@@ -4908,11 +4908,12 @@
                                         </div>
                                         <div>
                                             <h1 className="text-md font-bold tracking-tight font-grotesk text-white leading-none">Our-Vault</h1>
-                                            <p className="text-[8px] text-white/40 uppercase tracking-widest mt-0.5 leading-none">Holographic Telemetry Console</p>
+                                            <p className="hidden sm:block text-[8px] text-white/40 uppercase tracking-widest mt-0.5 leading-none">Holographic Telemetry Console</p>
                                         </div>
                                     </div>
+                                    {/* Month selector - desktop/tablet only (mobile is in tab bar) */}
                                     {activeTab === 'dashboard' && (
-                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 shadow-sm shrink-0">
+                                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 shadow-sm shrink-0">
                                             <button onClick={() => handleDashboardMonthChange(-1)} className="p-0.5 rounded-full transition-colors text-slate-400 hover:bg-white/10"><Icons.ChevronLeft className="w-4 h-4"/></button>
                                             <span className="text-sm font-extrabold min-w-[72px] text-center text-cyan-400 font-grotesk">{dashboardViewDate}</span>
                                             <button onClick={() => handleDashboardMonthChange(1)} className="p-0.5 rounded-full transition-colors text-slate-400 hover:bg-white/10"><Icons.ChevronRight className="w-4 h-4"/></button>
@@ -4927,8 +4928,13 @@
                                         ))}
                                     </nav>
                                 </div>
-                                <div className="flex items-center gap-3 shrink-0 ml-4">
-                                    <button onClick={() => setShowSyncModal(true)} className="text-[10px] font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full px-3 py-1 flex items-center gap-1.5 transition-all hover:bg-cyan-500/20">
+                                <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2 sm:ml-4">
+                                    {/* Mobile: icon-only sync button */}
+                                    <button onClick={() => setShowSyncModal(true)} className="sm:hidden text-cyan-400 p-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center" title="Sync">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-cyan-400'}`} />
+                                    </button>
+                                    {/* Desktop: full QUANTUM_LINK button */}
+                                    <button onClick={() => setShowSyncModal(true)} className="hidden sm:flex text-[10px] font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full px-3 py-1 items-center gap-1.5 transition-all hover:bg-cyan-500/20">
                                         <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-cyan-400'}`} />
                                         <span>QUANTUM_LINK: {isSyncing ? 'SYNCING' : 'ACTIVE'}</span>
                                     </button>
@@ -4936,17 +4942,26 @@
                                         <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400" />
                                         <span>DB_SYNCED</span>
                                     </div>
-                                    <button onClick={handleResetData} className="text-slate-500 hover:text-rose-500 transition-colors p-1.5 rounded-lg border border-white/5 hover:border-rose-500/30 hover:bg-rose-500/10" title="Reset All Data">
+                                    <button onClick={handleResetData} className="hidden sm:flex text-slate-500 hover:text-rose-500 transition-colors p-1.5 rounded-lg border border-white/5 hover:border-rose-500/30 hover:bg-rose-500/10" title="Reset All Data">
                                         <Icons.RefreshCw className="w-3.5 h-3.5"/>
                                     </button>
                                 </div>
                             </div>
-                            <div className="md:hidden overflow-x-auto no-scrollbar px-4 py-2 border-t flex gap-2 relative z-10 border-white/5 bg-[#0f1026]/40 backdrop-blur-xl">
+                            {/* Mobile tab bar with month selector for dashboard */}
+                            <div className="md:hidden overflow-x-auto no-scrollbar px-3 py-2 border-t flex items-center gap-2 relative z-10 border-white/5 bg-[#0f1026]/40 backdrop-blur-xl">
                                 {TABS.map(tab => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400' : 'text-slate-400 bg-white/5'}`}>
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400' : 'text-slate-400 bg-white/5'}`}>
                                         {tab.label}
                                     </button>
                                 ))}
+                                {/* Month selector: only shown on mobile when dashboard is active */}
+                                {activeTab === 'dashboard' && (
+                                    <div className="flex-shrink-0 ml-auto flex items-center gap-1 px-2 py-1 rounded-full border border-white/10 bg-white/5">
+                                        <button onClick={() => handleDashboardMonthChange(-1)} className="p-0.5 rounded-full transition-colors text-slate-400 active:bg-white/10"><Icons.ChevronLeft className="w-3.5 h-3.5"/></button>
+                                        <span className="text-xs font-extrabold min-w-[60px] text-center text-cyan-400 font-grotesk">{dashboardViewDate}</span>
+                                        <button onClick={() => handleDashboardMonthChange(1)} className="p-0.5 rounded-full transition-colors text-slate-400 active:bg-white/10"><Icons.ChevronRight className="w-3.5 h-3.5"/></button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="flex-1 flex overflow-hidden relative z-10">
