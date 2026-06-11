@@ -1334,7 +1334,7 @@
             }
         };
 
-        const initGapiAndGis = (clientId, onTokenReceived, onError) => {
+        const initGapiAndGis = (clientId, onTokenReceived, onError, autoRequest = false) => {
             let attempts = 0;
             const check = setInterval(() => {
                 attempts++;
@@ -1349,14 +1349,27 @@
                                 scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
                                 callback: (resp) => {
                                     if (resp.error) {
-                                        console.error('OAuth error:', resp);
-                                        if (onError) onError(resp.error_description || resp.error);
+                                        // silent 재인증 실패 시 조용히 무시 (popup_closed_by_user 등)
+                                        if (resp.error !== 'access_denied' && resp.error !== 'interaction_required') {
+                                            console.warn('OAuth silent error (expected on first visit):', resp.error);
+                                        } else {
+                                            console.error('OAuth error:', resp);
+                                            if (onError) onError(resp.error_description || resp.error);
+                                        }
                                     } else {
                                         if (onTokenReceived) onTokenReceived(resp.access_token);
                                     }
                                 }
                             });
                             window.tokenClient = client;
+                            // 이미 동의한 계정이 있으면 prompt 없이 자동으로 토큰 갱신 시도
+                            if (autoRequest) {
+                                try {
+                                    client.requestAccessToken({ prompt: '' });
+                                } catch(e) {
+                                    console.warn('Silent token request failed:', e);
+                                }
+                            }
                         }).catch(err => {
                             console.error('GAPI init error:', err);
                             if (onError) onError(err.message || String(err));
@@ -1409,7 +1422,9 @@
                 });
                 setTimeout(() => {
                     if (window.tokenClient) {
-                        window.tokenClient.requestAccessToken({ prompt: 'consent' });
+                        // prompt: '' 로 설정하여 이미 동의한 경우 팝업 없이 자동 갱신
+                        // 처음 연결하는 경우는 Google이 자동으로 동의 화면을 띄움
+                        window.tokenClient.requestAccessToken({ prompt: '' });
                     }
                 }, 500);
             };
@@ -4856,12 +4871,13 @@
 
             useEffect(() => {
                 if (googleClientId) {
+                    // autoRequest: true → 이미 동의한 계정 있으면 팝업 없이 자동으로 토큰 갱신
                     initGapiAndGis(googleClientId, (token) => {
                         setGoogleToken(token);
                         triggerSync(token, googleSpreadsheetId);
                     }, (err) => {
                         console.error('Google SDK init error:', err);
-                    });
+                    }, true);
                 }
             }, [googleClientId, googleSpreadsheetId, triggerSync]);
 
