@@ -1757,7 +1757,7 @@
                             <div className="p-1 rounded bg-white/5 text-slate-400 group-hover:text-cyan-400 transition-colors">
                                 {Icon ? <Icon className="w-3.5 h-3.5" /> : <Icons.Wallet className="w-3.5 h-3.5"/>}
                             </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-widest ${title === 'Total Assets' ? 'text-cyan-400 font-grotesk' : 'text-slate-400'}`}>
+                            <span className={`text-xs font-bold uppercase tracking-widest ${title === 'Total Assets' ? 'text-cyan-400 font-grotesk' : 'text-slate-400'}`}>
                                 {title === 'Total Assets' ? 'PORTFOLIO_WORTH' : title}
                             </span>
                             {(tooltip || breakdown) && !isNoHover && (
@@ -1779,20 +1779,20 @@
                                 </div>
                             )}
                         </div>
-                        {yoy !== undefined && !isNaN(yoy) && (<div className={`inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full ${trendBg} ${trendColor}`}><TrendIcon className="w-2.5 h-2.5 mr-0.5" />YoY {Math.abs(yoy).toFixed(1)}%</div>)}
+                        {yoy !== undefined && !isNaN(yoy) && (<div className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full ${trendBg} ${trendColor}`}><TrendIcon className="w-2.5 h-2.5 mr-0.5" />YoY {Math.abs(yoy).toFixed(1)}%</div>)}
                     </div>
                     <div className="relative z-10">
                         {breakdown && (
                             <div className="flex flex-wrap gap-x-2 gap-y-0.5 mb-1 border-b border-white/5 pb-1">
                                 {breakdown.map((item, idx) => (
                                     <div key={idx} className="flex items-center gap-0.5">
-                                        <span className="text-[8px] font-medium text-slate-500">{item.label}</span>
-                                        <span className="text-[8px] font-bold text-slate-300">{formatNumberWithCommas(Math.abs(item.value))}</span>
+                                        <span className="text-[10px] font-medium text-slate-500">{item.label}</span>
+                                        <span className="text-[10px] font-bold text-slate-300">{formatNumberWithCommas(Math.abs(item.value))}</span>
                                     </div>
                                 ))}
                             </div>
                         )}
-                        <h3 className={`text-2xl font-extrabold tracking-tight ${valueColor} truncate font-grotesk`}>{formatCurrency(value)}</h3>
+                        <h3 className={`text-3xl font-extrabold tracking-tight ${valueColor} truncate font-grotesk`}>{formatCurrency(value)}</h3>
                     </div>
                 </GlassCard>
             );
@@ -1890,8 +1890,8 @@
                   // 항목1: Investment, 항목2: 가상자산
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '가상자산').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Loan Repayment', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
-                  // 항목1: Expenses, 항목2: 대출이자/상환, 비고: 대출상환
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '대출이자/상환' && (b.category2||'').trim() === '대출상환').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  // 항목1: Expenses, 항목2: 대출이자/상환, 항목3: 공동(→ category2=Joint), 비고: 대출상환
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '대출이자/상환' && (b.category2||'').trim() === 'Joint').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Credit Cards', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
                   // 항목1: Expenses, 항목2: 신용카드
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '신용카드').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
