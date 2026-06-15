@@ -1884,13 +1884,17 @@
         const MonthlyAssetAllocationCard = ({ date, data, isWrapped }) => {
             const allocationPlan = [
                 { label: 'Stocks', targetRatio: 37, color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
-                  getActual: (budget) => budget.filter(b => ['INVEST','SAVING'].includes(normalizeCategory(b.category, 'budget')) && !isItemHidden(b, 'budget', data.meta) && ['Yungki','Sua','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('토스 주식') || b.name.toLowerCase().includes('toss stock') || b.name.includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  // 항목1: Investment, 항목2: 주식 또는 ISA
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && (b.name.trim() === '주식' || b.name.trim() === 'ISA' || b.name.trim().includes('주식') || b.name.trim().includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Crypto', targetRatio: 3, color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && (b.name.replace(/\s/g,'').includes('코인') || b.name.toLowerCase().includes('coin') || b.name.toLowerCase().includes('crypto'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  // 항목1: Investment, 항목2: 가상자산
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '가상자산').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Loan Repayment', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && ['대출상환', 'loanrepayment', 'loanrepay'].includes(b.name.replace(/\s/g, '').toLowerCase())).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  // 항목1: Expenses, 항목2: 대출이자/상환, 비고: 대출상환
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '대출이자/상환' && (b.category2||'').trim() === '대출상환').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: 'Credit Cards', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
-                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['Yungki','Sua','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('신용카드') || b.name.toLowerCase().includes('creditcard') || b.name.toLowerCase().includes('credit card'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
+                  // 항목1: Expenses, 항목2: 신용카드
+                  getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '신용카드').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
             ];
             const stats = useMemo(() => {
                 const year = date.substring(0, 4);
