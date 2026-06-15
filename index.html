@@ -4086,14 +4086,9 @@
             return (
                 <tr className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors group">
                     <td className="py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-[11px] font-black text-white/70 border border-white/10 shrink-0">
-                                {h.name ? h.name.slice(0, 1) : '?'}
-                            </div>
-                            <div className="min-w-0">
-                                <div className="text-xs font-bold text-slate-200 truncate">{h.name}</div>
-                                <div className="text-[10px] text-slate-500 font-grotesk">{h.ticker || '직접입력'}</div>
-                            </div>
+                        <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-200 truncate">{h.name}</div>
+                            <div className="text-[10px] text-slate-500 font-grotesk">{h.ticker || '직접입력'}</div>
                         </div>
                     </td>
                     <td className="py-2.5 px-2 text-right">
