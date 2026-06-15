@@ -2464,7 +2464,7 @@
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                             <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={10} axisLine={false} tickLine={false} />
                                             <YAxis yAxisId="left" fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                            <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#64748b" unit="%" axisLine={false} tickLine={false} />
+                                            <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#64748b" unit="%" domain={[0, 200]} axisLine={false} tickLine={false} />
                                             <RechartsTooltip formatter={(val, name) => name === 'Debt Ratio' ? `${val}%` : formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
                                             <Area yAxisId="left" type="monotone" dataKey="assets" name="Total Assets" stroke="#06b6d4" strokeWidth={2} fill="url(#colorTotal)" />
                                             <Line yAxisId="left" type="monotone" dataKey="netWorth" name="Net Worth" stroke="#8b5cf6" strokeWidth={2.5} dot={false} />
@@ -2590,13 +2590,13 @@
                                 {/* 부채비율 */}
                                 {(() => {
                                     const dr = netWorth > 0 ? (liabilitiesExclJeonse / netWorth) * 100 : (liabilitiesExclJeonse > 0 ? 999 : 0);
-                                    const drStatus = (netWorth <= 0 && liabilitiesExclJeonse > 0) || dr > 40 ? {label:'DANGER', c:'text-rose-400', bg:'bg-rose-500', range: 100} : dr > 20 ? {label:'WARNING', c:'text-amber-400', bg:'bg-amber-500', range: Math.min(dr,100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range: Math.min(dr,100)};
+                                    const drStatus = (netWorth <= 0 && liabilitiesExclJeonse > 0) || dr > 100 ? {label:'DANGER', c:'text-rose-400', bg:'bg-rose-500', range: 100} : dr > 40 ? {label:'WARNING', c:'text-amber-400', bg:'bg-amber-500', range: Math.min(dr/2, 100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range: Math.min(dr/2, 100)};
                                     const sr = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
                                     const srStatus = sr < 0 ? {label:'DEFICIT', c:'text-rose-400', bg:'bg-rose-500', range:0} : sr < 20 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:Math.min(sr,100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:Math.min(sr,100)};
                                     const liqRatio = totalAssets > 0 ? (liquidAssets / totalAssets * 100) : 0;
                                     const liqStatus = liqRatio < 10 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:liqRatio} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:liqRatio};
                                     const items = [
-                                        { label: 'Debt Ratio', value: (netWorth <= 0 && liabilitiesExclJeonse > 0) ? 'Impairment' : dr.toFixed(1)+'%', status: drStatus, desc: 'Debt to Net Worth (Recommended <20%)' },
+                                        { label: 'Debt Ratio', value: (netWorth <= 0 && liabilitiesExclJeonse > 0) ? 'Impairment' : dr.toFixed(1)+'%', status: drStatus, desc: 'Debt to Net Worth (Warning >40%, Danger >100%)' },
                                         { label: 'Savings Rate', value: sr.toFixed(1)+'%', status: srStatus, desc: 'Surplus to Income (Recommended >20%)' },
                                         { label: 'Liquidity Ratio', value: liqRatio.toFixed(1)+'%', status: liqStatus, desc: 'Cash weight of assets (Recommended >10%)' },
                                     ];
