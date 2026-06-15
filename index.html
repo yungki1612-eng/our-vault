@@ -1893,17 +1893,31 @@
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && ['Yungki','Sua','Yungki','Sua'].includes((b.category2||'').trim()) && b.name && (b.name.includes('신용카드') || b.name.toLowerCase().includes('creditcard') || b.name.toLowerCase().includes('credit card'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
             ];
             const stats = useMemo(() => {
-                const budget = data[date]?.budget || [];
-                const income = budget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
-                const items = allocationPlan.map(plan => {
-                    const targetAmt = income * (plan.targetRatio / 100);
-                    const actualAmt = plan.getActual(budget);
-                    const achieved = income > 0 && (plan.isLimit ? actualAmt <= targetAmt : actualAmt >= targetAmt);
-                    const progress = targetAmt > 0 ? Math.min((actualAmt / targetAmt) * 100, 100) : (actualAmt > 0 ? 100 : 0);
-                    const actualRatio = income > 0 ? (actualAmt / income) * 100 : 0;
-                    return { ...plan, income, targetAmt, actualAmt, achieved, progress, actualRatio };
-                });
                 const year = date.substring(0, 4);
+
+                // 해당 연도에서 데이터가 존재하는 월만 수집
+                const monthsWithData = Array.from({ length: 12 }, (_, i) => {
+                    const monthKey = `${year}-${String(i + 1).padStart(2, '0')}`;
+                    const mBudget = data[monthKey]?.budget || [];
+                    const mIncome = mBudget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+                    return { monthKey, month: i + 1, budget: mBudget, income: mIncome, hasData: mIncome > 0 };
+                }).filter(m => m.hasData);
+
+                const dataMonthCount = monthsWithData.length;
+
+                // 연간 합계 계산
+                const annualIncome = monthsWithData.reduce((s, m) => s + m.income, 0);
+
+                const items = allocationPlan.map(plan => {
+                    const annualActualAmt = monthsWithData.reduce((s, m) => s + plan.getActual(m.budget), 0);
+                    const annualTargetAmt = annualIncome * (plan.targetRatio / 100);
+                    const achieved = annualIncome > 0 && (plan.isLimit ? annualActualAmt <= annualTargetAmt : annualActualAmt >= annualTargetAmt);
+                    const progress = annualTargetAmt > 0 ? Math.min((annualActualAmt / annualTargetAmt) * 100, 100) : (annualActualAmt > 0 ? 100 : 0);
+                    const actualRatio = annualIncome > 0 ? (annualActualAmt / annualIncome) * 100 : 0;
+                    return { ...plan, income: annualIncome, targetAmt: annualTargetAmt, actualAmt: annualActualAmt, achieved, progress, actualRatio };
+                });
+
+                // 연간 월별 달성 트래커 (각 월이 해당 월 기준으로 목표 달성했는지)
                 const yearlyAchieved = Array.from({ length: 12 }, (_, i) => {
                     const monthKey = `${year}-${String(i + 1).padStart(2, '0')}`;
                     const mBudget = data[monthKey]?.budget || [];
@@ -1916,7 +1930,8 @@
                     });
                     return { month: i + 1, achieved: allAchieved, hasData: true };
                 });
-                return { income, items, yearlyAchieved, year };
+
+                return { income: annualIncome, items, yearlyAchieved, year, dataMonthCount };
             }, [date, data]);
 
             const content = (
@@ -1925,7 +1940,7 @@
                     <div className="flex items-center justify-between mb-2 px-1">
                         <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-3.5 rounded-full bg-emerald-400"></div>
-                            <span className="text-[11px] font-bold text-slate-400">Income Total (This Month)</span>
+                            <span className="text-[11px] font-bold text-slate-400">Annual Income ({stats.dataMonthCount}M)</span>
                         </div>
                         <span className="text-sm font-black text-emerald-400">{formatCurrency(stats.income)}</span>
                     </div>
@@ -1971,7 +1986,7 @@
                     <div className="mt-2 pt-2 border-t border-white/10">
                         <div className="flex items-center justify-between mb-1.5 px-0.5">
                             <span className="text-[9px] font-bold text-slate-400">{stats.year} Achievement Tracker</span>
-                            <span className="text-[8px] text-slate-500">{stats.yearlyAchieved.filter(m => m.achieved).length} / 12 months</span>
+                            <span className="text-[8px] text-slate-500">{stats.yearlyAchieved.filter(m => m.achieved).length} / {stats.dataMonthCount} months</span>
                         </div>
                         <div className="grid grid-cols-12 gap-1">
                             {stats.yearlyAchieved.map((m) => {
