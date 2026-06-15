@@ -2331,9 +2331,9 @@
                 const netAssets = assets - loans;
                 let dr = 0;
                 if (netAssets <= 0) {
-                    dr = loans > 0 ? 100 : 0;
+                    dr = loans > 0 ? 200 : 0;
                 } else {
-                    dr = Math.min((loans / netAssets) * 100, 100);
+                    dr = Math.min((loans / netAssets) * 100, 200);
                 }
                 return { name: month, assets: assets, netWorth: netAssets, debtRatio: parseFloat(dr.toFixed(1)) };
             });
