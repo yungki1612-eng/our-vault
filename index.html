@@ -974,7 +974,8 @@
             'Loan_Raw',
             'Profit_Raw',
             'Salary_Raw',
-            'Portfolio_Raw'
+            'Portfolio_Raw',
+            'lotto'
         ];
 
         const normalizePersonName = (name) => {
@@ -1289,6 +1290,12 @@
                 newData[month].loans = loanMonths[month] || [];
                 newData[month].stockProfit = profitMonths[month] || [];
             });
+
+            // lotto 시트 데이터 저장 (LottoGen 탭에서 사용)
+            const lottoRows = sheetsData['lotto'] || [];
+            if (lottoRows.length > 1) {
+                newData.lottoSheet = lottoRows;
+            }
             
             return newData;
         };
@@ -1386,16 +1393,15 @@
         // ─────────────────────────────────────────────────────────────
         //  LottoGen Component
         // ─────────────────────────────────────────────────────────────
-        const LottoGen = () => {
-            const [status, setStatus] = React.useState('idle'); // idle | loading | done | error
+        const LottoGen = ({ lottoSheetData }) => {
+            // lottoSheetData: 구글 시트 'lotto' 시트의 rows (2D array)
+            // 헤더: 회차, 추첨일, 1번, 2번, 3번, 4번, 5번, 6번, 보너스
+            const [status, setStatus] = React.useState('idle'); // idle | parsing | done | nodata
             const [rounds, setRounds] = React.useState([]);
             const [freq, setFreq] = React.useState({});
             const [freqRecent, setFreqRecent] = React.useState({});
             const [lastSeen, setLastSeen] = React.useState({});
             const [predictions, setPredictions] = React.useState([]);
-            const [errorMsg, setErrorMsg] = React.useState('');
-            const [currentRound, setCurrentRound] = React.useState(0);
-            const [progress, setProgress] = React.useState(0);
 
             const BALL_COLOR = (n) => {
                 if (n >= 1  && n <= 10) return '#fbbf24';
@@ -1406,44 +1412,35 @@
             };
             const BALL_TEXT = (n) => (n >= 31 && n <= 40) ? '#1e293b' : '#fff';
 
-            const fetchRound = async (no) => {
-                const url = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${no}`;
-                const r = await fetch(url);
-                const j = await r.json();
-                return j.returnValue === 'success' ? j : null;
-            };
-
-            const estimateLatest = () => {
-                const start = new Date('2002-12-07');
-                const diff = Math.floor((Date.now() - start) / (7 * 24 * 60 * 60 * 1000));
-                return Math.min(diff + 1, 1200);
-            };
-
-            const loadData = async () => {
-                setStatus('loading');
-                setProgress(0);
-                setRounds([]);
-                setErrorMsg('');
+            // 구글 시트 데이터가 들어오면 자동 파싱
+            React.useEffect(() => {
+                if (!lottoSheetData || lottoSheetData.length < 2) {
+                    setStatus('nodata');
+                    return;
+                }
+                setStatus('parsing');
                 try {
-                    const latest = estimateLatest();
-                    setCurrentRound(latest);
-                    const BATCH = 30;
-                    const allData = [];
-                    for (let i = 1; i <= latest; i += BATCH) {
-                        const batch = [];
-                        for (let j = i; j < Math.min(i + BATCH, latest + 1); j++) batch.push(fetchRound(j));
-                        const results = await Promise.all(batch);
-                        results.forEach(d => { if (d) allData.push(d); });
-                        setProgress(Math.round((Math.min(i + BATCH, latest) / latest) * 100));
-                    }
-                    setRounds(allData);
-                    computeStats(allData);
+                    // 헤더 행 skip, 나머지 파싱
+                    const dataRows = lottoSheetData.slice(1);
+                    const parsed = dataRows
+                        .map(row => ({
+                            drwNo:    parseInt(row[0]),
+                            drwtNo1:  parseInt(row[2]),
+                            drwtNo2:  parseInt(row[3]),
+                            drwtNo3:  parseInt(row[4]),
+                            drwtNo4:  parseInt(row[5]),
+                            drwtNo5:  parseInt(row[6]),
+                            drwtNo6:  parseInt(row[7]),
+                            bnusNo:   parseInt(row[8]),
+                        }))
+                        .filter(d => !isNaN(d.drwNo) && !isNaN(d.drwtNo1));
+                    setRounds(parsed);
+                    computeStats(parsed);
                     setStatus('done');
                 } catch(e) {
-                    setErrorMsg('데이터 로드 실패: ' + e.message);
-                    setStatus('error');
+                    setStatus('nodata');
                 }
-            };
+            }, [lottoSheetData]);
 
             const computeStats = (data) => {
                 const f = {}, fr = {}, ls = {};
@@ -1498,11 +1495,7 @@
             };
 
             const regenerate = () => {
-                if (rounds.length > 0) {
-                    computeStats(rounds);
-                } else {
-                    loadData();
-                }
+                if (rounds.length > 0) computeStats(rounds);
             };
 
             const top10 = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([n])=>+n);
@@ -1519,46 +1512,34 @@
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-black text-white font-grotesk tracking-tight">Lotto Gen</h2>
-                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">역대 당첨번호 통계 기반 예측</div>
+                                    <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">구글 시트 'lotto' 데이터 기반 통계 예측</div>
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                {status === 'idle' && (
-                                    <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-all">
-                                        <Icons.RefreshCw className="w-3.5 h-3.5" /> 데이터 로드 시작
-                                    </button>
-                                )}
                                 {status === 'done' && (
                                     <button onClick={regenerate} className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/20 transition-all">
                                         <Icons.RefreshCw className="w-3.5 h-3.5" /> 번호 재생성
                                     </button>
                                 )}
-                                {status === 'loading' && (
+                                {status === 'parsing' && (
                                     <div className="flex items-center gap-2 text-xs text-slate-400">
                                         <Icons.Loader2 className="w-4 h-4 animate-spin text-yellow-400" />
-                                        로딩 중... {progress}%
+                                        시트 데이터 분석 중...
                                     </div>
                                 )}
                             </div>
                         </div>
-                        {status === 'loading' && (
-                            <div className="mt-4">
-                                <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
-                                    <div className="h-full rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300" style={{width: `${progress}%`}} />
-                                </div>
-                                <div className="text-[10px] text-slate-500 mt-1">{progress < 100 ? `동행복권 API에서 역대 데이터를 가져오는 중입니다... (${progress}%)` : '분석 중...'}</div>
-                            </div>
-                        )}
-                        {status === 'error' && (
-                            <div className="mt-3 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 flex items-center gap-2">
-                                <Icons.AlertTriangle className="w-4 h-4 shrink-0" />{errorMsg}
-                                <button onClick={loadData} className="ml-auto text-xs underline text-rose-300">재시도</button>
-                            </div>
-                        )}
-                        {status === 'idle' && (
-                            <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs text-slate-400 text-center">
-                                <p>📡 '데이터 로드 시작'을 눌러 동행복권 API에서 역대 당첨번호를 분석합니다.</p>
-                                <p className="mt-1 text-slate-600">최초 로딩은 약 1~3분 소요됩니다.</p>
+                        {status === 'nodata' && (
+                            <div className="mt-4 p-4 rounded-xl bg-white/[0.02] border border-amber-500/20 text-xs space-y-2">
+                                <p className="text-amber-400 font-bold flex items-center gap-2"><Icons.AlertTriangle className="w-4 h-4" /> 구글 시트에 'lotto' 시트가 없거나 비어있습니다.</p>
+                                <p className="text-slate-400">아래 순서로 데이터를 먼저 채워주세요:</p>
+                                <ol className="text-slate-500 space-y-1 pl-4 list-decimal">
+                                    <li>구글 시트에서 <strong className="text-slate-300">확장 프로그램 → Apps Script</strong> 열기</li>
+                                    <li><code className="bg-white/5 px-1 rounded text-yellow-300">로또_자동생성_Apps_Script.gs</code> 코드 붙여넣기</li>
+                                    <li>메뉴 <strong className="text-slate-300">🎱 로또 자동생성기 → 🔄 전체 자동 실행</strong> 클릭</li>
+                                    <li>완료 후 대시보드 <strong className="text-slate-300">Data Source → 시트 동기화</strong> 다시 실행</li>
+                                </ol>
+                                <p className="text-slate-600 text-[10px] mt-2">📌 대상 시트: <span className="text-slate-400">당첨번호 데이터</span> → 시트명을 <code className="bg-white/5 px-1 rounded text-yellow-300">lotto</code>로 변경 필요</p>
                             </div>
                         )}
                         {status === 'done' && rounds.length > 0 && (
@@ -5338,7 +5319,7 @@
                                             sheetSyncStatus={sheetSyncStatus}
                                         />
                                     )}
-                                    {activeTab === 'lottogen' && <LottoGen />}
+                                    {activeTab === 'lottogen' && <LottoGen lottoSheetData={financialData.lottoSheet} />}
                                     {activeTab === 'datasource' && (
                                         <DataSourceSettings 
                                             financialData={financialData}
