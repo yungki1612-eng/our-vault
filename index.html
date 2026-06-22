@@ -5174,17 +5174,30 @@
                 if (!token || !spreadsheetId) return;
                 setSheetSyncStatus(prev => ({ ...prev, status: 'fetching' }));
                 try {
-                    // 실시간 환율 가져오기 (Frankfurter API - 무료, CORS 허용)
+                    // 실시간 환율 가져오기 (open.er-api.com - 무료, KRW 지원, CORS 허용)
                     let liveExchangeRate = null;
                     try {
-                        const fxResp = await fetch('https://api.frankfurter.app/latest?from=USD&to=KRW');
+                        const fxResp = await fetch('https://open.er-api.com/v6/latest/USD');
                         if (fxResp.ok) {
                             const fxData = await fxResp.json();
                             liveExchangeRate = fxData?.rates?.KRW || null;
-                            console.log('[환율] 실시간 USD/KRW:', liveExchangeRate);
+                            console.log('[환율] 실시간 USD/KRW (open.er-api):', liveExchangeRate);
                         }
                     } catch (fxErr) {
-                        console.warn('[환율] API 호출 실패, 기존 환율 유지:', fxErr);
+                        console.warn('[환율] open.er-api 실패, fallback 시도:', fxErr);
+                    }
+                    // Fallback: exchangerate-api
+                    if (!liveExchangeRate) {
+                        try {
+                            const fxResp2 = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                            if (fxResp2.ok) {
+                                const fxData2 = await fxResp2.json();
+                                liveExchangeRate = fxData2?.rates?.KRW || null;
+                                console.log('[환율] 실시간 USD/KRW (exchangerate-api fallback):', liveExchangeRate);
+                            }
+                        } catch (fxErr2) {
+                            console.warn('[환율] 모든 API 호출 실패, 기존 환율 유지:', fxErr2);
+                        }
                     }
 
                     const sheetsData = await fetchAllSheets(spreadsheetId, token);
