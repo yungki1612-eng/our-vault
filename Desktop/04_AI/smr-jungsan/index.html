@@ -178,6 +178,11 @@ function formatDate(date) {
     return y+'. '+m+'. '+d+'.';
 }
 
+function formatShortDate(date) {
+    var y=String(date.getFullYear()).slice(-2), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
+    return y+'.'+m+'.'+d;
+}
+
 function CornerCropper(props) {
     var src=props.src, onSave=props.onSave, onCancel=props.onCancel;
     var pts = useState([{x:10,y:10},{x:90,y:10},{x:90,y:90},{x:10,y:90}]);
@@ -323,7 +328,7 @@ function App() {
         setIsGenerating(true);
         buildPdfBlob().then(function(blob){
             var url=URL.createObjectURL(blob);
-            var a=document.createElement('a');a.href=url;a.download='[영수증]'+dateRange+'.pdf';
+            var a=document.createElement('a');a.href=url;a.download=formatShortDate(new Date())+'.pdf';
             document.body.appendChild(a);a.click();
             setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
             setIsGenerating(false);showMessage('PDF가 저장되었습니다.','success');
@@ -338,7 +343,7 @@ function App() {
             showMessage('로그인 완료! PDF 생성 중...','info');
             return buildPdfBlob();
         }).then(function(blob){
-            var filename='[영수증]'+dateRange+'.pdf';
+            var filename=formatShortDate(new Date())+'.pdf';
             var subject='[출장 증빙] '+dateRange+' 영수증 정산서 제출';
             var body='안녕하세요,\n\n'+dateRange+' 기간의 출장비 사용 내역 증빙 서류를 첨부 파일로 제출합니다.\n\n감사합니다.';
             return sendViaGmailAPI(email,subject,body,blob,filename);
