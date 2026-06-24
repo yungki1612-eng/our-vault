@@ -4,583 +4,454 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Receipt Flow - 스마트 출장증빙</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-
+    <script src="https://accounts.google.com/gsi/client" async></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
-        
-        .glass-card { 
-            background: rgba(255, 255, 255, 0.85); 
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.5); 
-        }
-        
-        .active-scale:active { transform: scale(0.98); }
-        
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        .glass-card { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.5); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        
-        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-        /* Corner Handles */
-        .handle {
-            fill: #4F46E5;
-            stroke: white;
-            stroke-width: 3;
-            cursor: pointer;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-        }
-        .crop-line {
-            stroke: #4F46E5;
-            stroke-width: 2;
-            stroke-dasharray: 4 2;
-        }
-        .crop-overlay {
-            fill: rgba(0, 0, 0, 0.5);
-            fill-rule: evenodd;
-        }
+        .handle { fill: #4F46E5; stroke: white; stroke-width: 3; cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .crop-line { stroke: #4F46E5; stroke-width: 2; stroke-dasharray: 4 2; }
+        .crop-overlay { fill: rgba(0,0,0,0.5); fill-rule: evenodd; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-white min-h-screen">
-    <div id="root"></div>
+<div id="root"></div>
+<script>
+'use strict';
 
-    <!-- React + ReactDOM + Babel: 순서 보장을 위해 동기 로드 -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+var GOOGLE_CLIENT_ID = '295698892982-43un8nsvo6chaqi3i0k06t3ed1p0bjp4.apps.googleusercontent.com';
+var GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email';
+var _tokenClient = null;
+var _accessToken = null;
+var _googleEmail = null;
+var _tokenExpiresAt = 0;
 
-    <script type="text/babel" data-presets="react">
-        const { useState, useCallback, useEffect, useRef } = React;
+function isTokenValid() { return _accessToken && Date.now() < _tokenExpiresAt - 60000; }
 
-        // ── 인라인 SVG 아이콘 ──────────────────────────────────────────────
-        const ICON_PATHS = {
-            receipt:       { d: ["M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z", "M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8", "M12 17.5v-11"] },
-            calendar:      { d: [], extra: "rect,line,line,line", rect: [{w:18,h:18,x:3,y:4,rx:2}], lines: [{x1:16,x2:16,y1:2,y2:6},{x1:8,x2:8,y1:2,y2:6},{x1:3,x2:21,y1:10,y2:10}] },
-            'chevron-right':{ d: ["m9 18 6-6-6-6"] },
-            camera:        { d: ["M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"], circle: [{cx:12,cy:13,r:3}] },
-            image:         { d: ["m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"], rect: [{w:18,h:18,x:3,y:3,rx:2}], circle: [{cx:9,cy:9,r:2}] },
-            crop:          { d: ["M6 2v14a2 2 0 0 0 2 2h14", "M18 22V8a2 2 0 0 0-2-2H2"] },
-            'trash-2':     { d: ["M3 6h18", "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6", "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"], lines: [{x1:10,x2:10,y1:11,y2:17},{x1:14,x2:14,y1:11,y2:17}] },
-            'check-circle':{ d: ["M22 11.08V12a10 10 0 1 1-5.93-9.14"], poly: ["22 4 12 14.01 9 11.01"] },
-            'file-down':   { d: ["M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z", "M12 18v-6", "m9 15 3 3 3-3"], poly: ["14 2 14 8 20 8"] },
-            mail:          { d: ["m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"], rect: [{w:20,h:16,x:2,y:4,rx:2}] },
-            send:          { d: ["m22 2-7 20-4-9-9-4Z", "M22 2 11 13"] },
-            check:         { poly: ["20 6 9 17 4 12"] },
-            info:          { d: ["M12 16v-4", "M12 8h.01"], circle: [{cx:12,cy:12,r:10}] },
-            'alert-circle':{ d: [], lines: [{x1:12,x2:12,y1:8,y2:12},{x1:12,x2:12.01,y1:16,y2:16}], circle: [{cx:12,cy:12,r:10}] },
-        };
+function waitForGsi() {
+    return new Promise(function(resolve) {
+        if (window.google && window.google.accounts) { resolve(); return; }
+        var t = setInterval(function() {
+            if (window.google && window.google.accounts) { clearInterval(t); resolve(); }
+        }, 200);
+    });
+}
 
-        const Icon = ({ name, size = 20, className = '' }) => {
-            const cfg = ICON_PATHS[name];
-            if (!cfg) return null;
-            return (
-                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    {(cfg.d || []).map((dd, i) => <path key={i} d={dd} />)}
-                    {(cfg.poly || []).map((pts, i) => <polyline key={i} points={pts} />)}
-                    {(cfg.rect || []).map((r, i) => <rect key={i} width={r.w} height={r.h} x={r.x} y={r.y} rx={r.rx} ry={r.rx} />)}
-                    {(cfg.circle || []).map((c, i) => <circle key={i} cx={c.cx} cy={c.cy} r={c.r} />)}
-                    {(cfg.lines || []).map((l, i) => <line key={i} x1={l.x1} x2={l.x2} y1={l.y1} y2={l.y2} />)}
-                </svg>
-            );
-        };
-        // ─────────────────────────────────────────────────────────────────
-
-        const formatDate = (date) => {
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return `${y}. ${m}. ${d}.`;
-        };
-
-        const CornerCropper = ({ src, onSave, onCancel }) => {
-            const [points, setPoints] = useState([
-                { x: 10, y: 10 }, { x: 90, y: 10 },
-                { x: 90, y: 90 }, { x: 10, y: 90 }
-            ]);
-            const [draggingIdx, setDraggingIdx] = useState(null);
-            const svgRef = useRef(null);
-            const containerRef = useRef(null);
-            const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
-
-            useEffect(() => {
-                const img = new Image();
-                img.onload = () => {
-                    const container = containerRef.current;
-                    if (!container) return;
-                    const cW = container.clientWidth;
-                    const cH = container.clientHeight;
-                    const ratio = Math.min(cW / img.naturalWidth, cH / img.naturalHeight);
-                    setImgSize({ w: img.naturalWidth * ratio, h: img.naturalHeight * ratio });
-                };
-                img.src = src;
-            }, [src]);
-
-            const getPos = (e) => {
-                const rect = svgRef.current.getBoundingClientRect();
-                const touch = e.touches ? e.touches[0] : e;
-                return {
-                    x: ((touch.clientX - rect.left) / rect.width) * 100,
-                    y: ((touch.clientY - rect.top) / rect.height) * 100
-                };
-            };
-
-            const handleMove = (e) => {
-                if (draggingIdx === null) return;
-                const pos = getPos(e);
-                setPoints(prev => prev.map((p, i) => i === draggingIdx ? {
-                    x: Math.max(0, Math.min(100, pos.x)),
-                    y: Math.max(0, Math.min(100, pos.y))
-                } : p));
-            };
-
-            const handleEnd = () => setDraggingIdx(null);
-
-            const generateResult = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const pxPoints = points.map(p => ({
-                        x: (p.x / 100) * img.naturalWidth,
-                        y: (p.y / 100) * img.naturalHeight
-                    }));
-                    const minX = Math.min(...pxPoints.map(p => p.x));
-                    const maxX = Math.max(...pxPoints.map(p => p.x));
-                    const minY = Math.min(...pxPoints.map(p => p.y));
-                    const maxY = Math.max(...pxPoints.map(p => p.y));
-                    canvas.width = maxX - minX;
-                    canvas.height = maxY - minY;
-                    ctx.beginPath();
-                    ctx.moveTo(pxPoints[0].x - minX, pxPoints[0].y - minY);
-                    ctx.lineTo(pxPoints[1].x - minX, pxPoints[1].y - minY);
-                    ctx.lineTo(pxPoints[2].x - minX, pxPoints[2].y - minY);
-                    ctx.lineTo(pxPoints[3].x - minX, pxPoints[3].y - minY);
-                    ctx.closePath();
-                    ctx.clip();
-                    ctx.drawImage(img, -minX, -minY);
-                    onSave(canvas.toDataURL('image/jpeg', 0.9));
-                };
-                img.src = src;
-            };
-
-            const pointsPath = `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y} L ${points[2].x},${points[2].y} L ${points[3].x},${points[3].y} Z`;
-            const overlayPath = `M 0,0 L 100,0 L 100,100 L 0,100 Z ${pointsPath}`;
-
-            return (
-                <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col overflow-hidden animate-fade-in">
-                    <div className="p-6 flex justify-between items-center bg-slate-900/50 backdrop-blur-md">
-                        <button onClick={onCancel} className="text-white font-bold px-4 py-2 rounded-xl bg-white/10">취소</button>
-                        <h3 className="text-white font-bold">영역 조정</h3>
-                        <button onClick={generateResult} className="text-white font-bold px-6 py-2 rounded-xl bg-indigo-500 shadow-lg">완료</button>
-                    </div>
-                    <div ref={containerRef} className="flex-1 relative flex items-center justify-center p-4">
-                        <div style={{ width: imgSize.w, height: imgSize.h }} className="relative">
-                            <img src={src} className="w-full h-full object-contain select-none pointer-events-none" />
-                            <svg ref={svgRef} viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full touch-none" onMouseMove={handleMove} onTouchMove={handleMove} onMouseUp={handleEnd} onTouchEnd={handleEnd} onMouseLeave={handleEnd}>
-                                <path d={overlayPath} className="crop-overlay" />
-                                <path d={pointsPath} className="crop-line" fill="none" />
-                                {points.map((p, i) => (
-                                    <circle key={i} cx={p.x} cy={p.y} r="3" className="handle" onMouseDown={() => setDraggingIdx(i)} onTouchStart={() => setDraggingIdx(i)} />
-                                ))}
-                            </svg>
-                        </div>
-                    </div>
-                    <div className="p-8 text-center bg-slate-900">
-                        <p className="text-white/60 text-sm font-medium flex items-center justify-center gap-2">
-                            <Icon name="info" size={16} /> 각 모서리를 드래그하여 영수증에 맞추세요
-                        </p>
-                    </div>
-                </div>
-            );
-        };
-
-        const App = () => {
-            const [step, setStep] = useState(1);
-            const [dateRange, setDateRange] = useState(`${formatDate(new Date())} ~ ${formatDate(new Date())}`);
-            const [images, setImages] = useState([]);
-            const [previewImages, setPreviewImages] = useState([]);
-            const [isProcessing, setIsProcessing] = useState(false);
-            const [isGenerating, setIsGenerating] = useState(false);
-            const [notification, setNotification] = useState(null);
-            const [croppingImg, setCroppingImg] = useState(null);
-            const [isFileSaved, setIsFileSaved] = useState(false);
-            const [email, setEmail] = useState('');
-            const [saveEmail, setSaveEmail] = useState(true);
-            
-            const dateInputRef = useRef(null);
-
-            useEffect(() => {
-                const handlePopState = (event) => {
-                    if (event.state && event.state.step) {
-                        setStep(event.state.step);
-                        if (event.state.step !== 3) setIsFileSaved(false);
-                    } else {
-                        setStep(1);
-                    }
-                    setCroppingImg(null);
-                };
-                window.addEventListener('popstate', handlePopState);
-                if (!window.history.state) window.history.replaceState({ step: 1 }, '');
-                
-                const savedEmail = localStorage.getItem('receipt_flow_email');
-                if (savedEmail) setEmail(savedEmail);
-
-                return () => window.removeEventListener('popstate', handlePopState);
-            }, []);
-
-            useEffect(() => {
-                if (step === 1 && dateInputRef.current) {
-                    flatpickr(dateInputRef.current, { 
-                        mode: "range", locale: "ko", dateFormat: "Y. m. d.", 
-                        defaultDate: [new Date(), new Date()],
-                        onChange: (dates) => { if (dates.length === 2) setDateRange(`${formatDate(dates[0])} ~ ${formatDate(dates[1])}`); }
+function requestGoogleToken() {
+    return waitForGsi().then(function() {
+        return new Promise(function(resolve, reject) {
+            function setupCallback() {
+                _tokenClient.callback = function(resp) {
+                    if (resp.error) { reject(new Error(resp.error_description || resp.error)); return; }
+                    _accessToken = resp.access_token;
+                    _tokenExpiresAt = Date.now() + (resp.expires_in || 3600) * 1000;
+                    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { Authorization: 'Bearer ' + _accessToken }
+                    }).then(function(r) { return r.json(); }).then(function(info) {
+                        _googleEmail = info.email;
+                        resolve({ token: _accessToken, email: _googleEmail });
+                    }).catch(function() {
+                        resolve({ token: _accessToken, email: _googleEmail });
                     });
-                }
-                if (step === 3) generatePreview();
-            }, [step]);
-
-            const navigateTo = (nextStep) => {
-                window.history.pushState({ step: nextStep }, '');
-                setStep(nextStep);
-                if (nextStep === 3) setIsFileSaved(false);
-            };
-            
-            const handleEmailChange = (e) => {
-                const newEmail = e.target.value;
-                setEmail(newEmail);
-                if (saveEmail) localStorage.setItem('receipt_flow_email', newEmail);
-            };
-            
-            const handleSaveEmailToggle = (e) => {
-                const isChecked = e.target.checked;
-                setSaveEmail(isChecked);
-                if (isChecked) {
-                    localStorage.setItem('receipt_flow_email', email);
-                } else {
-                    localStorage.removeItem('receipt_flow_email');
-                }
-            };
-            
-            const openMailApp = () => {
-                if (!email) { showMessage("이메일 주소를 입력해주세요.", "error"); return; }
-                const subject = encodeURIComponent(`[출장 증빙] ${dateRange} 영수증 정산서 제출`);
-                const body = encodeURIComponent(`안녕하세요,\n\n${dateRange} 기간의 출장비 사용 내역 증빙 서류를 제출합니다.\n\n* 중요: 방금 저장한 PDF 파일을 이 메일에 꼭 '첨부'해주세요.\n\n감사합니다.`);
-                window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-                showMessage("메일 앱이 열렸습니다. PDF 파일을 첨부해주세요.", "success");
-            };
-
-            const showMessage = (text, type = 'info') => {
-                setNotification({ text, type });
-                setTimeout(() => setNotification(null), 3500);
-            };
-
-            const handleFileUpload = async (e) => {
-                const files = Array.from(e.target.files);
-                if (files.length === 0) return;
-                setIsProcessing(true);
-                const results = await Promise.all(files.map(async (file) => {
-                    return new Promise(res => {
-                        const r = new FileReader();
-                        r.onload = (ev) => res({ id: Math.random().toString(36).substr(2, 9), src: ev.target.result });
-                        r.readAsDataURL(file);
-                    });
-                }));
-                setImages(prev => [...prev, ...results]);
-                setIsProcessing(false);
-            };
-
-            const removeImage = (id) => setImages(prev => prev.filter(img => img.id !== id));
-
-            const renderPageToCanvas = async (pageNum, imagesPerPage, pageWidthPx, pageHeightPx, paddingPx, gapPx, headerHeightPx, gridHeightPx) => {
-                const pageContainer = document.createElement('div');
-                pageContainer.style.cssText = `width:${pageWidthPx}px; height:${pageHeightPx}px; background:white; padding:${paddingPx}px; position:fixed; top:0; left:0; z-index:-9999; font-family:sans-serif; display:flex; flex-direction:column; box-sizing:border-box;`;
-                
-                const header = document.createElement('div');
-                header.style.cssText = `display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; padding-bottom:15px; border-bottom:3px solid #4F46E5; flex-shrink:0;`;
-                header.innerHTML = `<div style="font-size:32px; font-weight:bold; color:#1F2937;">출장 영수증 정산서</div><div style="font-size:14px; color:#6B7280; text-align:right;">출장 기간<br><b style="color:#4F46E5;">${dateRange}</b></div>`;
-                pageContainer.appendChild(header);
-                
-                const gridContainer = document.createElement('div');
-                gridContainer.style.cssText = `display:grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap:${gapPx}px; width:100%; height:${gridHeightPx}px;`;
-                
-                const startIdx = pageNum * imagesPerPage;
-                const endIdx = Math.min(startIdx + imagesPerPage, images.length);
-                const loadPromises = [];
-                
-                for (let i = startIdx; i < endIdx; i++) {
-                    const imgWrapper = document.createElement('div');
-                    imgWrapper.style.cssText = `border:1px solid #E5E7EB; border-radius:8px; overflow:hidden; background:#F9FAFB; display:flex; align-items:center; justify-content:center;`;
-                    const img = document.createElement('img');
-                    
-                    const p = new Promise(async (resolve) => {
-                        img.src = images[i].src;
-                        if (img.decode) {
-                            try { await img.decode(); resolve(); } catch(e) { img.onload = resolve; img.onerror = resolve; }
-                        } else {
-                            if (img.complete) resolve(); else { img.onload = resolve; img.onerror = resolve; }
-                        }
-                    });
-                    loadPromises.push(p);
-
-                    img.style.cssText = `max-width:100%; max-height:100%; object-fit:contain; display:block;`;
-                    imgWrapper.appendChild(img);
-                    gridContainer.appendChild(imgWrapper);
-                }
-                
-                pageContainer.appendChild(gridContainer);
-                document.body.appendChild(pageContainer);
-                
-                if (loadPromises.length > 0) { await Promise.all(loadPromises); }
-                await new Promise(resolve => setTimeout(() => requestAnimationFrame(resolve), 500));
-                
-                const canvas = await html2canvas(pageContainer, { 
-                    scale: 2, useCORS: true, logging: false, allowTaint: true, backgroundColor: "#ffffff"
+                };
+            }
+            if (!_tokenClient) {
+                _tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: GMAIL_SCOPE,
+                    callback: ''
                 });
-                
-                document.body.removeChild(pageContainer);
-                return canvas;
-            };
+            }
+            setupCallback();
+            _tokenClient.requestAccessToken({ prompt: isTokenValid() ? '' : 'consent' });
+        });
+    });
+}
 
-            const generatePreview = async () => {
-                setIsGenerating(true);
-                const imagesPerPage = 4;
-                const totalPages = Math.ceil(images.length / imagesPerPage) || 1;
-                const newPreviewImages = [];
+function encodeRfc2047(text) {
+    var enc = new TextEncoder();
+    var bytes = enc.encode(text);
+    var bin = '';
+    bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+    return '=?UTF-8?B?' + btoa(bin) + '?=';
+}
+function encodeBase64Body(text) {
+    var enc = new TextEncoder();
+    var bytes = enc.encode(text);
+    var bin = '';
+    bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+    return btoa(bin);
+}
+function base64UrlEncode(str) {
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
-                for (let pageNum = 0; pageNum < totalPages; pageNum++) {
-                    const canvas = await renderPageToCanvas(pageNum, imagesPerPage, 794, 1123, 40, 20, 100, 1123 - 80 - 100);
-                    newPreviewImages.push(canvas.toDataURL('image/png'));
-                }
-                
-                setPreviewImages(newPreviewImages);
-                setIsGenerating(false);
-            };
+function sendViaGmailAPI(to, subject, bodyText, pdfBlob, filename) {
+    return pdfBlob.arrayBuffer().then(function(buf) {
+        var bytes = new Uint8Array(buf);
+        var pdfBin = '';
+        bytes.forEach(function(b) { pdfBin += String.fromCharCode(b); });
+        var pdfB64 = btoa(pdfBin);
+        var boundary = 'rf_' + Date.now();
+        var mime = [
+            'MIME-Version: 1.0',
+            'To: ' + to,
+            'Subject: ' + encodeRfc2047(subject),
+            'Content-Type: multipart/mixed; boundary="' + boundary + '"',
+            '',
+            '--' + boundary,
+            'Content-Type: text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding: base64',
+            '',
+            encodeBase64Body(bodyText),
+            '',
+            '--' + boundary,
+            'Content-Type: application/pdf; name="' + filename + '"',
+            'Content-Transfer-Encoding: base64',
+            'Content-Disposition: attachment; filename="' + filename + '"',
+            '',
+            pdfB64,
+            '',
+            '--' + boundary + '--'
+        ].join('\r\n');
+        var raw = base64UrlEncode(mime);
+        return fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + _accessToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ raw: raw })
+        });
+    }).then(function(res) {
+        if (!res.ok) return res.json().then(function(err) { throw new Error(err.error && err.error.message || '전송 실패'); });
+        return res.json();
+    });
+}
 
-            const downloadPDF = async () => {
-                setIsGenerating(true);
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4', compress: true });
-                const imagesPerPage = 4;
-                const totalPages = Math.ceil(images.length / imagesPerPage);
-                
-                for (let pageNum = 0; pageNum < totalPages; pageNum++) {
-                    if (pageNum > 0) doc.addPage();
-                    const canvas = await renderPageToCanvas(pageNum, imagesPerPage, 794, 1123, 40, 20, 100, 1123 - 80 - 100);
-                    const imgData = canvas.toDataURL('image/jpeg', 0.75);
-                    doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-                }
-                
-                const blob = doc.output('blob');
-                const file = new File([blob], `[영수증]${dateRange}.pdf`, { type: 'application/octet-stream' });
-                const url = URL.createObjectURL(file);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `[영수증]${dateRange}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 1000);
-                
-                setIsGenerating(false);
-                setIsFileSaved(true); 
-                showMessage("파일이 저장되었습니다. 아래에서 메일을 전송하세요.", "success");
-            };
+var e = React.createElement;
+var useState = React.useState;
+var useEffect = React.useEffect;
+var useRef = React.useRef;
 
-            return (
-                <div className="flex items-center justify-center min-h-screen p-4">
-                    <div className="w-full max-w-lg glass-card rounded-[40px] shadow-2xl p-6 sm:p-8 transition-all overflow-hidden relative">
-                        {step === 1 && (
-                            <div className="text-center py-4 animate-fade-in">
-                                <div className="inline-flex p-4 rounded-3xl bg-white shadow-sm mb-6 text-indigo-500">
-                                    <Icon name="receipt" size={40} />
-                                </div>
-                                <h1 className="text-4xl sm:text-5xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-500">Receipt Flow</h1>
-                                <p className="text-slate-400 mb-10 font-medium">영수증을 모아 간편하게 PDF로 정산하세요.</p>
-                                <div className="bg-white rounded-3xl shadow-sm p-2 flex flex-col border border-indigo-50 gap-2 mb-6 text-left">
-                                    <label className="text-xs font-bold text-indigo-400 px-4 pt-2 uppercase tracking-tighter">출장 기간 설정</label>
-                                    <div className="flex items-center pb-2">
-                                        <div className="pl-4 text-indigo-400"><Icon name="calendar" size={20} /></div>
-                                        <input ref={dateInputRef} className="flex-grow bg-transparent outline-none px-4 text-slate-700 font-bold text-lg text-center cursor-pointer" value={dateRange} readOnly />
-                                    </div>
-                                </div>
-                                <button onClick={() => navigateTo(2)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] py-5 font-bold active:scale-95 shadow-xl shadow-indigo-100 transition-all flex items-center justify-center gap-2">
-                                    영수증 업로드 시작 <Icon name="chevron-right" />
-                                </button>
-                            </div>
-                        )}
+function svgIcon(children, size, cls) {
+    return e('svg', { xmlns:'http://www.w3.org/2000/svg', width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', className:cls||'' }, ...children);
+}
+var ICONS = {
+    receipt:      function(s,c){return svgIcon([e('path',{key:0,d:'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z'}),e('path',{key:1,d:'M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8'}),e('path',{key:2,d:'M12 17.5v-11'})],s,c);},
+    calendar:     function(s,c){return svgIcon([e('rect',{key:0,width:'18',height:'18',x:'3',y:'4',rx:'2',ry:'2'}),e('line',{key:1,x1:'16',x2:'16',y1:'2',y2:'6'}),e('line',{key:2,x1:'8',x2:'8',y1:'2',y2:'6'}),e('line',{key:3,x1:'3',x2:'21',y1:'10',y2:'10'})],s,c);},
+    chevronRight: function(s,c){return svgIcon([e('path',{key:0,d:'m9 18 6-6-6-6'})],s,c);},
+    camera:       function(s,c){return svgIcon([e('path',{key:0,d:'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'}),e('circle',{key:1,cx:'12',cy:'13',r:'3'})],s,c);},
+    image:        function(s,c){return svgIcon([e('rect',{key:0,width:'18',height:'18',x:'3',y:'3',rx:'2',ry:'2'}),e('circle',{key:1,cx:'9',cy:'9',r:'2'}),e('path',{key:2,d:'m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'})],s,c);},
+    crop:         function(s,c){return svgIcon([e('path',{key:0,d:'M6 2v14a2 2 0 0 0 2 2h14'}),e('path',{key:1,d:'M18 22V8a2 2 0 0 0-2-2H2'})],s,c);},
+    trash:        function(s,c){return svgIcon([e('path',{key:0,d:'M3 6h18'}),e('path',{key:1,d:'M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6'}),e('path',{key:2,d:'M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'}),e('line',{key:3,x1:'10',x2:'10',y1:'11',y2:'17'}),e('line',{key:4,x1:'14',x2:'14',y1:'11',y2:'17'})],s,c);},
+    checkCircle:  function(s,c){return svgIcon([e('path',{key:0,d:'M22 11.08V12a10 10 0 1 1-5.93-9.14'}),e('polyline',{key:1,points:'22 4 12 14.01 9 11.01'})],s,c);},
+    fileDown:     function(s,c){return svgIcon([e('path',{key:0,d:'M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z'}),e('polyline',{key:1,points:'14 2 14 8 20 8'}),e('path',{key:2,d:'M12 18v-6'}),e('path',{key:3,d:'m9 15 3 3 3-3'})],s,c);},
+    send:         function(s,c){return svgIcon([e('path',{key:0,d:'m22 2-7 20-4-9-9-4Z'}),e('path',{key:1,d:'M22 2 11 13'})],s,c);},
+    check:        function(s,c){return svgIcon([e('polyline',{key:0,points:'20 6 9 17 4 12'})],s,c);},
+    info:         function(s,c){return svgIcon([e('circle',{key:0,cx:'12',cy:'12',r:'10'}),e('path',{key:1,d:'M12 16v-4'}),e('path',{key:2,d:'M12 8h.01'})],s,c);},
+    alertCircle:  function(s,c){return svgIcon([e('circle',{key:0,cx:'12',cy:'12',r:'10'}),e('line',{key:1,x1:'12',x2:'12',y1:'8',y2:'12'}),e('line',{key:2,x1:'12',x2:'12.01',y1:'16',y2:'16'})],s,c);},
+    mail:         function(s,c){return svgIcon([e('rect',{key:0,width:'20',height:'16',x:'2',y:'4',rx:'2'}),e('path',{key:1,d:'m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7'})],s,c);},
+    google: function(s,c){return e('svg',{xmlns:'http://www.w3.org/2000/svg',width:s||20,height:s||20,viewBox:'0 0 24 24',className:c||''},e('path',{d:'M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z',fill:'#4285F4'}),e('path',{d:'M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z',fill:'#34A853'}),e('path',{d:'M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z',fill:'#FBBC05'}),e('path',{d:'M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z',fill:'#EA4335'}));},
+};
+function Icon(name, size, cls) { return ICONS[name] ? ICONS[name](size||20, cls) : null; }
 
-                        {step === 2 && (
-                            <div className="animate-slide-up">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">영수증 추가 <span className="text-indigo-600 bg-indigo-50 px-3 py-0.5 rounded-full text-lg">{images.length}</span></h2>
-                                    <button onClick={() => window.history.back()} className="text-slate-400 text-sm font-semibold hover:text-indigo-500">이전</button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-6">
-                                    <label className="flex flex-col items-center justify-center h-36 border-2 border-dashed border-indigo-100 rounded-[32px] bg-white/50 cursor-pointer hover:bg-indigo-50/50 transition-all active:scale-95 group">
-                                        <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform text-indigo-600"><Icon name="camera" /></div>
-                                        <span className="text-indigo-600 font-bold text-sm">카메라</span>
-                                        <input type="file" multiple accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-                                    </label>
-                                    <label className="flex flex-col items-center justify-center h-36 border-2 border-dashed border-pink-100 rounded-[32px] bg-white/50 cursor-pointer hover:bg-pink-50/50 transition-all active:scale-95 group">
-                                        <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform text-pink-600"><Icon name="image" /></div>
-                                        <span className="text-pink-600 font-bold text-sm">갤러리</span>
-                                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileUpload} />
-                                    </label>
-                                </div>
-                                <div className="grid grid-cols-3 gap-3 mb-8 max-h-72 overflow-y-auto p-1 custom-scrollbar">
-                                    {images.map(img => (
-                                        <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden shadow-md group border-2 border-white cursor-pointer" onClick={() => setCroppingImg(img)}>
-                                            <img src={img.src} className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                                                <Icon name="crop" size={24} />
-                                                <span className="text-[10px] font-bold mt-1">영역 조정</span>
-                                            </div>
-                                            <button onClick={(e) => { e.stopPropagation(); removeImage(img.id); }} className="absolute top-1 right-1 bg-rose-500 text-white rounded-full p-1.5 shadow-lg active:scale-90 z-10">
-                                                <Icon name="trash-2" size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {isProcessing && <div className="aspect-square rounded-2xl bg-slate-100 flex items-center justify-center animate-pulse border-2 border-dashed border-slate-200"><div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>}
-                                </div>
-                                <button disabled={images.length === 0 || isProcessing} onClick={() => navigateTo(3)} className="w-full py-5 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white rounded-[24px] font-bold shadow-xl active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2">
-                                    정산서 미리보기 <Icon name="check-circle" />
-                                </button>
-                            </div>
-                        )}
+function formatDate(date) {
+    var y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
+    return y+'. '+m+'. '+d+'.';
+}
 
-                        {step === 3 && (
-                            <div className="animate-fade-in flex flex-col h-full">
-                                <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                                    <h2 className="text-2xl font-black text-slate-800">최종 확인</h2>
-                                    <button onClick={() => window.history.back()} className="text-indigo-600 font-bold text-sm bg-indigo-50 px-4 py-2 rounded-full active:scale-95 transition-all">이전</button>
-                                </div>
+function CornerCropper(props) {
+    var src=props.src, onSave=props.onSave, onCancel=props.onCancel;
+    var pts = useState([{x:10,y:10},{x:90,y:10},{x:90,y:90},{x:10,y:90}]);
+    var points=pts[0], setPoints=pts[1];
+    var di = useState(null); var draggingIdx=di[0], setDraggingIdx=di[1];
+    var svgRef=useRef(null), containerRef=useRef(null);
+    var is = useState({w:0,h:0}); var imgSize=is[0], setImgSize=is[1];
+    useEffect(function() {
+        var img=new Image();
+        img.onload=function(){var c=containerRef.current;if(!c)return;var ratio=Math.min(c.clientWidth/img.naturalWidth,c.clientHeight/img.naturalHeight);setImgSize({w:img.naturalWidth*ratio,h:img.naturalHeight*ratio});};
+        img.src=src;
+    }, [src]);
+    function getPos(ev){var rect=svgRef.current.getBoundingClientRect(),t=ev.touches?ev.touches[0]:ev;return{x:((t.clientX-rect.left)/rect.width)*100,y:((t.clientY-rect.top)/rect.height)*100};}
+    function handleMove(ev){if(draggingIdx===null)return;var pos=getPos(ev);setPoints(function(prev){return prev.map(function(p,i){return i===draggingIdx?{x:Math.max(0,Math.min(100,pos.x)),y:Math.max(0,Math.min(100,pos.y))}:p;});});}
+    function generateResult(){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');var px=points.map(function(p){return{x:(p.x/100)*img.naturalWidth,y:(p.y/100)*img.naturalHeight};});var minX=Math.min.apply(null,px.map(function(p){return p.x;})),maxX=Math.max.apply(null,px.map(function(p){return p.x;}));var minY=Math.min.apply(null,px.map(function(p){return p.y;})),maxY=Math.max.apply(null,px.map(function(p){return p.y;}));canvas.width=maxX-minX;canvas.height=maxY-minY;ctx.beginPath();ctx.moveTo(px[0].x-minX,px[0].y-minY);ctx.lineTo(px[1].x-minX,px[1].y-minY);ctx.lineTo(px[2].x-minX,px[2].y-minY);ctx.lineTo(px[3].x-minX,px[3].y-minY);ctx.closePath();ctx.clip();ctx.drawImage(img,-minX,-minY);onSave(canvas.toDataURL('image/jpeg',0.9));};img.src=src;}
+    var pp=points;
+    var pointsPath='M '+pp[0].x+','+pp[0].y+' L '+pp[1].x+','+pp[1].y+' L '+pp[2].x+','+pp[2].y+' L '+pp[3].x+','+pp[3].y+' Z';
+    var overlayPath='M 0,0 L 100,0 L 100,100 L 0,100 Z '+pointsPath;
+    return e('div',{className:'fixed inset-0 z-50 bg-slate-900 flex flex-col overflow-hidden animate-fade-in'},
+        e('div',{className:'p-6 flex justify-between items-center bg-slate-900/50 backdrop-blur-md'},
+            e('button',{onClick:onCancel,className:'text-white font-bold px-4 py-2 rounded-xl bg-white/10'},'취소'),
+            e('h3',{className:'text-white font-bold'},'영역 조정'),
+            e('button',{onClick:generateResult,className:'text-white font-bold px-6 py-2 rounded-xl bg-indigo-500'},'완료')
+        ),
+        e('div',{ref:containerRef,className:'flex-1 relative flex items-center justify-center p-4'},
+            e('div',{style:{width:imgSize.w,height:imgSize.h},className:'relative'},
+                e('img',{src:src,className:'w-full h-full object-contain select-none pointer-events-none'}),
+                e('svg',{ref:svgRef,viewBox:'0 0 100 100',preserveAspectRatio:'none',className:'absolute inset-0 w-full h-full touch-none',
+                    onMouseMove:handleMove,onTouchMove:handleMove,
+                    onMouseUp:function(){setDraggingIdx(null);},onTouchEnd:function(){setDraggingIdx(null);},onMouseLeave:function(){setDraggingIdx(null);}},
+                    e('path',{d:overlayPath,className:'crop-overlay'}),
+                    e('path',{d:pointsPath,className:'crop-line',fill:'none'}),
+                    ...points.map(function(p,i){return e('circle',{key:i,cx:p.x,cy:p.y,r:'3',className:'handle',onMouseDown:function(){setDraggingIdx(i);},onTouchStart:function(){setDraggingIdx(i);}});})
+                )
+            )
+        ),
+        e('div',{className:'p-8 text-center bg-slate-900'},
+            e('p',{className:'text-white/60 text-sm font-medium flex items-center justify-center gap-2'},Icon('info',16),' 각 모서리를 드래그하여 영수증에 맞추세요')
+        )
+    );
+}
 
-                                <div className="flex-grow overflow-y-auto custom-scrollbar pb-2">
-                                    <div className="w-full bg-slate-200 rounded-[32px] mb-6 border-4 border-white overflow-hidden shadow-inner relative flex flex-col items-center justify-start flex-shrink-0 min-h-[400px]">
-                                        {isGenerating && (!previewImages || previewImages.length === 0) ? (
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-center px-4">
-                                                <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                                                <p className="text-indigo-600 font-bold text-lg">파일 생성 중...</p>
-                                            </div>
-                                        ) : (
-                                            previewImages && previewImages.length > 0 && (
-                                                <div className="w-full h-full overflow-y-auto p-2 space-y-2 custom-scrollbar" style={{maxHeight: '500px'}}>
-                                                    {previewImages.map((src, idx) => (
-                                                        <img 
-                                                            key={idx}
-                                                            src={src} 
-                                                            alt={`미리보기 ${idx + 1}`} 
-                                                            className="w-full h-auto object-contain rounded-[16px] shadow-sm bg-white"
-                                                        />
-                                                    ))}
-                                                </div>
-                                            )
-                                        )}
-                                    </div>
-                                    
-                                    <div className={`transition-all duration-300 ${isFileSaved ? 'opacity-60 grayscale' : 'opacity-100'}`}>
-                                        <div className="flex items-center gap-2 mb-2 px-1">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">1</div>
-                                            <span className="text-sm font-bold text-slate-700">증빙 파일 저장 (필수)</span>
-                                            {isFileSaved && <span className="text-xs text-emerald-600 font-bold flex items-center gap-1"><Icon name="check" size={14} />완료</span>}
-                                        </div>
-                                        <div className="mb-6">
-                                            <button onClick={downloadPDF} disabled={isGenerating} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-bold active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-200 text-sm">
-                                                <Icon name="file-down" /> PDF 저장
-                                            </button>
-                                        </div>
-                                    </div>
+function App() {
+    var s1=useState(1); var step=s1[0],setStep=s1[1];
+    var s2=useState(formatDate(new Date())+' ~ '+formatDate(new Date())); var dateRange=s2[0],setDateRange=s2[1];
+    var s3=useState([]); var images=s3[0],setImages=s3[1];
+    var s4=useState([]); var previewImages=s4[0],setPreviewImages=s4[1];
+    var s5=useState(false); var isProcessing=s5[0],setIsProcessing=s5[1];
+    var s6=useState(false); var isGenerating=s6[0],setIsGenerating=s6[1];
+    var s7=useState(false); var isSending=s7[0],setIsSending=s7[1];
+    var s8=useState(null); var notification=s8[0],setNotification=s8[1];
+    var s9=useState(null); var croppingImg=s9[0],setCroppingImg=s9[1];
+    var s10=useState(''); var email=s10[0],setEmail=s10[1];
+    var s11=useState(true); var saveEmail=s11[0],setSaveEmail=s11[1];
+    var s12=useState(null); var googleEmail=s12[0],setGoogleEmail=s12[1];
+    var s13=useState(false); var sentOk=s13[0],setSentOk=s13[1];
+    var dateInputRef=useRef(null);
 
-                                    {isFileSaved && (
-                                        <div className="animate-slide-up pt-4 border-t border-slate-100">
-                                            <div className="flex items-center gap-2 mb-3 px-1">
-                                                <div className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-bold">2</div>
-                                                <span className="text-sm font-bold text-slate-700">담당자에게 전송</span>
-                                            </div>
-                                            <div className="bg-white/80 rounded-[24px] p-4 mb-4 border border-indigo-100 shadow-sm animate-fade-in">
-                                                <label className="text-xs font-bold text-indigo-500 px-1 mb-1 block">담당자 이메일 (증빙 제출용)</label>
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-500"><Icon name="mail" size={20} /></div>
-                                                    <input 
-                                                        type="email" 
-                                                        placeholder="manager@company.com" 
-                                                        className="flex-grow bg-transparent outline-none text-slate-700 font-bold text-lg placeholder:font-normal placeholder:text-slate-300"
-                                                        value={email}
-                                                        onChange={handleEmailChange}
-                                                    />
-                                                </div>
-                                                <label className="flex items-center gap-2 px-1 cursor-pointer group">
-                                                    <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${saveEmail ? 'bg-indigo-600' : 'bg-slate-200'}`}>
-                                                        {saveEmail && <Icon name="check" size={14} className="text-white" />}
-                                                    </div>
-                                                    <input type="checkbox" checked={saveEmail} onChange={handleSaveEmailToggle} className="hidden" />
-                                                    <span className="text-xs text-slate-500 font-medium group-hover:text-indigo-600 transition-colors">이메일 주소 기억하기</span>
-                                                </label>
-                                            </div>
+    useEffect(function(){
+        function handlePop(ev){setStep((ev.state&&ev.state.step)||1);setCroppingImg(null);setSentOk(false);}
+        window.addEventListener('popstate',handlePop);
+        if(!window.history.state)window.history.replaceState({step:1},'');
+        var saved=localStorage.getItem('receipt_flow_email');if(saved)setEmail(saved);
+        var savedG=localStorage.getItem('receipt_flow_google_email');if(savedG)setGoogleEmail(savedG);
+        return function(){window.removeEventListener('popstate',handlePop);};
+    },[]);
 
-                                            <button onClick={openMailApp} className="w-full py-4 bg-slate-800 text-white rounded-[24px] font-bold active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-200">
-                                                <Icon name="send" /> 메일 앱 열기
-                                            </button>
-                                            <p className="text-center text-[10px] text-slate-400 mt-3 font-medium animate-pulse">
-                                                * 방금 저장한 파일을 메일에 꼭 <span className="text-rose-500 font-bold underline">직접 첨부</span>해주세요!
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+    useEffect(function(){
+        if(step===1&&dateInputRef.current){
+            flatpickr(dateInputRef.current,{mode:'range',locale:'ko',dateFormat:'Y. m. d.',defaultDate:[new Date(),new Date()],
+                onChange:function(dates){if(dates.length===2)setDateRange(formatDate(dates[0])+' ~ '+formatDate(dates[1]));}});
+        }
+        if(step===3)generatePreview();
+    },[step]);
 
-                        {notification && (
-                            <div className="absolute bottom-6 left-6 right-6 z-50 animate-slide-up">
-                                <div className={`px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : notification.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-indigo-50 border-indigo-100 text-indigo-700'}`}>
-                                    <Icon name={notification.type === 'success' ? 'check-circle' : notification.type === 'error' ? 'alert-circle' : 'info'} size={20} />
-                                    <span className="font-bold text-sm leading-tight">{notification.text}</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+    function navigateTo(next){window.history.pushState({step:next},'');setStep(next);setSentOk(false);}
+    function showMessage(text,type){setNotification({text:text,type:type||'info'});setTimeout(function(){setNotification(null);},4000);}
 
-                    {croppingImg && (
-                        <CornerCropper 
-                            src={croppingImg.src} 
-                            onSave={(newSrc) => {
-                                setImages(prev => prev.map(img => img.id === croppingImg.id ? { ...img, src: newSrc } : img));
-                                setCroppingImg(null);
-                                showMessage("영역이 수정되었습니다.", "success");
-                            }}
-                            onCancel={() => setCroppingImg(null)}
-                        />
-                    )}
-                </div>
-            );
-        };
+    function handleFileUpload(ev){
+        var files=Array.from(ev.target.files);if(!files.length)return;
+        setIsProcessing(true);
+        Promise.all(files.map(function(file){return new Promise(function(res){var r=new FileReader();r.onload=function(e2){res({id:Math.random().toString(36).substr(2,9),src:e2.target.result});};r.readAsDataURL(file);});}))
+        .then(function(results){setImages(function(prev){return[...prev,...results];});setIsProcessing(false);});
+    }
+    function removeImage(id){setImages(function(prev){return prev.filter(function(img){return img.id!==id;});});}
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-    </script>
+    function renderPage(pageNum,perPage,pw,ph,pad,gap,gh){
+        var pc=document.createElement('div');
+        pc.style.cssText='width:'+pw+'px;height:'+ph+'px;background:white;padding:'+pad+'px;position:fixed;top:0;left:0;z-index:-9999;font-family:sans-serif;display:flex;flex-direction:column;box-sizing:border-box;';
+        var hdr=document.createElement('div');
+        hdr.style.cssText='display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;padding-bottom:15px;border-bottom:3px solid #4F46E5;flex-shrink:0;';
+        hdr.innerHTML='<div style="font-size:32px;font-weight:bold;color:#1F2937;">출장 영수증 정산서</div><div style="font-size:14px;color:#6B7280;text-align:right;">출장 기간<br><b style="color:#4F46E5;">'+dateRange+'</b></div>';
+        pc.appendChild(hdr);
+        var grid=document.createElement('div');
+        grid.style.cssText='display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:'+gap+'px;width:100%;height:'+gh+'px;';
+        var start=pageNum*perPage,end=Math.min(start+perPage,images.length),loads=[];
+        for(var i=start;i<end;i++){
+            var wrap=document.createElement('div');
+            wrap.style.cssText='border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;background:#F9FAFB;display:flex;align-items:center;justify-content:center;';
+            var img=document.createElement('img');
+            (function(imgEl,src){
+                loads.push(new Promise(function(res){imgEl.src=src;if(imgEl.decode)imgEl.decode().then(res).catch(function(){imgEl.onload=res;imgEl.onerror=res;});else{if(imgEl.complete)res();else{imgEl.onload=res;imgEl.onerror=res;}}}));
+                imgEl.style.cssText='max-width:100%;max-height:100%;object-fit:contain;display:block;';
+                wrap.appendChild(imgEl);grid.appendChild(wrap);
+            })(img,images[i].src);
+        }
+        pc.appendChild(grid);document.body.appendChild(pc);
+        return (loads.length?Promise.all(loads):Promise.resolve())
+            .then(function(){return new Promise(function(res){setTimeout(function(){requestAnimationFrame(res);},500);});})
+            .then(function(){return html2canvas(pc,{scale:2,useCORS:true,logging:false,allowTaint:true,backgroundColor:'#ffffff'});})
+            .then(function(canvas){document.body.removeChild(pc);return canvas;});
+    }
+
+    function buildPdfBlob(){
+        var jsPDF=window.jspdf.jsPDF;
+        var doc=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
+        var perPage=4,total=Math.ceil(images.length/perPage);
+        var chain=Promise.resolve();
+        for(var p=0;p<total;p++){
+            (function(pageNum){chain=chain.then(function(){
+                if(pageNum>0)doc.addPage();
+                return renderPage(pageNum,perPage,794,1123,40,20,943).then(function(canvas){
+                    doc.addImage(canvas.toDataURL('image/jpeg',0.75),'JPEG',0,0,210,297);
+                });
+            });})(p);
+        }
+        return chain.then(function(){return doc.output('blob');});
+    }
+
+    function generatePreview(){
+        setIsGenerating(true);
+        var perPage=4,total=Math.ceil(images.length/perPage)||1,arr=[];
+        var chain=Promise.resolve();
+        for(var p=0;p<total;p++){
+            (function(pageNum){chain=chain.then(function(){
+                return renderPage(pageNum,perPage,794,1123,40,20,943).then(function(canvas){arr.push(canvas.toDataURL('image/png'));});
+            });})(p);
+        }
+        chain.then(function(){setPreviewImages(arr);setIsGenerating(false);});
+    }
+
+    function downloadPDF(){
+        setIsGenerating(true);
+        buildPdfBlob().then(function(blob){
+            var url=URL.createObjectURL(blob);
+            var a=document.createElement('a');a.href=url;a.download='[영수증]'+dateRange+'.pdf';
+            document.body.appendChild(a);a.click();
+            setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+            setIsGenerating(false);showMessage('PDF가 저장되었습니다.','success');
+        });
+    }
+
+    function handleAutoSend(){
+        if(!email){showMessage('담당자 이메일을 먼저 입력해주세요.','error');return;}
+        setIsSending(true);
+        requestGoogleToken().then(function(result){
+            if(result.email){setGoogleEmail(result.email);localStorage.setItem('receipt_flow_google_email',result.email);}
+            showMessage('로그인 완료! PDF 생성 중...','info');
+            return buildPdfBlob();
+        }).then(function(blob){
+            var filename='[영수증]'+dateRange+'.pdf';
+            var subject='[출장 증빙] '+dateRange+' 영수증 정산서 제출';
+            var body='안녕하세요,\n\n'+dateRange+' 기간의 출장비 사용 내역 증빙 서류를 첨부 파일로 제출합니다.\n\n감사합니다.';
+            return sendViaGmailAPI(email,subject,body,blob,filename);
+        }).then(function(){
+            setSentOk(true);setIsSending(false);
+            showMessage('전송 완료! '+email+'로 PDF가 발송되었습니다.','success');
+        }).catch(function(err){
+            console.error(err);setIsSending(false);
+            showMessage('전송 실패: '+err.message,'error');
+        });
+    }
+
+    var step1El = step===1 && e('div',{className:'text-center py-4 animate-fade-in'},
+        e('div',{className:'inline-flex p-4 rounded-3xl bg-white shadow-sm mb-6 text-indigo-500'},Icon('receipt',40)),
+        e('h1',{className:'text-4xl sm:text-5xl font-black mb-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-500'},'Receipt Flow'),
+        e('p',{className:'text-slate-400 mb-10 font-medium'},'영수증을 모아 간편하게 PDF로 정산하세요.'),
+        e('div',{className:'bg-white rounded-3xl shadow-sm p-2 flex flex-col border border-indigo-50 gap-2 mb-6 text-left'},
+            e('label',{className:'text-xs font-bold text-indigo-400 px-4 pt-2 uppercase tracking-tighter'},'출장 기간 설정'),
+            e('div',{className:'flex items-center pb-2'},
+                e('div',{className:'pl-4 text-indigo-400'},Icon('calendar',20)),
+                e('input',{ref:dateInputRef,className:'flex-grow bg-transparent outline-none px-4 text-slate-700 font-bold text-lg text-center cursor-pointer',value:dateRange,readOnly:true,onChange:function(){}})
+            )
+        ),
+        e('button',{onClick:function(){navigateTo(2);},className:'w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] py-5 font-bold active:scale-95 shadow-xl shadow-indigo-100 transition-all flex items-center justify-center gap-2'},'영수증 업로드 시작 ',Icon('chevronRight',20))
+    );
+
+    var step2El = step===2 && e('div',{className:'animate-slide-up'},
+        e('div',{className:'flex justify-between items-center mb-6'},
+            e('h2',{className:'text-2xl font-bold text-slate-800 flex items-center gap-2'},'영수증 추가 ',e('span',{className:'text-indigo-600 bg-indigo-50 px-3 py-0.5 rounded-full text-lg'},images.length)),
+            e('button',{onClick:function(){window.history.back();},className:'text-slate-400 text-sm font-semibold hover:text-indigo-500'},'이전')
+        ),
+        e('div',{className:'grid grid-cols-2 gap-4 mb-6'},
+            e('label',{className:'flex flex-col items-center justify-center h-36 border-2 border-dashed border-indigo-100 rounded-[32px] bg-white/50 cursor-pointer hover:bg-indigo-50/50 transition-all active:scale-95 group'},
+                e('div',{className:'w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform text-indigo-600'},Icon('camera')),
+                e('span',{className:'text-indigo-600 font-bold text-sm'},'카메라'),
+                e('input',{type:'file',multiple:true,accept:'image/*',capture:'environment',className:'hidden',onChange:handleFileUpload})
+            ),
+            e('label',{className:'flex flex-col items-center justify-center h-36 border-2 border-dashed border-pink-100 rounded-[32px] bg-white/50 cursor-pointer hover:bg-pink-50/50 transition-all active:scale-95 group'},
+                e('div',{className:'w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform text-pink-600'},Icon('image')),
+                e('span',{className:'text-pink-600 font-bold text-sm'},'갤러리'),
+                e('input',{type:'file',multiple:true,accept:'image/*',className:'hidden',onChange:handleFileUpload})
+            )
+        ),
+        e('div',{className:'grid grid-cols-3 gap-3 mb-8 max-h-72 overflow-y-auto p-1 custom-scrollbar'},
+            ...images.map(function(img){return e('div',{key:img.id,className:'relative aspect-square rounded-2xl overflow-hidden shadow-md group border-2 border-white cursor-pointer',onClick:function(){setCroppingImg(img);}},
+                e('img',{src:img.src,className:'w-full h-full object-cover'}),
+                e('div',{className:'absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white'},Icon('crop',24),e('span',{className:'text-[10px] font-bold mt-1'},'영역 조정')),
+                e('button',{onClick:function(ev){ev.stopPropagation();removeImage(img.id);},className:'absolute top-1 right-1 bg-rose-500 text-white rounded-full p-1.5 shadow-lg active:scale-90 z-10'},Icon('trash',14))
+            );}),
+            isProcessing&&e('div',{className:'aspect-square rounded-2xl bg-slate-100 flex items-center justify-center animate-pulse border-2 border-dashed border-slate-200'},e('div',{className:'w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin'}))
+        ),
+        e('button',{disabled:images.length===0||isProcessing,onClick:function(){navigateTo(3);},className:'w-full py-5 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white rounded-[24px] font-bold shadow-xl active:scale-95 disabled:opacity-30 transition-all flex items-center justify-center gap-2'},'정산서 미리보기 ',Icon('checkCircle'))
+    );
+
+    var step3El = step===3 && e('div',{className:'animate-fade-in flex flex-col'},
+        e('div',{className:'flex items-center justify-between mb-4'},
+            e('h2',{className:'text-2xl font-black text-slate-800'},'최종 확인'),
+            e('button',{onClick:function(){window.history.back();},className:'text-indigo-600 font-bold text-sm bg-indigo-50 px-4 py-2 rounded-full active:scale-95 transition-all'},'이전')
+        ),
+        e('div',{className:'overflow-y-auto custom-scrollbar pb-2'},
+            e('div',{className:'w-full bg-slate-200 rounded-[32px] mb-5 border-4 border-white overflow-hidden shadow-inner relative flex flex-col items-center min-h-[260px]'},
+                isGenerating&&previewImages.length===0
+                    ? e('div',{className:'absolute inset-0 flex flex-col items-center justify-center gap-4'},e('div',{className:'w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin'}),e('p',{className:'text-indigo-600 font-bold'},'미리보기 생성 중...'))
+                    : previewImages.length>0&&e('div',{className:'w-full overflow-y-auto p-2 space-y-2 custom-scrollbar',style:{maxHeight:'260px'}},
+                        ...previewImages.map(function(src,i){return e('img',{key:i,src:src,className:'w-full h-auto object-contain rounded-[16px] shadow-sm bg-white'});}))
+            ),
+            e('div',{className:'bg-white rounded-[24px] p-4 mb-4 border border-slate-100 shadow-sm'},
+                e('label',{className:'text-xs font-bold text-slate-400 px-1 mb-2 block'},'수신자 이메일'),
+                e('div',{className:'flex items-center gap-2 mb-3'},
+                    e('div',{className:'bg-indigo-50 p-2.5 rounded-xl text-indigo-500'},Icon('mail',20)),
+                    e('input',{type:'email',placeholder:'manager@company.com',className:'flex-grow bg-transparent outline-none text-slate-700 font-bold text-lg placeholder:font-normal placeholder:text-slate-300',value:email,onChange:function(ev){var v=ev.target.value;setEmail(v);if(saveEmail)localStorage.setItem('receipt_flow_email',v);}})
+                ),
+                e('label',{className:'flex items-center gap-2 px-1 cursor-pointer'},
+                    e('div',{className:'w-5 h-5 rounded flex items-center justify-center transition-colors '+(saveEmail?'bg-indigo-600':'bg-slate-200')},saveEmail&&Icon('check',14,'text-white')),
+                    e('input',{type:'checkbox',checked:saveEmail,onChange:function(ev){var c=ev.target.checked;setSaveEmail(c);if(c)localStorage.setItem('receipt_flow_email',email);else localStorage.removeItem('receipt_flow_email');},className:'hidden'}),
+                    e('span',{className:'text-xs text-slate-500'},'이메일 주소 기억하기')
+                )
+            ),
+            e('div',{className:'flex items-center gap-2 mb-4 px-1'},
+                e('div',{className:'w-2 h-2 rounded-full flex-shrink-0 '+(googleEmail?'bg-emerald-400':'bg-slate-300')}),
+                e('span',{className:'text-xs text-slate-500'},googleEmail?'Google 로그인됨: '+googleEmail:'Google 미로그인 (전송 버튼 클릭 시 자동 로그인)')
+            ),
+            sentOk
+                ? e('div',{className:'w-full py-6 bg-emerald-50 border-2 border-emerald-200 rounded-[24px] flex flex-col items-center justify-center gap-2 animate-slide-up'},
+                    e('div',{className:'flex items-center gap-2 text-emerald-600 font-black text-xl'},Icon('checkCircle',28,'text-emerald-500'),'전송 완료!'),
+                    e('p',{className:'text-sm text-emerald-500 text-center'},email+'\n으로 PDF가 발송되었습니다.')
+                  )
+                : e('div',{className:'flex flex-col gap-3'},
+                    e('button',{onClick:handleAutoSend,disabled:isSending||isGenerating,className:'w-full py-5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-[24px] font-bold active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 shadow-xl shadow-indigo-200'},
+                        isSending
+                            ? e('div',{className:'flex items-center gap-3'},e('div',{className:'w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin'}),'전송 중...')
+                            : e('div',{className:'flex items-center gap-2'},Icon('google',22),' PDF 생성 및 자동 전송')
+                    ),
+                    e('button',{onClick:downloadPDF,disabled:isGenerating||isSending,className:'w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-[24px] font-semibold active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-30 text-sm'},Icon('fileDown',18),' PDF만 저장')
+                )
+        )
+    );
+
+    var notifEl = notification && e('div',{className:'absolute bottom-6 left-6 right-6 z-50 animate-slide-up'},
+        e('div',{className:'px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border '+(notification.type==='success'?'bg-emerald-50 border-emerald-100 text-emerald-700':notification.type==='error'?'bg-rose-50 border-rose-100 text-rose-700':'bg-indigo-50 border-indigo-100 text-indigo-700')},
+            Icon(notification.type==='success'?'checkCircle':notification.type==='error'?'alertCircle':'info',20),
+            e('span',{className:'font-bold text-sm leading-tight'},notification.text)
+        )
+    );
+
+    return e('div',{className:'flex items-center justify-center min-h-screen p-4'},
+        e('div',{className:'w-full max-w-lg glass-card rounded-[40px] shadow-2xl p-6 sm:p-8 transition-all overflow-hidden relative'},
+            step1El, step2El, step3El, notifEl
+        ),
+        croppingImg&&e(CornerCropper,{
+            src:croppingImg.src,
+            onSave:function(newSrc){setImages(function(prev){return prev.map(function(img){return img.id===croppingImg.id?Object.assign({},img,{src:newSrc}):img;});});setCroppingImg(null);showMessage('영역이 수정되었습니다.','success');},
+            onCancel:function(){setCroppingImg(null);}
+        })
+    );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(e(App,null));
+</script>
 </body>
 </html>
