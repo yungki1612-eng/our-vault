@@ -2698,6 +2698,22 @@
                 if (catKey === 'REAL_ESTATE') val += reStats.totalValue;
                 return { name: ASSET_CATEGORIES[catKey].label, value: val, color: ASSET_CATEGORIES[catKey].color };
             }).filter(i => i.value > 0);
+
+            const currentLoans = (currentData.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
+            const loanPieData = currentLoans.map((l, i) => ({
+                name: l.name || 'Unknown',
+                value: evaluateFormula(l.amount) || 0,
+                color: ['#ec4899', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][i % 6]
+            })).filter(l => l.value > 0).sort((a,b) => b.value - a.value);
+
+            const loanTrendData = recentMonths.map(month => {
+                const d = safeData[month];
+                const loans = (d?.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
+                const lease = loans.filter(l => normalizeCategory(l.category, 'loans') === 'LEASE').reduce((a,b)=>a+(evaluateFormula(b.amount)||0), 0);
+                const debt = loans.filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE').reduce((a,b)=>a+(evaluateFormula(b.amount)||0), 0);
+                return { name: month, lease, debt, total: lease + debt };
+            });
+
             const [activeItem, setActiveIndex] = useState(null); 
             const updateGoal = (type, value) => {
                 const newData = JSON.parse(JSON.stringify(safeData));
@@ -2945,6 +2961,60 @@
                                         </div>
                                     ));
                                 })()}
+                            </div>
+                        </CollapsibleCard>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch mb-6">
+                        <CollapsibleCard title="Loan Breakdown" icon={Icons.CreditCard} className="h-64" headerExtra={<span className="text-[10px] text-slate-500 font-bold font-grotesk">{viewDate} STATUS</span>}>
+                            <div className="flex-1 flex items-center gap-2 min-h-0 h-full">
+                                <div className="w-2/5 h-full relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={loanPieData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(`loan-${index}`)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem !== null && typeof activeItem === 'string' && activeItem.startsWith('loan-') ? parseInt(activeItem.split('-')[1]) : -1} activeShape={renderActiveShape}>
+                                                {loanPieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}
+                                            </Pie>
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 flex-col">
+                                        <span className="text-[9px] font-bold text-slate-500 font-grotesk tracking-widest">TOTAL DEBT</span>
+                                    </div>
+                                </div>
+                                <div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar">
+                                    <div className="space-y-1">
+                                        {loanPieData.length === 0 && <div className="text-xs text-slate-500 text-center py-4">No loan data</div>}
+                                        {loanPieData.map((entry, index) => {
+                                            const total = loanPieData.reduce((acc, cur) => acc + cur.value, 0);
+                                            return (
+                                            <div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === `loan-${index}` ? 'bg-white/5' : ''}`} onMouseEnter={() => setActiveIndex(`loan-${index}`)} onMouseLeave={() => setActiveIndex(null)}>
+                                                <div className="flex items-center gap-1.5 overflow-hidden">
+                                                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div>
+                                                    <span className="font-bold text-slate-300 truncate" title={entry.name}>{entry.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <span className="font-bold text-slate-200">{formatCurrency(entry.value)}</span>
+                                                    <span className="text-slate-500 font-mono w-8 text-right">{total > 0 ? ((entry.value/total)*100).toFixed(0) : 0}%</span>
+                                                </div>
+                                            </div>
+                                        )})}
+                                    </div>
+                                </div>
+                            </div>
+                        </CollapsibleCard>
+                        
+                        <CollapsibleCard title="Loan Trend (12 Months)" icon={Icons.TrendingDown} className="h-64">
+                            <div className="h-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={loanTrendData} barGap={4}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                        <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
+                                        <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
+                                        <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.02)'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '6px 10px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                        <Legend wrapperStyle={{fontSize:'10px'}} />
+                                        <Bar dataKey="debt" name="General Debt" stackId="a" fill="#ec4899" barSize={16} radius={[0,0,0,0]} />
+                                        <Bar dataKey="lease" name="Jeonse/Lease" stackId="a" fill="#8b5cf6" barSize={16} radius={[4,4,0,0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </div>
                         </CollapsibleCard>
                     </div>
