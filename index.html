@@ -1415,6 +1415,8 @@
             const [freqRecent, setFreqRecent] = React.useState({});
             const [lastSeen, setLastSeen] = React.useState({});
             const [predictions, setPredictions] = React.useState([]);
+            const [slotGames, setSlotGames] = React.useState([]);
+            const [isSpinning, setIsSpinning] = React.useState(false);
             const [errorMsg, setErrorMsg] = React.useState('');
             const [progress, setProgress] = React.useState(0);
             const [progressLabel, setProgressLabel] = React.useState('');
@@ -1532,6 +1534,26 @@
 
             const regenerate = () => { if (rounds.length > 0) computeStats(rounds); };
 
+            const generateSlotGame = () => {
+                const nums = [];
+                while(nums.length < 6) {
+                    const r = Math.floor(Math.random() * 45) + 1;
+                    if(!nums.includes(r)) nums.push(r);
+                }
+                return nums.sort((a,b)=>a-b);
+            };
+
+            const handleSpin = () => {
+                setIsSpinning(true);
+                setSlotGames([]);
+                setTimeout(() => {
+                    const games = [];
+                    for(let i=0; i<5; i++) games.push(generateSlotGame());
+                    setSlotGames(games);
+                    setIsSpinning(false);
+                }, 800);
+            };
+
             const BALL_COLOR = (n) => {
                 if (n >= 1  && n <= 10) return '#fbbf24';
                 if (n >= 11 && n <= 20) return '#38bdf8';
@@ -1625,6 +1647,45 @@
                                     <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">최소 출현</div>
                                     <div className="text-lg font-black font-grotesk" style={{color: BALL_COLOR(cold10[0])}}>{cold10[0]}번</div>
                                 </div>
+                            </div>
+                        )}
+                    </GlassCard>
+
+                    <GlassCard className="p-5 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                            <div>
+                                <h3 className="text-xl font-black text-white flex items-center gap-2 font-grotesk">
+                                    <span className="text-2xl">🎰</span> 행운의 슬롯머신
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-1">버튼을 누르면 5게임(각 6개 번호)이 무작위로 추천됩니다.</p>
+                            </div>
+                            <button 
+                                onClick={handleSpin} 
+                                disabled={isSpinning}
+                                className={`px-8 py-4 rounded-2xl font-black text-lg transition-all shadow-xl flex items-center gap-2 ${isSpinning ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-105 hover:shadow-fuchsia-500/25'}`}
+                            >
+                                {isSpinning ? <><Icons.Loader2 className="w-6 h-6 animate-spin" /> 뽑는 중...</> : '슬롯 당기기!'}
+                            </button>
+                        </div>
+
+                        {slotGames.length > 0 && (
+                            <div className="mt-6 space-y-3 animate-fade-in">
+                                {slotGames.map((game, i) => (
+                                    <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-fuchsia-500/20 flex flex-col sm:flex-row items-center gap-4 hover:border-fuchsia-500/40 transition-colors">
+                                        <div className="text-xs font-bold text-fuchsia-400 uppercase tracking-widest shrink-0 w-16 text-center sm:text-left">
+                                            Game {i+1}
+                                        </div>
+                                        <div className="flex gap-2 flex-wrap justify-center flex-1">
+                                            {game.map(n => (
+                                                <div key={n} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-sm sm:text-base font-black shadow-lg"
+                                                    style={{background: BALL_COLOR(n), color: BALL_TEXT(n), boxShadow: `0 4px 12px ${BALL_COLOR(n)}40`}}>
+                                                    {n}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </GlassCard>
