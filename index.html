@@ -2700,18 +2700,36 @@
             }).filter(i => i.value > 0);
 
             const currentLoans = (currentData.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
+
+            const allLoanNamesSet = new Set();
+            recentMonths.forEach(month => {
+                const loans = (safeData[month]?.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
+                loans.forEach(l => {
+                    if (l.name) allLoanNamesSet.add(l.name);
+                });
+            });
+            const allLoanNames = Array.from(allLoanNamesSet);
+            const loanColors = ['#ec4899', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#14b8a6', '#f43f5e', '#84cc16'];
+            const loanColorMap = {};
+            allLoanNames.forEach((name, i) => loanColorMap[name] = loanColors[i % loanColors.length]);
+
             const loanPieData = currentLoans.map((l, i) => ({
                 name: l.name || 'Unknown',
                 value: evaluateFormula(l.amount) || 0,
-                color: ['#ec4899', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'][i % 6]
+                color: loanColorMap[l.name] || loanColors[i % loanColors.length]
             })).filter(l => l.value > 0).sort((a,b) => b.value - a.value);
 
             const loanTrendData = recentMonths.map(month => {
                 const d = safeData[month];
                 const loans = (d?.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
-                const lease = loans.filter(l => normalizeCategory(l.category, 'loans') === 'LEASE').reduce((a,b)=>a+(evaluateFormula(b.amount)||0), 0);
-                const debt = loans.filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE').reduce((a,b)=>a+(evaluateFormula(b.amount)||0), 0);
-                return { name: month, lease, debt, total: lease + debt };
+                const dataPoint = { name: month };
+                allLoanNames.forEach(name => dataPoint[name] = 0);
+                loans.forEach(l => {
+                    if (l.name) {
+                        dataPoint[l.name] += evaluateFormula(l.amount) || 0;
+                    }
+                });
+                return dataPoint;
             });
 
             const [activeItem, setActiveIndex] = useState(null); 
@@ -3005,15 +3023,16 @@
                         <CollapsibleCard title="Loan Trend (12 Months)" icon={Icons.TrendingDown} className="h-64">
                             <div className="h-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={loanTrendData} barGap={4}>
+                                    <LineChart data={loanTrendData}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                         <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
                                         <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.02)'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '6px 10px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
-                                        <Legend wrapperStyle={{fontSize:'10px'}} />
-                                        <Bar dataKey="debt" name="General Debt" stackId="a" fill="#ec4899" barSize={16} radius={[0,0,0,0]} />
-                                        <Bar dataKey="lease" name="Jeonse/Lease" stackId="a" fill="#8b5cf6" barSize={16} radius={[4,4,0,0]} />
-                                    </BarChart>
+                                        <RechartsTooltip cursor={{stroke: 'rgba(255,255,255,0.05)'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '6px 10px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                        <Legend wrapperStyle={{fontSize:'10px', paddingTop:'10px'}} iconType="circle" />
+                                        {allLoanNames.map(name => (
+                                            <Line key={name} type="monotone" dataKey={name} stroke={loanColorMap[name]} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />
+                                        ))}
+                                    </LineChart>
                                 </ResponsiveContainer>
                             </div>
                         </CollapsibleCard>
