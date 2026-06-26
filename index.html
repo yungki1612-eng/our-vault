@@ -1951,6 +1951,350 @@
             );
         };
 
+        // ─── Reports View ────────────────────────────────────────────────
+        const ReportsView = ({ data = {} }) => {
+            const safeData = data || {};
+            const meta = safeData.meta || {};
+
+            // 모든 월 키 수집
+            const allMonths = Object.keys(safeData).filter(isMonthKey).sort();
+            const availableYears = [...new Set(allMonths.map(m => m.substring(0, 4)))].sort().reverse();
+
+            const [selectedYear, setSelectedYear] = useState(() => {
+                if (availableYears.length > 0) return availableYears[0];
+                return new Date().getFullYear().toString();
+            });
+            const [selectedMonth, setSelectedMonth] = useState(null);
+
+            // 부동산 통계 (PerformanceReport와 동일한 로직)
+            const reStats = useMemo(() => {
+                const list = safeData.realEstate || [];
+                return {
+                    totalValue: list.reduce((acc, item) => acc + (evaluateFormula(item.currentValue) || 0), 0),
+                    ownedDebt: list.filter(i => i.ownershipType === 'OWN' || !i.ownershipType)
+                        .reduce((acc, i) => acc + (evaluateFormula(i.loan) || 0) + (evaluateFormula(i.deposit) || 0), 0)
+                };
+            }, [safeData.realEstate]);
+
+            // 월별 지표 계산
+            const calcMonthMetrics = (monthKey) => {
+                const monthData = safeData[monthKey];
+                if (!monthData) return null;
+                const assets  = (monthData.assets  || []).filter(a => !isItemHidden(a, 'assets',  meta)).reduce((s, a) => s + (evaluateFormula(a.value)  || 0), 0);
+                const loans   = (monthData.loans   || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0);
+                const income  = (monthData.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                const expense = (monthData.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                const invest  = (monthData.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                const liquid  = (monthData.assets  || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets',  meta)).reduce((s, a) => s + (evaluateFormula(a.value)  || 0), 0);
+                const totalAssets  = assets + reStats.totalValue;
+                const totalLoans   = loans  + reStats.ownedDebt;
+                const netWorth = totalAssets - totalLoans;
+                const savingsRate = income > 0 ? ((income - expense) / income) * 100 : null;
+                const investRate  = income > 0 ? (invest / income) * 100 : null;
+                const debtRatio   = netWorth > 0 ? (totalLoans / netWorth) * 100 : (totalLoans > 0 ? 999 : 0);
+                const emergencyIdx = expense > 0 ? liquid / expense : null;
+                const hasData = (monthData.assets || []).length > 0 && (monthData.budget || []).length > 0;
+                return { assets: totalAssets, loans: totalLoans, netWorth, income, expense, invest, liquid, savingsRate, investRate, debtRatio, emergencyIdx, hasData };
+            };
+
+            // 선택 연도의 12개 월 데이터
+            const yearMonths = useMemo(() => Array.from({ length: 12 }, (_, i) => {
+                const monthKey = `${selectedYear}-${String(i + 1).padStart(2, '0')}`;
+                const metrics = calcMonthMetrics(monthKey);
+                const prevKey = getPreviousMonth(monthKey);
+                const prevMetrics = calcMonthMetrics(prevKey);
+                const netWorthDelta = (metrics && prevMetrics) ? metrics.netWorth - prevMetrics.netWorth : null;
+                const assetGrowth = (metrics && prevMetrics && prevMetrics.assets > 0) ? ((metrics.assets - prevMetrics.assets) / prevMetrics.assets) * 100 : null;
+
+                let score = null;
+                let grade = null;
+                if (metrics && metrics.hasData) {
+                    let s = 0;
+                    s += assetGrowth !== null ? Math.min(15, Math.max(0, (assetGrowth / 1) * 15)) : 7.5;
+                    s += metrics.savingsRate !== null ? Math.min(20, Math.max(0, (metrics.savingsRate / 20) * 20)) : 10;
+                    s += metrics.investRate !== null ? Math.min(15, Math.max(0, (metrics.investRate / 15) * 15)) : 7.5;
+                    s += netWorthDelta !== null ? (netWorthDelta >= 0 ? 15 : Math.max(0, 15 + (netWorthDelta / Math.abs(prevMetrics?.netWorth || 1)) * 15)) : 7.5;
+                    s += metrics.debtRatio <= 40 ? 15 : metrics.debtRatio >= 200 ? 0 : Math.max(0, 15 - ((metrics.debtRatio - 40) / 160) * 15);
+                    s += metrics.emergencyIdx !== null ? Math.min(10, (metrics.emergencyIdx / 6) * 10) : 5;
+                    score = Math.round(Math.min(100, Math.max(0, s)));
+                    grade = score >= 90 ? { label: 'A+', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', emoji: '🏆' }
+                          : score >= 75 ? { label: 'A',  color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', emoji: '✅' }
+                          : score >= 50 ? { label: 'B',  color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', emoji: '⚠️' }
+                          :               { label: 'C',  color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30', emoji: '🚨' };
+                }
+                return { monthKey, month: i + 1, metrics, prevMetrics, netWorthDelta, assetGrowth, score, grade };
+            }), [selectedYear, safeData, reStats]);
+
+            // 연간 KPI 계산
+            const annualKPI = useMemo(() => {
+                const monthsWithData = yearMonths.filter(m => m.metrics && m.metrics.hasData);
+                if (monthsWithData.length === 0) return null;
+                const totalIncome  = monthsWithData.reduce((s, m) => s + m.metrics.income, 0);
+                const totalExpense = monthsWithData.reduce((s, m) => s + m.metrics.expense, 0);
+                const totalInvest  = monthsWithData.reduce((s, m) => s + m.metrics.invest, 0);
+                const avgSavings   = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : null;
+                const avgDebtRatio = monthsWithData.reduce((s, m) => s + m.metrics.debtRatio, 0) / monthsWithData.length;
+                // 연간 순자산 변화: 마지막 달 - 1년전 같은 달
+                const lastM = monthsWithData[monthsWithData.length - 1];
+                const firstM = monthsWithData[0];
+                const netWorthDelta = lastM && firstM ? lastM.metrics.netWorth - firstM.metrics.netWorth : null;
+                return { totalIncome, totalExpense, totalInvest, avgSavings, avgDebtRatio, netWorthDelta, monthCount: monthsWithData.length };
+            }, [yearMonths]);
+
+            const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    {/* ── 헤더 ── */}
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                                <Icons.Activity className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-white font-grotesk tracking-tight">Monthly Reports</h2>
+                                <p className="text-xs text-slate-500">자산관리사 관점의 월별 재무 성과 분석</p>
+                            </div>
+                        </div>
+                        {/* 연도 선택 */}
+                        <div className="flex items-center gap-2">
+                            {availableYears.map(y => (
+                                <button key={y} onClick={() => { setSelectedYear(y); setSelectedMonth(null); }}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all font-grotesk ${selectedYear === y ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' : 'text-slate-400 bg-white/5 border border-white/5 hover:border-white/20'}`}>
+                                    {y}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── 연간 KPI 4개 ── */}
+                    {annualKPI && (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[
+                                { label: '연간 순자산 변화', value: annualKPI.netWorthDelta, format: v => `${v >= 0 ? '+' : ''}${formatCurrency(Math.round(v))}`, color: annualKPI.netWorthDelta >= 0 ? 'text-emerald-400' : 'text-rose-400', icon: Icons.TrendingUp, sub: `${annualKPI.monthCount}개월 누적` },
+                                { label: '연평균 저축률', value: annualKPI.avgSavings, format: v => `${v.toFixed(1)}%`, color: annualKPI.avgSavings >= 20 ? 'text-emerald-400' : annualKPI.avgSavings >= 10 ? 'text-amber-400' : 'text-rose-400', icon: Icons.Coins, sub: '목표 20% 이상' },
+                                { label: '연간 총 투자금액', value: annualKPI.totalInvest, format: v => formatCurrency(v), color: 'text-indigo-400', icon: Icons.CandlestickChart, sub: `수입 대비 ${annualKPI.totalIncome > 0 ? ((annualKPI.totalInvest/annualKPI.totalIncome)*100).toFixed(1) : 0}%` },
+                                { label: '평균 부채비율', value: annualKPI.avgDebtRatio, format: v => v >= 900 ? 'N/A' : `${v.toFixed(1)}%`, color: annualKPI.avgDebtRatio < 40 ? 'text-emerald-400' : annualKPI.avgDebtRatio < 100 ? 'text-amber-400' : 'text-rose-400', icon: Icons.Building2, sub: '목표 40% 미만' },
+                            ].map((kpi, i) => (
+                                <GlassCard key={i} className="p-4 flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{kpi.label}</span>
+                                        <div className="p-1.5 rounded-lg bg-white/5 text-slate-400"><kpi.icon className="w-3.5 h-3.5" /></div>
+                                    </div>
+                                    <div className={`text-2xl font-black font-grotesk ${kpi.color}`}>
+                                        {kpi.value !== null ? kpi.format(kpi.value) : '—'}
+                                    </div>
+                                    <div className="text-[10px] text-slate-600 font-medium">{kpi.sub}</div>
+                                </GlassCard>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* ── 월별 카드 그리드 ── */}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {yearMonths.map(({ monthKey, month, metrics, netWorthDelta, assetGrowth, score, grade }) => {
+                            const isSelected = selectedMonth === monthKey;
+                            const hasData = metrics && metrics.hasData;
+                            return (
+                                <button key={monthKey} onClick={() => setSelectedMonth(isSelected ? null : monthKey)}
+                                    className={`relative text-left p-3 rounded-2xl border transition-all duration-200 ${
+                                        isSelected
+                                            ? `${grade?.bg || 'bg-cyan-500/10'} ${grade?.border || 'border-cyan-500/30'} shadow-lg scale-[1.03]`
+                                            : hasData
+                                                ? 'bg-white/3 border-white/8 hover:bg-white/6 hover:border-white/15 hover:-translate-y-0.5'
+                                                : 'bg-white/1 border-white/5 opacity-40 cursor-default'
+                                    }`}
+                                    disabled={!hasData}>
+                                    {/* 월 이름 */}
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase font-grotesk">{MONTH_NAMES[month - 1]}</span>
+                                        {hasData && grade && (
+                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${grade.bg} ${grade.color} border ${grade.border}`}>
+                                                {grade.label}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {hasData ? (
+                                        <>
+                                            {/* 점수 */}
+                                            <div className={`text-2xl font-black font-grotesk leading-none mb-1 ${grade?.color || 'text-white'}`}>{score}</div>
+                                            <div className="text-[9px] text-slate-500 mb-2">/ 100</div>
+                                            {/* 순자산 변화 */}
+                                            {netWorthDelta !== null && (
+                                                <div className={`text-[10px] font-bold ${netWorthDelta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {netWorthDelta >= 0 ? '↑' : '↓'} {formatCurrency(Math.abs(Math.round(netWorthDelta)))}
+                                                </div>
+                                            )}
+                                            {/* 저축률 바 */}
+                                            {metrics.savingsRate !== null && (
+                                                <div className="mt-2">
+                                                    <div className="flex justify-between mb-0.5">
+                                                        <span className="text-[8px] text-slate-600">저축률</span>
+                                                        <span className={`text-[8px] font-bold ${metrics.savingsRate >= 20 ? 'text-emerald-400' : 'text-amber-400'}`}>{metrics.savingsRate.toFixed(0)}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                                        <div className={`h-full rounded-full ${metrics.savingsRate >= 20 ? 'bg-emerald-500' : metrics.savingsRate >= 10 ? 'bg-amber-500' : 'bg-rose-500'}`}
+                                                             style={{ width: `${Math.min(100, Math.max(0, metrics.savingsRate))}%` }} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* 선택 인디케이터 */}
+                                            {isSelected && (
+                                                <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-3 h-1 rounded-full bg-cyan-400" />
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="text-[10px] text-slate-600 mt-2 font-medium">No data</div>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* ── 상세 드릴다운 패널 ── */}
+                    {selectedMonth && (
+                        <div className="animate-fade-in">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="h-px flex-1 bg-white/5" />
+                                <span className="text-xs font-bold text-cyan-400 font-grotesk px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full">
+                                    {selectedMonth} 상세 분석
+                                </span>
+                                <div className="h-px flex-1 bg-white/5" />
+                            </div>
+
+                            {/* 기존 PerformanceReport 재활용 */}
+                            <PerformanceReport data={safeData} viewDate={selectedMonth} />
+
+                            {/* 추가: 수입/지출 상세 브레이크다운 */}
+                            {(() => {
+                                const mData = safeData[selectedMonth];
+                                if (!mData || !mData.budget || mData.budget.length === 0) return null;
+                                const incomeItems  = mData.budget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME'  && !isItemHidden(b, 'budget', meta));
+                                const expenseItems = mData.budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', meta));
+                                const investItems  = mData.budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST'  && !isItemHidden(b, 'budget', meta));
+                                const totalIncome  = incomeItems.reduce((s, b)  => s + (evaluateFormula(b.amount) || 0), 0);
+                                const totalExpense = expenseItems.reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                                const totalInvest  = investItems.reduce((s, b)  => s + (evaluateFormula(b.amount) || 0), 0);
+                                const renderItems = (items, totalForRatio, color) => items.sort((a, b) => (evaluateFormula(b.amount) || 0) - (evaluateFormula(a.amount) || 0)).map((item, idx) => {
+                                    const amt = evaluateFormula(item.amount) || 0;
+                                    const pct = totalForRatio > 0 ? (amt / totalForRatio) * 100 : 0;
+                                    return (
+                                        <div key={idx} className="flex items-center gap-2 py-1.5 border-b border-white/5 last:border-0">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-0.5">
+                                                    <span className="text-xs text-slate-300 font-medium truncate">{item.name}</span>
+                                                    <span className="text-xs font-bold text-slate-200 font-grotesk ml-2 flex-shrink-0">{formatCurrency(amt)}</span>
+                                                </div>
+                                                <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] text-slate-500 w-8 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
+                                        </div>
+                                    );
+                                });
+                                return (
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                                        <GlassCard className="p-5">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400"><Icons.TrendingUp className="w-4 h-4" /></div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">수입 내역</h4>
+                                                    <p className="text-[10px] text-slate-500">Total {formatCurrency(totalIncome)}</p>
+                                                </div>
+                                            </div>
+                                            {incomeItems.length > 0 ? renderItems(incomeItems, totalIncome, 'bg-emerald-500') : <p className="text-xs text-slate-600">데이터 없음</p>}
+                                        </GlassCard>
+                                        <GlassCard className="p-5">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400"><Icons.TrendingDown className="w-4 h-4" /></div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">지출 내역</h4>
+                                                    <p className="text-[10px] text-slate-500">Total {formatCurrency(totalExpense)}</p>
+                                                </div>
+                                            </div>
+                                            {expenseItems.length > 0 ? renderItems(expenseItems, totalExpense, 'bg-rose-500') : <p className="text-xs text-slate-600">데이터 없음</p>}
+                                        </GlassCard>
+                                        <GlassCard className="p-5">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400"><Icons.CandlestickChart className="w-4 h-4" /></div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">투자 내역</h4>
+                                                    <p className="text-[10px] text-slate-500">Total {formatCurrency(totalInvest)}</p>
+                                                </div>
+                                            </div>
+                                            {investItems.length > 0 ? renderItems(investItems, totalInvest, 'bg-indigo-500') : <p className="text-xs text-slate-600">데이터 없음</p>}
+                                        </GlassCard>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* 추가: 자산 스냅샷 비교 (선택 월 vs 전월) */}
+                            {(() => {
+                                const curr = (() => {
+                                    const mData = safeData[selectedMonth];
+                                    if (!mData) return null;
+                                    const assets = (mData.assets || []).filter(a => !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) + reStats.totalValue;
+                                    const loans  = (mData.loans  || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0) + reStats.ownedDebt;
+                                    return { assets, loans, netWorth: assets - loans };
+                                })();
+                                const prevKey = getPreviousMonth(selectedMonth);
+                                const prev = (() => {
+                                    const mData = safeData[prevKey];
+                                    if (!mData) return null;
+                                    const assets = (mData.assets || []).filter(a => !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) + reStats.totalValue;
+                                    const loans  = (mData.loans  || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0) + reStats.ownedDebt;
+                                    return { assets, loans, netWorth: assets - loans };
+                                })();
+                                if (!curr) return null;
+                                const rows = [
+                                    { label: '총 자산', curr: curr.assets, prev: prev?.assets, color: 'text-cyan-400' },
+                                    { label: '총 부채', curr: curr.loans, prev: prev?.loans, color: 'text-rose-400', invertDelta: true },
+                                    { label: '순 자산', curr: curr.netWorth, prev: prev?.netWorth, color: 'text-emerald-400' },
+                                ];
+                                return (
+                                    <GlassCard className="p-5 mt-4">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="p-1.5 rounded-lg bg-sky-500/10 text-sky-400"><Icons.Activity className="w-4 h-4" /></div>
+                                            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">자산 스냅샷 비교</h4>
+                                            <span className="text-[10px] text-slate-500 ml-1">{prevKey} → {selectedMonth}</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            {rows.map((row, i) => {
+                                                const delta = row.prev !== undefined && row.prev !== null ? row.curr - row.prev : null;
+                                                const isGood = row.invertDelta ? (delta !== null && delta <= 0) : (delta !== null && delta >= 0);
+                                                return (
+                                                    <div key={i} className="bg-white/3 border border-white/8 rounded-xl p-4">
+                                                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-bold">{row.label}</p>
+                                                        <p className={`text-xl font-black font-grotesk ${row.color}`}>{formatCurrency(row.curr)}</p>
+                                                        {delta !== null && (
+                                                            <p className={`text-[11px] font-bold mt-1 ${isGood ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                {delta >= 0 ? '↑ +' : '↓ '}{formatCurrency(Math.abs(Math.round(delta)))}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </GlassCard>
+                                );
+                            })()}
+                        </div>
+                    )}
+
+                    {/* 빈 상태 */}
+                    {availableYears.length === 0 && (
+                        <GlassCard className="p-12 text-center">
+                            <div className="text-4xl mb-3">📊</div>
+                            <p className="text-slate-400 font-bold">데이터가 없습니다</p>
+                            <p className="text-slate-600 text-sm mt-1">Data Source에서 Google Sheet를 연결하고 동기화하세요</p>
+                        </GlassCard>
+                    )}
+                </div>
+            );
+        };
+        // ─── End ReportsView ──────────────────────────────────────────────
+
         const CurrencyInput = ({ value, onChange, className }) => {
             const [localValue, setLocalValue] = useState(String(value || 0));
             const [isEditing, setIsEditing] = useState(false);
@@ -2964,8 +3308,7 @@
                         </CollapsibleCard>
                     </div>
 
-                    {/* ─── Monthly Performance Report ─── */}
-                    <PerformanceReport data={safeData} viewDate={viewDate} />
+
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch mb-6">
                         <CollapsibleCard title="Loan Breakdown" icon={Icons.CreditCard} className="h-64" headerExtra={<span className="text-[10px] text-slate-500 font-bold font-grotesk">{viewDate} STATUS</span>}>
@@ -5337,6 +5680,7 @@
 
             const TABS = [
                 {id: 'dashboard', label: 'Dashboard', icon: Icons.LayoutDashboard}, 
+                {id: 'reports',   label: 'Reports',   icon: Icons.Activity},
                 {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart},
                 {id: 'lottogen', label: 'Lotto Gen', icon: Icons.Ticket},
                 {id: 'datasource', label: 'Data Source', icon: Icons.Database}
@@ -5494,6 +5838,7 @@
                             <main className="flex-1 overflow-auto p-4 lg:p-8 custom-scrollbar">
                                 <div className="max-w-[1600px] mx-auto space-y-6 pb-20">
                                     {activeTab === 'dashboard' && <Dashboard key={lastUpdated} data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} viewDate={dashboardViewDate} setViewDate={setDashboardViewDate} />}
+                                    {activeTab === 'reports' && <ReportsView data={financialData} />}
                                     {activeTab === 'realestate' && <RealEstateSheet data={financialData} onUpdate={updateFinancialData} darkMode={darkMode} />}
                                     {activeTab === 'portfolio' && (
                                         <InvestmentPortfolio 
