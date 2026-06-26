@@ -1345,7 +1345,9 @@
             }
         };
 
-        const initGapiAndGis = (clientId, onTokenReceived, onError, autoRequest = false) => {
+        // silentMode: true → 자동 재인증 (interaction_required 실패는 조용히 무시)
+        // silentMode: false → 수동 연결 (팝업 강제)
+        const initGapiAndGis = (clientId, onTokenReceived, onError, autoRequest = false, silentMode = false) => {
             let attempts = 0;
             const check = setInterval(() => {
                 attempts++;
@@ -1360,9 +1362,16 @@
                                 scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
                                 callback: (resp) => {
                                     if (resp.error) {
-                                        // silent 재인증 실패 시 조용히 무시 (popup_closed_by_user 등)
-                                        if (resp.error !== 'access_denied' && resp.error !== 'interaction_required') {
-                                            console.warn('OAuth silent error (expected on first visit):', resp.error);
+                                        const isSilentFailure = resp.error === 'interaction_required' ||
+                                            resp.error === 'access_denied' ||
+                                            resp.error === 'popup_closed_by_user' ||
+                                            resp.error === 'popup_blocked_by_browser';
+                                        if (silentMode && isSilentFailure) {
+                                            // silent 재인증 실패 → 조용히 무시 (정상적인 경우)
+                                            console.warn('Silent OAuth failed (expected, user must reconnect manually):', resp.error);
+                                        } else if (!silentMode && resp.error === 'popup_closed_by_user') {
+                                            // 사용자가 팝업을 직접 닫은 경우 → 조용히 처리
+                                            console.warn('User closed OAuth popup');
                                         } else {
                                             console.error('OAuth error:', resp);
                                             if (onError) onError(resp.error_description || resp.error);
@@ -1504,17 +1513,17 @@
                     return;
                 }
                 setSdkError(null);
+                // silentMode: false → 수동 연결이므로 팝업을 반드시 띄워야 함
                 initGapiAndGis(localClientId, (token) => {
                     setGoogleToken(token);
                     triggerSync(token, localSpreadsheetId);
                 }, (err) => {
                     setSdkError(err);
-                });
+                }, false, false);
                 setTimeout(() => {
                     if (window.tokenClient) {
-                        // prompt: '' 로 설정하여 이미 동의한 경우 팝업 없이 자동 갱신
-                        // 처음 연결하는 경우는 Google이 자동으로 동의 화면을 띄움
-                        window.tokenClient.requestAccessToken({ prompt: '' });
+                        // 수동 연결: 계정 선택 팝업을 항상 표시
+                        window.tokenClient.requestAccessToken({ prompt: 'select_account' });
                     }
                 }, 500);
             };
@@ -1726,6 +1735,204 @@
                             {children}
                         </div>
                     )}
+                </GlassCard>
+            );
+        };
+
+        // ─── Monthly Performance Report Card ───────────────────────────
+        const PerformanceReport = ({ data = {}, viewDate }) => {
+            const safeData = data || {};
+            const currentData = safeData[viewDate] || { assets: [], loans: [], budget: [], stockProfit: [] };
+            const prevMonthKey = getPreviousMonth(viewDate);
+            const prevData = safeData[prevMonthKey] || null;
+
+            const reStats = useMemo(() => {
+                const list = safeData.realEstate || [];
+                return {
+                    totalValue: list.reduce((acc, item) => acc + (evaluateFormula(item.currentValue) || 0), 0),
+                    ownedDebt: list.filter(i => i.ownershipType === 'OWN' || !i.ownershipType).reduce((acc, i) => acc + (evaluateFormula(i.loan) || 0) + (evaluateFormula(i.deposit) || 0), 0)
+                };
+            }, [safeData.realEstate]);
+
+            const calcTotals = (monthData, meta) => {
+                if (!monthData) return null;
+                const assets  = (monthData.assets  || []).filter(a => !isItemHidden(a, 'assets',  meta)).reduce((s, a) => s + (evaluateFormula(a.value)  || 0), 0);
+                const loans   = (monthData.loans   || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0);
+                const income  = (monthData.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                const expense = (monthData.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                const invest  = (monthData.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                const liquid  = (monthData.assets  || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets',  meta)).reduce((s, a) => s + (evaluateFormula(a.value)  || 0), 0);
+                const stockPnl  = (monthData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', meta)).reduce((s, i) => s + (evaluateFormula(i.profit)   || 0), 0);
+                const dividend  = (monthData.stockProfit || []).filter(i => i.category === 'DIVIDEND'     && !isItemHidden(i, 'stockProfit', meta)).reduce((s, i) => s + (evaluateFormula(i.dividend) || 0), 0);
+                const totalAssetsWithRE = assets + reStats.totalValue;
+                const totalLoansWithRE  = loans  + reStats.ownedDebt;
+                return { assets: totalAssetsWithRE, loans: totalLoansWithRE, netWorth: totalAssetsWithRE - totalLoansWithRE, income, expense, invest, liquid, stockPnl, dividend };
+            };
+
+            const curr = useMemo(() => calcTotals(currentData, safeData.meta), [currentData, safeData.meta, reStats, viewDate]);
+            const prev = useMemo(() => calcTotals(prevData,    safeData.meta), [prevData,    safeData.meta, reStats]);
+
+            const hasAssets = (currentData.assets || []).length > 0 || reStats.totalValue > 0;
+            const hasBudget = (currentData.budget || []).length > 0;
+            const isReportReady = hasAssets && hasBudget;
+
+            const metrics = useMemo(() => {
+                if (!curr) return null;
+                const assetGrowth    = prev && prev.assets > 0 ? ((curr.assets - prev.assets) / prev.assets) * 100 : null;
+                const savingsRate    = curr.income > 0 ? ((curr.income - curr.expense) / curr.income) * 100 : null;
+                const investRate     = curr.income > 0 ? (curr.invest / curr.income) * 100 : null;
+                const netWorthDelta  = prev !== null ? curr.netWorth - prev.netWorth : null;
+                const debtRatio      = curr.netWorth > 0 ? (curr.loans / curr.netWorth) * 100 : curr.loans > 0 ? 999 : 0;
+                const prevDebtRatio  = prev && prev.netWorth > 0 ? (prev.loans / prev.netWorth) * 100 : prev && prev.loans > 0 ? 999 : 0;
+                const debtRatioDelta = prev !== null ? debtRatio - prevDebtRatio : null;
+                const emergencyIdx   = curr.expense > 0 ? curr.liquid / curr.expense : null;
+                const stockContrib   = curr.income > 0 ? ((curr.stockPnl + curr.dividend) / curr.income) * 100 : null;
+
+                let score = 0;
+                score += assetGrowth  !== null ? Math.min(15, Math.max(0, (assetGrowth  / 1)  * 15)) : 7.5;
+                score += savingsRate  !== null ? Math.min(20, Math.max(0, (savingsRate  / 20) * 20)) : 10;
+                score += investRate   !== null ? Math.min(15, Math.max(0, (investRate   / 15) * 15)) : 7.5;
+                score += netWorthDelta !== null ? (netWorthDelta >= 0 ? 15 : Math.max(0, 15 + (netWorthDelta / (Math.abs((prev && prev.netWorth) || 1))) * 15)) : 7.5;
+                score += debtRatio <= 40 ? 15 : debtRatio >= 200 ? 0 : Math.max(0, 15 - ((debtRatio - 40) / 160) * 15);
+                score += emergencyIdx !== null ? Math.min(10, (emergencyIdx / 6) * 10) : 5;
+                score += stockContrib !== null ? (stockContrib >= 0 ? Math.min(10, stockContrib / 2) : 0) : 5;
+                score = Math.round(Math.min(100, Math.max(0, score)));
+
+                const grade = score >= 90 ? { label: 'A+', desc: 'Excellent', color: 'text-amber-400',   bg: 'from-amber-500/20 to-yellow-500/10',   border: 'border-amber-500/30',   emoji: '🏆' }
+                    : score >= 75 ?          { label: 'A',  desc: 'Good',      color: 'text-emerald-400', bg: 'from-emerald-500/20 to-teal-500/10',   border: 'border-emerald-500/30', emoji: '✅' }
+                    : score >= 50 ?          { label: 'B',  desc: 'Caution',   color: 'text-amber-400',   bg: 'from-amber-500/15 to-orange-500/10',   border: 'border-amber-500/30',   emoji: '⚠️' }
+                    :                        { label: 'C',  desc: 'Alert',     color: 'text-rose-400',    bg: 'from-rose-500/20 to-red-500/10',       border: 'border-rose-500/30',    emoji: '🚨' };
+
+                const metricList = [
+                    { key: 'assetGrowth',   label: '자산 증가율',     value: assetGrowth,   format: v => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`, bar: assetGrowth !== null ? Math.min(100, Math.max(0, assetGrowth * 50 + 50)) : 50,   status: assetGrowth === null ? 'na' : assetGrowth >= 1 ? 'good' : assetGrowth >= 0 ? 'warn' : 'bad', hint: '전달 대비 총자산 증감률. +1% 이상 목표.',   arrow: assetGrowth !== null ? (assetGrowth >= 0 ? '↑' : '↓') : null, invertArrow: false },
+                    { key: 'savingsRate',   label: '저축률',           value: savingsRate,   format: v => `${v.toFixed(1)}%`,                      bar: savingsRate !== null ? Math.min(100, Math.max(0, (savingsRate / 40) * 100)) : 50, status: savingsRate === null ? 'na' : savingsRate >= 20 ? 'good' : savingsRate >= 10 ? 'warn' : 'bad', hint: '(수입−지출)÷수입. 20% 이상 권장.',         arrow: null, invertArrow: false },
+                    { key: 'investRate',    label: '투자 집중도',      value: investRate,    format: v => `${v.toFixed(1)}%`,                      bar: investRate !== null ? Math.min(100, Math.max(0, (investRate / 30) * 100)) : 50,   status: investRate === null ? 'na' : investRate >= 15 ? 'good' : investRate >= 5 ? 'warn' : 'bad',     hint: '투자금÷수입. 15% 이상 권장.',               arrow: null, invertArrow: false },
+                    { key: 'netWorthDelta', label: '순자산 증가',      value: netWorthDelta, format: v => `${v >= 0 ? '+' : ''}${formatCurrency(Math.round(v))}`, bar: netWorthDelta !== null && prev && Math.abs(prev.netWorth) > 0 ? Math.min(100, Math.max(0, (netWorthDelta / Math.abs(prev.netWorth)) * 1000 + 50)) : 50, status: netWorthDelta === null ? 'na' : netWorthDelta > 0 ? 'good' : netWorthDelta === 0 ? 'warn' : 'bad', hint: '이번달 순자산(자산−부채) 변화액.', arrow: netWorthDelta !== null ? (netWorthDelta >= 0 ? '↑' : '↓') : null, invertArrow: false },
+                    { key: 'debtRatio',     label: '부채비율',         value: debtRatio,     format: v => v >= 900 ? 'N/A' : `${v.toFixed(1)}%`,   bar: Math.min(100, Math.max(0, (debtRatio / 200) * 100)),  status: debtRatio < 40 ? 'good' : debtRatio < 100 ? 'warn' : 'bad', hint: '부채÷순자산. 40% 미만 권장.',  arrow: debtRatioDelta !== null ? (debtRatioDelta <= 0 ? '↓' : '↑') : null, arrowGood: debtRatioDelta !== null && debtRatioDelta <= 0, invertArrow: true },
+                    { key: 'emergency',     label: '비상금 지수',      value: emergencyIdx,  format: v => `${v.toFixed(1)}개월`,                   bar: emergencyIdx !== null ? Math.min(100, (emergencyIdx / 12) * 100) : 50, status: emergencyIdx === null ? 'na' : emergencyIdx >= 6 ? 'good' : emergencyIdx >= 3 ? 'warn' : 'bad', hint: '유동자산÷월지출. 6개월 이상 권장.', arrow: null, invertArrow: false },
+                    { key: 'stockContrib',  label: '주식수익 기여율',  value: stockContrib,  format: v => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`,  bar: stockContrib !== null ? Math.min(100, Math.max(0, (stockContrib / 20) * 100 + 50)) : 50, status: stockContrib === null ? 'na' : stockContrib > 5 ? 'good' : stockContrib >= 0 ? 'warn' : 'bad', hint: '(주식손익+배당)÷수입.',           arrow: stockContrib !== null ? (stockContrib >= 0 ? '↑' : '↓') : null, invertArrow: false },
+                ];
+
+                const summaryParts = [];
+                if (assetGrowth  !== null) summaryParts.push(assetGrowth >= 1 ? `총 자산이 전달 대비 ${assetGrowth.toFixed(1)}% 증가했습니다.` : assetGrowth >= 0 ? `총 자산은 전달과 유사한 수준입니다.` : `총 자산이 전달 대비 ${Math.abs(assetGrowth).toFixed(1)}% 감소했습니다.`);
+                if (savingsRate  !== null) summaryParts.push(savingsRate >= 20 ? `저축률 ${savingsRate.toFixed(1)}%로 목표(20%)를 초과 달성했습니다.` : savingsRate >= 0 ? `저축률이 ${savingsRate.toFixed(1)}%로, 목표(20%) 달성이 필요합니다.` : `이번 달 지출이 수입을 초과했습니다.`);
+                if (emergencyIdx !== null && emergencyIdx < 6) summaryParts.push(`비상금이 ${emergencyIdx.toFixed(1)}개월치로 권장 기준(6개월)에 미치지 못합니다.`);
+
+                const recommendations = [];
+                if (debtRatio >= 40)                           recommendations.push({ icon: '🏦', text: `부채비율 ${debtRatio >= 900 ? 'N/A' : debtRatio.toFixed(1) + '%'}로 대출 상환 검토를 권장합니다.` });
+                if (savingsRate !== null && savingsRate < 20)  recommendations.push({ icon: '💰', text: `저축률 ${savingsRate.toFixed(1)}%로 지출 절감이 필요합니다.` });
+                if (emergencyIdx !== null && emergencyIdx < 3) recommendations.push({ icon: '⚡', text: `비상금이 ${emergencyIdx.toFixed(1)}개월치로 매우 부족합니다. 즉시 확충 권장.` });
+                if (investRate !== null && investRate < 5)     recommendations.push({ icon: '📈', text: `투자 비율이 ${investRate.toFixed(1)}%로 낮습니다. 투자 확대를 고려하세요.` });
+                if (recommendations.length === 0)              recommendations.push({ icon: '🎯', text: '모든 주요 지표가 목표 범위 내에 있습니다. 현재 기조를 유지하세요.' });
+
+                return { metricList, score, grade, summary: summaryParts.join(' '), recommendations };
+            }, [curr, prev]);
+
+            const statusBg    = { good: 'bg-emerald-500', warn: 'bg-amber-500', bad: 'bg-rose-500', na: 'bg-slate-600' };
+            const statusLabel = { good: 'GOOD', warn: 'WARN', bad: 'LOW',  na: 'N/A' };
+            const statusText  = { good: 'text-emerald-400', warn: 'text-amber-400', bad: 'text-rose-400', na: 'text-slate-500' };
+
+            if (!isReportReady) {
+                return (
+                    <GlassCard className="p-6 border-l-4 border-slate-600">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-slate-400"><Icons.Activity className="w-4 h-4" /></div>
+                            <h3 className="font-bold text-slate-300 text-sm uppercase tracking-wider font-grotesk">Monthly Performance Report</h3>
+                            <span className="text-[10px] font-mono text-slate-500 bg-slate-500/10 px-2 py-0.5 rounded border border-slate-500/20">{viewDate}</span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 py-2">
+                            <div className="flex-shrink-0 w-14 h-14 rounded-full bg-slate-800/80 border border-slate-600/40 flex items-center justify-center">
+                                <span className="text-2xl">⏳</span>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-slate-300 mb-3">리포트를 생성하려면 구글시트 데이터가 필요합니다</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${hasAssets ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-slate-600/30 bg-slate-800/50 text-slate-500'}`}>
+                                        <span>{hasAssets ? '✅' : '❌'}</span><span className="font-bold">Assets 데이터</span>
+                                    </div>
+                                    <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-lg border ${hasBudget ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-slate-600/30 bg-slate-800/50 text-slate-500'}`}>
+                                        <span>{hasBudget ? '✅' : '❌'}</span><span className="font-bold">Income/Expense 데이터</span>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-500 mt-3">구글시트에 데이터를 입력하고 동기화하면 자동으로 리포트가 생성됩니다.</p>
+                            </div>
+                        </div>
+                    </GlassCard>
+                );
+            }
+
+            if (!metrics) return null;
+            const { metricList, score, grade, summary, recommendations } = metrics;
+
+            return (
+                <GlassCard className={`border-l-4 ${grade.border} overflow-hidden`}>
+                    <div className="px-6 pt-5 pb-4 flex flex-wrap items-center justify-between gap-3 border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400"><Icons.Activity className="w-4 h-4" /></div>
+                            <h3 className="font-bold text-slate-200 text-sm uppercase tracking-wider font-grotesk">Monthly Performance Report</h3>
+                            <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">{viewDate}</span>
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider font-grotesk">vs {prevMonthKey}</span>
+                    </div>
+                    <div className="px-6 py-5">
+                        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6">
+                            {/* 종합 점수판 */}
+                            <div className={`flex flex-col items-center justify-center bg-gradient-to-br ${grade.bg} border ${grade.border} rounded-2xl p-5 relative overflow-hidden min-h-[180px]`}>
+                                <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-white/10 blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                <div className="relative z-10 text-center">
+                                    <div className="text-4xl mb-2">{grade.emoji}</div>
+                                    <div className={`text-6xl font-black font-grotesk ${grade.color} leading-none`}>{score}</div>
+                                    <div className="text-slate-400 text-[10px] font-bold mt-1 font-grotesk">/ 100점</div>
+                                    <div className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border ${grade.border} ${grade.color} text-xs font-black font-grotesk`}>
+                                        Grade <span className="text-lg leading-none">{grade.label}</span>
+                                    </div>
+                                    <div className={`text-[10px] font-bold mt-1 ${grade.color} opacity-70`}>{grade.desc}</div>
+                                </div>
+                            </div>
+                            {/* 지표 바 */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                {metricList.map(m => (
+                                    <div key={m.key}>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${statusText[m.status]} bg-white/5 border border-white/5`}>{statusLabel[m.status]}</span>
+                                                <span className="text-[10px] font-bold text-slate-300">{m.label}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                {m.arrow && (
+                                                    <span className={`text-[10px] font-black ${m.invertArrow ? (m.arrowGood ? 'text-emerald-400' : 'text-rose-400') : (m.arrow === '↑' ? 'text-emerald-400' : 'text-rose-400')}`}>{m.arrow}</span>
+                                                )}
+                                                <span className={`text-[11px] font-extrabold font-grotesk ${statusText[m.status]}`}>
+                                                    {m.value !== null ? m.format(m.value) : '—'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                                            <div className={`h-full rounded-full transition-all duration-700 ${statusBg[m.status]}`} style={{ width: `${Math.min(100, Math.max(2, m.bar))}%`, opacity: m.status === 'na' ? 0.3 : 1 }} />
+                                        </div>
+                                        <div className="text-[8px] text-slate-600 mt-0.5">{m.hint}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        {summary && (
+                            <div className="mt-5 px-4 py-3 bg-white/3 border border-white/8 rounded-xl">
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                    <Icons.Edit2 className="w-3 h-3 text-cyan-400" />
+                                    <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest font-grotesk">이달의 분석 요약</span>
+                                </div>
+                                <p className="text-[11px] text-slate-300 leading-relaxed">{summary}</p>
+                            </div>
+                        )}
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {recommendations.map((r, i) => (
+                                <div key={i} className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-white/3 border border-white/8 text-[10px] text-slate-400 leading-snug">
+                                    <span className="text-sm flex-shrink-0 mt-0.5">{r.icon}</span>
+                                    <span>{r.text}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </GlassCard>
             );
         };
@@ -2742,6 +2949,9 @@
                             </div>
                         </CollapsibleCard>
                     </div>
+
+                    {/* ─── Monthly Performance Report ─── */}
+                    <PerformanceReport data={safeData} viewDate={viewDate} />
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch mb-6">
                         <CollapsibleCard title="Loan Breakdown" icon={Icons.CreditCard} className="h-64" headerExtra={<span className="text-[10px] text-slate-500 font-bold font-grotesk">{viewDate} STATUS</span>}>
@@ -5091,13 +5301,15 @@
 
             useEffect(() => {
                 if (googleClientId) {
-                    // autoRequest: true → 이미 동의한 계정 있으면 팝업 없이 자동으로 토큰 갱신
+                    // autoRequest: true, silentMode: true → 팝업 없이 자동으로 토큰 갱신 시도
+                    // silent 실패(interaction_required 등)는 조용히 무시하고, 성공 시에만 동기화
                     initGapiAndGis(googleClientId, (token) => {
                         setGoogleToken(token);
                         triggerSync(token, googleSpreadsheetId);
                     }, (err) => {
-                        console.error('Google SDK init error:', err);
-                    }, true);
+                        // 자동 재인증 실패는 치명적 에러가 아님 (사용자가 수동으로 Data Source에서 연결 가능)
+                        console.warn('Auto Google auth failed (user can reconnect manually):', err);
+                    }, true, true);
                 }
             }, [googleClientId, googleSpreadsheetId, triggerSync]);
 
