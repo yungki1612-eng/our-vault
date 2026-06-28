@@ -5871,6 +5871,133 @@
                                             <div className="bg-gradient-to-r from-cyan-400 to-indigo-500 h-full w-[85%] rounded-full shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
                                         </div>
                                     </GlassCard>
+
+                                    {/* ── 이달의 투자 명언 ── */}
+                                    {(() => {
+                                        const QUOTES = [
+                                            { text: "주식 시장은 인내심 없는 사람의 돈을 인내심 있는 사람에게 이전시키는 장치다.", author: "Warren Buffett" },
+                                            { text: "분산투자는 무지에 대한 보호책이다. 자신이 뭘 하는지 아는 사람에겐 거의 의미가 없다.", author: "Warren Buffett" },
+                                            { text: "당신의 위(배)가 당신의 머리보다 강하면 주식을 사지 마라.", author: "Peter Lynch" },
+                                            { text: "최고의 투자는 자기 자신에 대한 투자다.", author: "Warren Buffett" },
+                                            { text: "리스크는 자신이 무엇을 하는지 모를 때 생긴다.", author: "Warren Buffett" },
+                                            { text: "시장을 예측하려는 것은 날씨를 통제하려는 것과 같다.", author: "John Bogle" },
+                                            { text: "좋은 회사를 적정 가격에 사는 것이, 평범한 회사를 싼 가격에 사는 것보다 훨씬 낫다.", author: "Warren Buffett" },
+                                            { text: "투자에서 가장 중요한 자질은 지능이 아니라 인내심이다.", author: "Benjamin Graham" },
+                                            { text: "10년 보유할 생각이 없다면 10분도 보유하지 마라.", author: "Warren Buffett" },
+                                            { text: "복리는 세계 8번째 불가사의다. 이해하는 자는 벌고, 이해 못 하는 자는 낸다.", author: "Einstein" },
+                                            { text: "월급의 10%는 저축하라. 습관이 부를 만든다.", author: "George Clason" },
+                                            { text: "부자가 되는 가장 빠른 길은 천천히 가는 것이다.", author: "Charlie Munger" },
+                                        ];
+                                        // 월 기준으로 고정 (같은 달엔 같은 명언)
+                                        const monthIdx = new Date().getMonth();
+                                        const q = QUOTES[monthIdx % QUOTES.length];
+                                        return (
+                                            <GlassCard className="p-4 border-fuchsia-500/15">
+                                                <div className="flex items-center gap-1.5 mb-3">
+                                                    <span className="text-base">💬</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-grotesk">이달의 명언</span>
+                                                </div>
+                                                <p className="text-[10px] text-slate-300 leading-relaxed mb-2 italic">"{q.text}"</p>
+                                                <p className="text-[9px] text-fuchsia-400 font-bold text-right">— {q.author}</p>
+                                            </GlassCard>
+                                        );
+                                    })()}
+
+                                    {/* ── 월 재무 건강 점수판 ── */}
+                                    {(() => {
+                                        const meta = financialData?.meta || {};
+                                        const allMonths = Object.keys(financialData).filter(isMonthKey).sort();
+                                        if (allMonths.length === 0) return null;
+                                        const viewKey = dashboardViewDate || allMonths[allMonths.length - 1];
+                                        const prevKey = getPreviousMonth(viewKey);
+                                        const reList = financialData.realEstate || [];
+                                        const reTotal = reList.reduce((s, i) => s + (evaluateFormula(i.currentValue) || 0), 0);
+                                        const reDebt  = reList.filter(i => i.ownershipType === 'OWN' || !i.ownershipType).reduce((s, i) => s + (evaluateFormula(i.loan) || 0) + (evaluateFormula(i.deposit) || 0), 0);
+
+                                        const calcScore = (mk) => {
+                                            const md = financialData[mk];
+                                            if (!md) return null;
+                                            const assets  = (md.assets  || []).filter(a => !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) + reTotal;
+                                            const loans   = (md.loans   || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0) + reDebt;
+                                            const income  = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                                            const expense = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                                            const invest  = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                                            const liquid  = (md.assets  || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0);
+                                            const hasData = (md.assets || []).length > 0 && (md.budget || []).length > 0;
+                                            if (!hasData || income === 0) return null;
+                                            const netWorth   = assets - loans;
+                                            const savingsRate = ((income - expense) / income) * 100;
+                                            const investRate  = (invest / income) * 100;
+                                            const debtRatio   = netWorth > 0 ? (loans / netWorth) * 100 : 999;
+                                            const emergencyIdx = expense > 0 ? liquid / expense : 0;
+                                            let s = 0;
+                                            s += Math.min(20, Math.max(0, (savingsRate / 20) * 20));
+                                            s += Math.min(15, Math.max(0, (investRate / 15) * 15));
+                                            s += debtRatio <= 40 ? 15 : debtRatio >= 200 ? 0 : Math.max(0, 15 - ((debtRatio - 40) / 160) * 15);
+                                            s += Math.min(10, (emergencyIdx / 6) * 10);
+                                            s += Math.min(20, Math.max(0, (savingsRate / 20) * 20)); // 가중
+                                            s = Math.round(Math.min(100, Math.max(0, s * (100/80))));
+                                            return s;
+                                        };
+
+                                        const score = calcScore(viewKey);
+                                        const prevScore = calcScore(prevKey);
+                                        if (score === null) return null;
+
+                                        const grade = score >= 90 ? { label: 'A+', emoji: '🏆', color: 'text-amber-400', ring: 'stroke-amber-400', glow: 'shadow-amber-500/20' }
+                                                    : score >= 75 ? { label: 'A',  emoji: '✅', color: 'text-emerald-400', ring: 'stroke-emerald-400', glow: 'shadow-emerald-500/20' }
+                                                    : score >= 50 ? { label: 'B',  emoji: '⚠️', color: 'text-amber-400', ring: 'stroke-amber-400', glow: 'shadow-amber-500/20' }
+                                                    :               { label: 'C',  emoji: '🚨', color: 'text-rose-400',   ring: 'stroke-rose-400',   glow: 'shadow-rose-500/20'   };
+
+                                        const delta = prevScore !== null ? score - prevScore : null;
+                                        const circumference = 2 * Math.PI * 28;
+                                        const offset = circumference * (1 - score / 100);
+
+                                        return (
+                                            <GlassCard className={`p-4 border-white/10`}>
+                                                <div className="flex items-center gap-1.5 mb-3">
+                                                    <span className="text-base">{grade.emoji}</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-grotesk">재무 건강 점수</span>
+                                                    <span className="text-[9px] text-slate-600 ml-auto font-mono">{viewKey}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    {/* 원형 게이지 */}
+                                                    <div className="relative flex-shrink-0">
+                                                        <svg width="68" height="68" viewBox="0 0 68 68">
+                                                            <circle cx="34" cy="34" r="28" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6"/>
+                                                            <circle cx="34" cy="34" r="28" fill="none"
+                                                                className={grade.ring}
+                                                                strokeWidth="6"
+                                                                strokeLinecap="round"
+                                                                strokeDasharray={circumference}
+                                                                strokeDashoffset={offset}
+                                                                transform="rotate(-90 34 34)"
+                                                                style={{ transition: 'stroke-dashoffset 0.8s ease', filter: 'drop-shadow(0 0 4px currentColor)' }}
+                                                            />
+                                                        </svg>
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                            <span className={`text-lg font-black font-grotesk leading-none ${grade.color}`}>{score}</span>
+                                                            <span className="text-[8px] text-slate-500">/ 100</span>
+                                                        </div>
+                                                    </div>
+                                                    {/* 등급 + 변화 */}
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className={`text-2xl font-black font-grotesk ${grade.color}`}>{grade.label}</div>
+                                                        {delta !== null && (
+                                                            <div className={`flex items-center gap-0.5 text-[10px] font-bold ${delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                {delta >= 0 ? '↑' : '↓'} {Math.abs(delta)}점
+                                                                <span className="text-slate-600 font-normal ml-0.5">vs 전월</span>
+                                                            </div>
+                                                        )}
+                                                        <div className="text-[9px] text-slate-600">
+                                                            {score >= 75 ? '양호한 재무 상태' : score >= 50 ? '개선 필요' : '긴급 점검 필요'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </GlassCard>
+                                        );
+                                    })()}
+
                                 </div>
 
                                 <div className="space-y-2 mt-auto border-t border-white/5 pt-6 font-mono text-[9px] text-slate-500">
