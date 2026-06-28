@@ -2175,14 +2175,35 @@
                                 const totalIncome  = incomeItems.reduce((s, b)  => s + (evaluateFormula(b.amount) || 0), 0);
                                 const totalExpense = expenseItems.reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
                                 const totalInvest  = investItems.reduce((s, b)  => s + (evaluateFormula(b.amount) || 0), 0);
-                                const renderItems = (items, totalForRatio, color) => items.sort((a, b) => (evaluateFormula(b.amount) || 0) - (evaluateFormula(a.amount) || 0)).map((item, idx) => {
-                                    const amt = evaluateFormula(item.amount) || 0;
+                                const groupByName = (items) => {
+                                    const map = new Map();
+                                    items.forEach(item => {
+                                        const name = (item.name || '').trim();
+                                        const amt = evaluateFormula(item.amount) || 0;
+                                        if (map.has(name)) {
+                                            map.get(name).amount += amt;
+                                            map.get(name).count += 1;
+                                        } else {
+                                            map.set(name, { name, amount: amt, count: 1 });
+                                        }
+                                    });
+                                    return Array.from(map.values());
+                                };
+                                const renderItems = (items, totalForRatio, color) => {
+                                    const grouped = groupByName(items).sort((a, b) => b.amount - a.amount);
+                                    return grouped.map((item, idx) => {
+                                    const amt = item.amount;
                                     const pct = totalForRatio > 0 ? (amt / totalForRatio) * 100 : 0;
                                     return (
                                         <div key={idx} className="flex items-center gap-2 py-1.5 border-b border-white/5 last:border-0">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between mb-0.5">
-                                                    <span className="text-xs text-slate-300 font-medium truncate">{item.name}</span>
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <span className="text-xs text-slate-300 font-medium truncate">{item.name}</span>
+                                                        {item.count > 1 && (
+                                                            <span className="text-[9px] font-bold text-slate-500 bg-white/5 border border-white/10 rounded px-1 flex-shrink-0">×{item.count}</span>
+                                                        )}
+                                                    </div>
                                                     <span className="text-xs font-bold text-slate-200 font-grotesk ml-2 flex-shrink-0">{formatCurrency(amt)}</span>
                                                 </div>
                                                 <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
@@ -2192,7 +2213,7 @@
                                             <span className="text-[10px] text-slate-500 w-8 text-right flex-shrink-0">{pct.toFixed(0)}%</span>
                                         </div>
                                     );
-                                });
+                                });};
                                 return (
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
                                         <GlassCard className="p-5">
