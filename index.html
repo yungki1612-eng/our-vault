@@ -5918,34 +5918,45 @@
                                         const reTotal = reList.reduce((s, i) => s + (evaluateFormula(i.currentValue) || 0), 0);
                                         const reDebt  = reList.filter(i => i.ownershipType === 'OWN' || !i.ownershipType).reduce((s, i) => s + (evaluateFormula(i.loan) || 0) + (evaluateFormula(i.deposit) || 0), 0);
 
-                                        const calcScore = (mk) => {
+                                        const calcScore = (mk, prevMk) => {
                                             const md = financialData[mk];
                                             if (!md) return null;
-                                            const assets  = (md.assets  || []).filter(a => !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) + reTotal;
-                                            const loans   = (md.loans   || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0) + reDebt;
-                                            const income  = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
-                                            const expense = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
-                                            const invest  = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
-                                            const liquid  = (md.assets  || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0);
+                                            const prevMd = financialData[prevMk];
+                                            const assets   = (md.assets  || []).filter(a => !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) + reTotal;
+                                            const loans    = (md.loans   || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0) + reDebt;
+                                            const income   = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                                            const expense  = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                                            const invest   = (md.budget  || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST'  && !isItemHidden(b, 'budget', meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0);
+                                            const liquid   = (md.assets  || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0);
+                                            const stockPnl = (md.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', meta)).reduce((s, i) => s + (evaluateFormula(i.profit) || 0), 0);
+                                            const dividend = (md.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', meta)).reduce((s, i) => s + (evaluateFormula(i.dividend) || 0), 0);
                                             const hasData = (md.assets || []).length > 0 && (md.budget || []).length > 0;
                                             if (!hasData || income === 0) return null;
-                                            const netWorth   = assets - loans;
-                                            const savingsRate = ((income - expense) / income) * 100;
-                                            const investRate  = (invest / income) * 100;
-                                            const debtRatio   = netWorth > 0 ? (loans / netWorth) * 100 : 999;
-                                            const emergencyIdx = expense > 0 ? liquid / expense : 0;
+                                            const netWorth     = assets - loans;
+                                            const savingsRate  = ((income - expense) / income) * 100;
+                                            const investRate   = (invest / income) * 100;
+                                            const debtRatio    = netWorth > 0 ? (loans / netWorth) * 100 : (loans > 0 ? 999 : 0);
+                                            const emergencyIdx = expense > 0 ? liquid / expense : null;
+                                            const stockContrib = income > 0 ? ((stockPnl + dividend) / income) * 100 : null;
+                                            // 전월 대비 자산증가율 & 순자산증가
+                                            const prevAssets   = prevMd ? (prevMd.assets || []).filter(a => !isItemHidden(a, 'assets', meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) + reTotal : null;
+                                            const prevLoans    = prevMd ? (prevMd.loans  || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0) + reDebt : null;
+                                            const prevNetWorth = prevAssets !== null && prevLoans !== null ? prevAssets - prevLoans : null;
+                                            const assetGrowth  = prevAssets !== null && prevAssets > 0 ? ((assets - prevAssets) / prevAssets) * 100 : null;
+                                            const netWorthDelta = prevNetWorth !== null ? netWorth - prevNetWorth : null;
                                             let s = 0;
+                                            s += assetGrowth !== null  ? Math.min(15, Math.max(0, (assetGrowth / 1) * 15)) : 7.5;
                                             s += Math.min(20, Math.max(0, (savingsRate / 20) * 20));
                                             s += Math.min(15, Math.max(0, (investRate / 15) * 15));
+                                            s += netWorthDelta !== null ? (netWorthDelta >= 0 ? 15 : Math.max(0, 15 + (netWorthDelta / Math.abs(prevNetWorth || 1)) * 15)) : 7.5;
                                             s += debtRatio <= 40 ? 15 : debtRatio >= 200 ? 0 : Math.max(0, 15 - ((debtRatio - 40) / 160) * 15);
-                                            s += Math.min(10, (emergencyIdx / 6) * 10);
-                                            s += Math.min(20, Math.max(0, (savingsRate / 20) * 20)); // 가중
-                                            s = Math.round(Math.min(100, Math.max(0, s * (100/80))));
-                                            return s;
+                                            s += emergencyIdx !== null ? Math.min(10, (emergencyIdx / 6) * 10) : 5;
+                                            s += stockContrib !== null ? (stockContrib >= 0 ? Math.min(10, stockContrib / 2) : 0) : 5;
+                                            return Math.round(Math.min(100, Math.max(0, s)));
                                         };
 
-                                        const score = calcScore(viewKey);
-                                        const prevScore = calcScore(prevKey);
+                                        const score = calcScore(viewKey, prevKey);
+                                        const prevScore = calcScore(prevKey, getPreviousMonth(prevKey));
                                         if (score === null) return null;
 
                                         const grade = score >= 90 ? { label: 'A+', emoji: '🏆', color: 'text-amber-400', ring: 'stroke-amber-400', glow: 'shadow-amber-500/20' }
