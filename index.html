@@ -4926,7 +4926,17 @@
         };
 
         const AccountCardComponent = ({ account, priceCache, exchangeRate, personColor, onDeleteAccount, onDeleteHolding, onEditHolding }) => {
-            const accountValue = (account.holdings || []).reduce((s, h) => s + calcHoldingValue(h, priceCache, exchangeRate), 0);
+            const holdings = account.holdings || [];
+            const accountValue = holdings.reduce((s, h) => s + calcHoldingValue(h, priceCache, exchangeRate), 0);
+            
+            const sortedHoldings = React.useMemo(() => {
+                return [...holdings].sort((a, b) => {
+                    const valA = calcHoldingValue(a, priceCache, exchangeRate);
+                    const valB = calcHoldingValue(b, priceCache, exchangeRate);
+                    return valB - valA;
+                });
+            }, [holdings, priceCache, exchangeRate]);
+
             return (
                 <GlassCard className="overflow-hidden group/account">
                     <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06]">
@@ -4945,7 +4955,7 @@
                             </div>
                         </div>
                     </div>
-                    {(account.holdings || []).length > 0 ? (
+                    {sortedHoldings.length > 0 ? (
                         <div className="overflow-x-auto custom-scrollbar">
                             <table className="w-full min-w-[520px]">
                                 <thead>
@@ -4959,7 +4969,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {account.holdings.map(h => (
+                                    {sortedHoldings.map(h => (
                                         <HoldingRowComponent key={h.id} accountId={account.id} h={h} priceCache={priceCache} exchangeRate={exchangeRate} onDeleteHolding={onDeleteHolding} onEditHolding={onEditHolding} />
                                     ))}
                                 </tbody>
