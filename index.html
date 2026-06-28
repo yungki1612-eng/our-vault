@@ -2557,37 +2557,43 @@
             return isWrapped ? content : <GlassCard className="p-5 h-full">{content}</GlassCard>;
         };
 
-        const MonthlyAssetAllocationCard = ({ date, data, isWrapped }) => {
+        const MonthlyAssetAllocationCard = ({ date, data, isWrapped, onUpdate }) => {
+            // 기본 타겟 비율 (meta에 저장된 값이 있으면 그걸 사용)
+            const savedTargets = (data?.meta?.allocationTargets) || {};
+            const DEFAULT_TARGETS = { Stocks: 37, Crypto: 3, 'Loan Repayment': 8, 'Credit Cards': 20 };
+            const getTarget = (label) => savedTargets[label] !== undefined ? savedTargets[label] : DEFAULT_TARGETS[label];
+
+            const updateTarget = (label, newVal) => {
+                if (!onUpdate || isNaN(newVal) || newVal < 0 || newVal > 100) return;
+                const newData = { ...data, meta: { ...(data.meta || {}), allocationTargets: { ...savedTargets, [label]: newVal } } };
+                onUpdate(newData);
+            };
+
+            // 인라인 편집 상태
+            const [editingLabel, setEditingLabel] = useState(null);
+            const [editValue, setEditValue] = useState('');
+
             const allocationPlan = [
-                { label: 'Stocks', targetRatio: 37, color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
-                  // 항목1: Investment, 항목2: 주식 또는 ISA
+                { label: 'Stocks', color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && (b.name.trim() === '주식' || b.name.trim() === 'ISA' || b.name.trim().includes('주식') || b.name.trim().includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-                { label: 'Crypto', targetRatio: 3, color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
-                  // 항목1: Investment, 항목2: 가상자산
+                { label: 'Crypto', color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '가상자산').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-                { label: 'Loan Repayment', targetRatio: 8, color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
-                  // 항목1: Expenses, 항목2: 대출이자/상환, 항목3: 공동(→ category2=Joint), 비고: 대출상환
+                { label: 'Loan Repayment', color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '대출이자/상환' && (b.category2||'').trim() === 'Joint').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-                { label: 'Credit Cards', targetRatio: 20, isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
-                  // 항목1: Expenses, 항목2: 신용카드
+                { label: 'Credit Cards', isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '신용카드').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-            ];
+            ].map(p => ({ ...p, targetRatio: getTarget(p.label) }));
+
             const stats = useMemo(() => {
                 const year = date.substring(0, 4);
-
-                // 해당 연도에서 데이터가 존재하는 월만 수집
                 const monthsWithData = Array.from({ length: 12 }, (_, i) => {
                     const monthKey = `${year}-${String(i + 1).padStart(2, '0')}`;
                     const mBudget = data[monthKey]?.budget || [];
                     const mIncome = mBudget.filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
                     return { monthKey, month: i + 1, budget: mBudget, income: mIncome, hasData: mIncome > 0 };
                 }).filter(m => m.hasData);
-
                 const dataMonthCount = monthsWithData.length;
-
-                // 연간 합계 계산
                 const annualIncome = monthsWithData.reduce((s, m) => s + m.income, 0);
-
                 const items = allocationPlan.map(plan => {
                     const annualActualAmt = monthsWithData.reduce((s, m) => s + plan.getActual(m.budget), 0);
                     const annualTargetAmt = annualIncome * (plan.targetRatio / 100);
@@ -2596,8 +2602,6 @@
                     const actualRatio = annualIncome > 0 ? (annualActualAmt / annualIncome) * 100 : 0;
                     return { ...plan, income: annualIncome, targetAmt: annualTargetAmt, actualAmt: annualActualAmt, achieved, progress, actualRatio };
                 });
-
-                // 연간 월별 달성 트래커 (각 월이 해당 월 기준으로 목표 달성했는지)
                 const yearlyAchieved = Array.from({ length: 12 }, (_, i) => {
                     const monthKey = `${year}-${String(i + 1).padStart(2, '0')}`;
                     const mBudget = data[monthKey]?.budget || [];
@@ -2610,9 +2614,8 @@
                     });
                     return { month: i + 1, achieved: allAchieved, hasData: true };
                 });
-
                 return { income: annualIncome, items, yearlyAchieved, year, dataMonthCount };
-            }, [date, data]);
+            }, [date, data, savedTargets]);
 
             const content = (
                 <div className="flex-1 flex flex-col min-h-0 w-full">
@@ -2624,7 +2627,7 @@
                         </div>
                         <span className="text-base font-black text-emerald-400 font-grotesk">{formatCurrency(stats.income)}</span>
                     </div>
-                    {/* 배분 항목 테이블 */}
+                    {/* 배분 항목 */}
                     <div className="flex flex-col gap-2.5 flex-1">
                         {stats.items.map((item, idx) => (
                             <div key={idx} className={`rounded-xl border ${item.borderColor} ${item.bgColor} px-3 py-3 flex-1`}>
@@ -2632,7 +2635,38 @@
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></div>
                                         <span className="text-xs font-bold text-slate-200">{item.label}</span>
-                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.textColor} bg-white/5 border border-white/10`}>Target {item.targetRatio}%</span>
+                                        {/* 타겟 뱃지 - 클릭하면 인라인 편집 */}
+                                        {editingLabel === item.label ? (
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    autoFocus
+                                                    type="number"
+                                                    min="0" max="100" step="1"
+                                                    value={editValue}
+                                                    onChange={e => setEditValue(e.target.value)}
+                                                    onBlur={() => {
+                                                        const v = parseFloat(editValue);
+                                                        if (!isNaN(v)) updateTarget(item.label, v);
+                                                        setEditingLabel(null);
+                                                    }}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') { const v = parseFloat(editValue); if (!isNaN(v)) updateTarget(item.label, v); setEditingLabel(null); }
+                                                        if (e.key === 'Escape') setEditingLabel(null);
+                                                    }}
+                                                    className="w-12 text-center text-[10px] font-bold bg-black/60 border border-cyan-500/50 rounded px-1 py-0.5 text-cyan-300 outline-none focus:ring-1 focus:ring-cyan-500/50"
+                                                />
+                                                <span className={`text-[9px] font-bold ${item.textColor}`}>%</span>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => { setEditingLabel(item.label); setEditValue(String(item.targetRatio)); }}
+                                                title="클릭해서 타겟 수정"
+                                                className={`group/target flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.textColor} bg-white/5 border border-white/10 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-all cursor-pointer`}
+                                            >
+                                                Target {item.targetRatio}%
+                                                <Icons.Pencil className="w-2.5 h-2.5 opacity-0 group-hover/target:opacity-70 transition-opacity ml-0.5" />
+                                            </button>
+                                        )}
                                     </div>
                                     <div className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${item.achieved ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : (item.isLimit ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-slate-400 border border-white/10')}`}>
                                         {item.achieved ? (
@@ -3185,7 +3219,7 @@
                         </div>
                         <div className="lg:col-span-1">
                             <CollapsibleCard title="Asset Allocation Strategy" icon={Icons.Target} className="h-[500px]" headerExtra={<span className="text-[10px] text-slate-500 font-medium font-grotesk">{viewDate} CRITERION</span>}>
-                                <MonthlyAssetRatioCard date={viewDate} data={safeData} isWrapped />
+                                <MonthlyAssetRatioCard date={viewDate} data={safeData} isWrapped onUpdate={onUpdate} />
                             </CollapsibleCard>
                         </div>
                     </div>
