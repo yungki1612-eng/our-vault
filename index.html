@@ -2564,8 +2564,10 @@
         const MonthlyAssetAllocationCard = ({ date, data, isWrapped, onUpdate }) => {
             // 기본 타겟 비율 (meta에 저장된 값이 있으면 그걸 사용)
             const savedTargets = (data?.meta?.allocationTargets) || {};
-            const DEFAULT_TARGETS = { Stocks: 37, Crypto: 3, 'Loan Repayment': 8, 'Credit Cards': 20 };
-            const getTarget = (label) => savedTargets[label] !== undefined ? savedTargets[label] : DEFAULT_TARGETS[label];
+            const DEFAULT_TARGETS = { '주식': 37, '가상자산': 3, '대출 상환': 8, '신용카드': 20 };
+            // 레거시 영어 키 매핑 (기존 저장값 호환)
+            const LEGACY_KEY_MAP = { '주식': 'Stocks', '가상자산': 'Crypto', '대출 상환': 'Loan Repayment', '신용카드': 'Credit Cards' };
+            const getTarget = (label) => savedTargets[label] !== undefined ? savedTargets[label] : (savedTargets[LEGACY_KEY_MAP[label]] !== undefined ? savedTargets[LEGACY_KEY_MAP[label]] : DEFAULT_TARGETS[label]);
 
             const updateTarget = (label, newVal) => {
                 if (!onUpdate || isNaN(newVal) || newVal < 0 || newVal > 100) return;
@@ -2578,13 +2580,13 @@
             const [editValue, setEditValue] = useState('');
 
             const allocationPlan = [
-                { label: 'Stocks', color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
+                { label: '주식', color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && (b.name.trim() === '주식' || b.name.trim() === 'ISA' || b.name.trim().includes('주식') || b.name.trim().includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-                { label: 'Crypto', color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
+                { label: '가상자산', color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '가상자산').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-                { label: 'Loan Repayment', color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
+                { label: '대출 상환', color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '대출이자/상환' && (b.category2||'').trim() === 'Joint').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-                { label: 'Credit Cards', isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
+                { label: '신용카드', isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '신용카드').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
             ].map(p => ({ ...p, targetRatio: getTarget(p.label) }));
 
@@ -2627,7 +2629,7 @@
                     <div className="flex items-center justify-between mb-3 px-1">
                         <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-4 rounded-full bg-emerald-400"></div>
-                            <span className="text-xs font-bold text-slate-400">Annual Income ({stats.dataMonthCount}M)</span>
+                            <span className="text-xs font-bold text-slate-400">연간 수입 ({stats.dataMonthCount}개월)</span>
                         </div>
                         <span className="text-base font-black text-emerald-400 font-grotesk">{formatCurrency(stats.income)}</span>
                     </div>
@@ -2667,16 +2669,16 @@
                                                 title="클릭해서 타겟 수정"
                                                 className={`group/target flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${item.textColor} bg-white/5 border border-white/10 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-all cursor-pointer`}
                                             >
-                                                Target {item.targetRatio}%
+                                                목표 {item.targetRatio}%
                                                 <Icons.Pencil className="w-2.5 h-2.5 opacity-0 group-hover/target:opacity-70 transition-opacity ml-0.5" />
                                             </button>
                                         )}
                                     </div>
                                     <div className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${item.achieved ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : (item.isLimit ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-slate-400 border border-white/10')}`}>
                                         {item.achieved ? (
-                                            <><svg className="w-2.5 h-2.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>Achieved</>
+                                            <><svg className="w-2.5 h-2.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>달성</>
                                         ) : (
-                                            <>{item.isLimit ? 'Over Limit' : 'In Progress'}</>
+                                            <>{item.isLimit ? '한도 초과' : '진행 중'}</>
                                         )}
                                     </div>
                                 </div>
@@ -2688,11 +2690,11 @@
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] text-slate-500 font-medium">Target</span>
+                                        <span className="text-[10px] text-slate-500 font-medium">목표</span>
                                         <span className="text-xs font-extrabold text-slate-200 font-grotesk">{formatCurrency(item.targetAmt)}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] text-slate-500 font-medium">Actual</span>
+                                        <span className="text-[10px] text-slate-500 font-medium">실적</span>
                                         <span className={`text-xs font-extrabold font-grotesk ${item.achieved ? 'text-emerald-400' : item.textColor}`}>{formatCurrency(item.actualAmt)}</span>
                                         <span className="text-[9px] text-slate-400">({item.actualRatio.toFixed(1)}%)</span>
                                     </div>
@@ -2708,7 +2710,7 @@
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400"><Icons.PieChart className="w-5 h-5" /></div>
-                            <div><h4 className="text-sm font-bold text-slate-200">Asset Allocation Strategy</h4><p className="text-[10px] text-slate-500 font-medium">As of {date}</p></div>
+                            <div><h4 className="text-sm font-bold text-slate-200">자산배분 전략</h4><p className="text-[10px] text-slate-500 font-medium">{date} 기준</p></div>
                         </div>
                     </div>
                     {content}
