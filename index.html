@@ -5308,7 +5308,385 @@
             );
         };
 
+        // ==========================================
+        // TOSS INVEST VIEW
+        // ==========================================
+        const TossInvestView = ({ data }) => {
+            const portfolio = data.portfolio || { persons: {}, priceCache: {}, exchangeRate: 1380 };
+            const priceCache = portfolio.priceCache || {};
+            const exchangeRate = portfolio.exchangeRate || 1380;
+
+            // ---- Market Data ----
+            const MARKET_INDICES = [
+                { label: 'KOSPI', ticker: '^KS11', flag: '🇰🇷' },
+                { label: 'KOSDAQ', ticker: '^KQ11', flag: '🇰🇷' },
+                { label: 'S&P 500', ticker: '^GSPC', flag: '🇺🇸' },
+                { label: 'NASDAQ', ticker: '^IXIC', flag: '🇺🇸' },
+                { label: 'USD/KRW', ticker: 'KRW=X', flag: '💱' },
+            ];
+            const [marketData, setMarketData] = useState({});
+            const [marketLoading, setMarketLoading] = useState(true);
+            const [marketError, setMarketError] = useState(false);
+            const [lastRefresh, setLastRefresh] = useState(null);
+
+            const fetchMarketData = async () => {
+                setMarketLoading(true);
+                setMarketError(false);
+                try {
+                    const results = {};
+                    // Use Yahoo Finance v8 via allorigins proxy to avoid CORS
+                    await Promise.all(MARKET_INDICES.map(async (idx) => {
+                        try {
+                            const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query2.finance.yahoo.com/v8/finance/chart/${idx.ticker}?interval=1d&range=2d`)}`;
+                            const res = await fetch(url);
+                            if (!res.ok) throw new Error('fetch failed');
+                            const json = await res.json();
+                            const meta = json?.chart?.result?.[0]?.meta;
+                            if (meta) {
+                                results[idx.ticker] = {
+                                    price: meta.regularMarketPrice,
+                                    prevClose: meta.previousClose || meta.chartPreviousClose,
+                                    currency: meta.currency,
+                                };
+                            }
+                        } catch {}
+                    }));
+                    setMarketData(results);
+                    setLastRefresh(new Date());
+                } catch {
+                    setMarketError(true);
+                } finally {
+                    setMarketLoading(false);
+                }
+            };
+
+            useEffect(() => { fetchMarketData(); }, []);
+
+            // ---- Holdings Aggregation ----
+            const allHoldings = useMemo(() => {
+                const list = [];
+                ['sua', 'yungki'].forEach(key => {
+                    const person = portfolio.persons?.[key];
+                    if (!person) return;
+                    (person.accounts || []).forEach(acc => {
+                        (acc.holdings || []).forEach(h => {
+                            const evalVal = calcHoldingValue(h, priceCache, exchangeRate);
+                            const cost = calcHoldingCost(h, exchangeRate);
+                            const pnl = evalVal - cost;
+                            const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
+                            list.push({ ...h, evalVal, cost, pnl, pnlPct, owner: person.name, ownerColor: person.color, broker: acc.broker, accountName: acc.accountName });
+                        });
+                    });
+                });
+                return list.sort((a, b) => b.evalVal - a.evalVal);
+            }, [portfolio, priceCache, exchangeRate]);
+
+            const totalEval = allHoldings.reduce((s, h) => s + h.evalVal, 0);
+            const totalCost = allHoldings.reduce((s, h) => s + h.cost, 0);
+            const totalPnL = totalEval - totalCost;
+            const totalPnLPct = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
+
+            // ---- Sector Breakdown ----
+            const sectorMap = useMemo(() => {
+                const m = {};
+                allHoldings.forEach(h => {
+                    const sec = h.sector || h.category || '기타';
+                    m[sec] = (m[sec] || 0) + h.evalVal;
+                });
+                return Object.entries(m).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+            }, [allHoldings]);
+
+            const SECTOR_COLORS = ['#06b6d4','#8b5cf6','#10b981','#f59e0b','#ec4899','#3b82f6','#f43f5e','#84cc16','#14b8a6','#a78bfa'];
+
+            // ---- Performance ----
+            const topHolding = allHoldings.length > 0 ? allHoldings.reduce((a, b) => b.pnlPct > a.pnlPct ? b : a, allHoldings[0]) : null;
+            const worstHolding = allHoldings.length > 0 ? allHoldings.reduce((a, b) => b.pnlPct < a.pnlPct ? b : a, allHoldings[0]) : null;
+
+            const formatKRW = (v) => {
+                if (typeof v !== 'number' || isNaN(v)) return '₩0';
+                if (Math.abs(v) >= 1e8) return `₩${(v/1e8).toFixed(2)}억`;
+                if (Math.abs(v) >= 1e4) return `₩${(v/1e4).toFixed(0)}만`;
+                return `₩${v.toFixed(0)}`;
+            };
+            const fmtPct = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+            const pnlColor = (v) => v >= 0 ? 'text-rose-400' : 'text-blue-400';
+
+            const hasData = allHoldings.length > 0;
+
+            return (
+                <div className="space-y-6 pb-12 animate-fade-in">
+                    {/* ── HEADER ── */}
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-extrabold text-white tracking-tighter font-grotesk flex items-center gap-2">
+                                <span className="text-2xl">🏦</span> Toss Invest
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">투자 포트폴리오 분석 대시보드</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {lastRefresh && <span className="text-[10px] text-slate-600 font-mono">{lastRefresh.toLocaleTimeString('ko-KR')} 기준</span>}
+                            <button onClick={fetchMarketData} disabled={marketLoading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold hover:bg-cyan-500/20 transition-all disabled:opacity-50">
+                                <Icons.RefreshCw className={`w-3 h-3 ${marketLoading ? 'animate-spin' : ''}`} />
+                                시세 갱신
+                            </button>
+                            <a href="https://www.tossinvest.com" target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/30 text-violet-400 text-xs font-bold hover:bg-violet-500/20 transition-all">
+                                <Icons.ExternalLink className="w-3 h-3" />
+                                토스증권 열기
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* ── SECTION 1: MARKET PULSE ── */}
+                    <div className="quantum-card rounded-2xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-1.5 h-4 rounded-full bg-cyan-400"></div>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">글로벌 시장 현황</span>
+                            {marketError && <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">데이터 로드 실패 — CORS 제한</span>}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                            {MARKET_INDICES.map(idx => {
+                                const d = marketData[idx.ticker];
+                                const chg = d ? ((d.price - d.prevClose) / d.prevClose) * 100 : 0;
+                                const up = chg >= 0;
+                                return (
+                                    <div key={idx.ticker} className="bg-white/5 rounded-xl p-3 border border-white/5 hover:border-white/10 transition-all">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-[10px] font-bold text-slate-400">{idx.flag} {idx.label}</span>
+                                            {!marketLoading && d && (
+                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${up ? 'bg-rose-500/10 text-rose-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                                    {up ? '▲' : '▼'} {Math.abs(chg).toFixed(2)}%
+                                                </span>
+                                            )}
+                                        </div>
+                                        {marketLoading ? (
+                                            <div className="h-5 bg-white/5 rounded animate-pulse w-3/4 mt-1"></div>
+                                        ) : d ? (
+                                            <p className={`text-base font-black font-grotesk ${up ? 'text-rose-300' : 'text-blue-300'}`}>
+                                                {idx.ticker === 'KRW=X' ? `₩${d.price.toFixed(1)}` : d.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                            </p>
+                                        ) : (
+                                            <p className="text-base font-black text-slate-600 font-grotesk">—</p>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* ── SECTION 2: PORTFOLIO SUMMARY ── */}
+                    {hasData ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {[
+                                { label: '총 평가금액', value: formatKRW(totalEval), sub: `${allHoldings.length}개 종목`, color: 'text-white', border: 'border-cyan-500/30', bg: 'bg-cyan-500/5' },
+                                { label: '총 투자원금', value: formatKRW(totalCost), sub: '평균매수가 기준', color: 'text-slate-200', border: 'border-white/10', bg: 'bg-white/5' },
+                                { label: '총 평가손익', value: formatKRW(totalPnL), sub: fmtPct(totalPnLPct), color: pnlColor(totalPnL), border: totalPnL >= 0 ? 'border-rose-500/30' : 'border-blue-500/30', bg: totalPnL >= 0 ? 'bg-rose-500/5' : 'bg-blue-500/5' },
+                            ].map((c, i) => (
+                                <div key={i} className={`rounded-2xl p-5 border ${c.border} ${c.bg} quantum-card`}>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{c.label}</p>
+                                    <p className={`text-2xl font-black font-grotesk ${c.color}`}>{c.value}</p>
+                                    <p className={`text-xs mt-1 font-bold ${c.color === 'text-white' || c.color === 'text-slate-200' ? 'text-slate-500' : c.color} opacity-70`}>{c.sub}</p>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="quantum-card rounded-2xl p-8 flex flex-col items-center justify-center gap-3 text-center">
+                            <Icons.Database className="w-10 h-10 text-slate-600" />
+                            <p className="text-slate-400 font-bold">포트폴리오 데이터가 없습니다</p>
+                            <p className="text-xs text-slate-600">Google Sheets에서 Portfolio_Raw 시트를 동기화하세요.</p>
+                        </div>
+                    )}
+
+                    {hasData && (
+                        <>
+                            {/* ── SECTION 3: HOLDINGS TABLE + SECTOR PIE ── */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Holdings Table */}
+                                <div className="lg:col-span-2 quantum-card rounded-2xl overflow-hidden">
+                                    <div className="flex items-center gap-2 px-5 py-4 border-b border-white/5">
+                                        <div className="w-1.5 h-4 rounded-full bg-violet-400"></div>
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">보유 종목 현황</span>
+                                        <span className="ml-auto text-[10px] text-slate-600 font-mono">평가금액 내림차순</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr className="border-b border-white/5">
+                                                    {['종목', '보유자', '수량', '평균매수가', '현재가', '평가금액', '손익률'].map(h => (
+                                                        <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold text-slate-600 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {allHoldings.map((h, i) => {
+                                                    const currentPrice = getHoldingCurrentPrice(h, priceCache) || h.avgPrice;
+                                                    const isKRW = h.currency !== 'USD';
+                                                    const priceStr = isKRW
+                                                        ? `₩${currentPrice.toLocaleString('ko-KR')}`
+                                                        : `$${currentPrice.toFixed(2)}`;
+                                                    const avgStr = isKRW
+                                                        ? `₩${h.avgPrice.toLocaleString('ko-KR')}`
+                                                        : `$${h.avgPrice.toFixed(2)}`;
+                                                    return (
+                                                        <tr key={h.id || i} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                                                            <td className="px-4 py-3">
+                                                                <div className="font-bold text-slate-200 truncate max-w-[120px]" title={h.name}>{h.name}</div>
+                                                                <div className="text-[10px] text-slate-600 font-mono">{h.ticker}</div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: h.ownerColor + '20', color: h.ownerColor }}>{h.owner}</span>
+                                                            </td>
+                                                            <td className="px-4 py-3 font-mono text-slate-300">{h.quantity.toLocaleString()}</td>
+                                                            <td className="px-4 py-3 font-mono text-slate-400">{avgStr}</td>
+                                                            <td className="px-4 py-3 font-mono text-slate-200">{priceStr}</td>
+                                                            <td className="px-4 py-3 font-black text-slate-100 font-grotesk whitespace-nowrap">{formatKRW(h.evalVal)}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span className={`text-xs font-black font-mono ${pnlColor(h.pnl)}`}>{fmtPct(h.pnlPct)}</span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Sector Breakdown */}
+                                <div className="quantum-card rounded-2xl overflow-hidden">
+                                    <div className="flex items-center gap-2 px-5 py-4 border-b border-white/5">
+                                        <div className="w-1.5 h-4 rounded-full bg-emerald-400"></div>
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">섹터 배분</span>
+                                    </div>
+                                    <div className="p-4">
+                                        {/* Mini donut */}
+                                        <div className="h-36 mb-4">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie data={sectorMap} cx="50%" cy="50%" innerRadius="55%" outerRadius="85%"
+                                                        paddingAngle={2} dataKey="value" cornerRadius={3}>
+                                                        {sectorMap.map((_, i) => <Cell key={i} fill={SECTOR_COLORS[i % SECTOR_COLORS.length]} stroke="none" />)}
+                                                    </Pie>
+                                                    <RechartsTooltip formatter={(v) => formatKRW(v)} contentStyle={{ background: 'rgba(10,11,22,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e2e8f0' }} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                        {/* Legend bars */}
+                                        <div className="space-y-2">
+                                            {sectorMap.map((s, i) => {
+                                                const pct = totalEval > 0 ? (s.value / totalEval) * 100 : 0;
+                                                return (
+                                                    <div key={s.name}>
+                                                        <div className="flex items-center justify-between mb-0.5">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length] }}></div>
+                                                                <span className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]">{s.name}</span>
+                                                            </div>
+                                                            <span className="text-[10px] font-mono text-slate-400">{pct.toFixed(1)}%</span>
+                                                        </div>
+                                                        <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: SECTOR_COLORS[i % SECTOR_COLORS.length] }}></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── SECTION 4: PERFORMANCE METRICS ── */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {/* Total Return */}
+                                <div className="quantum-card rounded-2xl p-5">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">총 수익률</p>
+                                    <p className={`text-3xl font-black font-grotesk ${pnlColor(totalPnL)}`}>{fmtPct(totalPnLPct)}</p>
+                                    <p className={`text-xs font-bold mt-1 ${pnlColor(totalPnL)} opacity-70`}>{formatKRW(totalPnL)}</p>
+                                    <p className="text-[9px] text-slate-600 mt-2">매수가 대비 현재 평가 기준</p>
+                                </div>
+                                {/* Allocation Health */}
+                                <div className="quantum-card rounded-2xl p-5">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">자산 집중도</p>
+                                    {allHoldings.length > 0 && (() => {
+                                        const top3 = allHoldings.slice(0,3).reduce((s,h) => s + h.evalVal, 0);
+                                        const conc = totalEval > 0 ? (top3 / totalEval) * 100 : 0;
+                                        const label = conc > 80 ? { t: '집중', c: 'text-rose-400' } : conc > 60 ? { t: '보통', c: 'text-amber-400' } : { t: '분산', c: 'text-emerald-400' };
+                                        return (<>
+                                            <p className={`text-3xl font-black font-grotesk ${label.c}`}>{conc.toFixed(1)}%</p>
+                                            <p className={`text-xs font-bold mt-1 ${label.c} opacity-70`}>{label.t}</p>
+                                            <p className="text-[9px] text-slate-600 mt-2">상위 3개 종목 비중</p>
+                                        </>);
+                                    })()}
+                                </div>
+                                {/* Best Performer */}
+                                {topHolding && (
+                                    <div className="quantum-card rounded-2xl p-5 border-l-4 border-rose-400">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">🏆 최고 종목</p>
+                                        <p className="text-sm font-black text-white truncate">{topHolding.name}</p>
+                                        <p className="text-2xl font-black font-grotesk text-rose-400 mt-1">{fmtPct(topHolding.pnlPct)}</p>
+                                        <p className="text-[10px] text-slate-600 mt-1 font-mono">{topHolding.ticker}</p>
+                                    </div>
+                                )}
+                                {/* Worst Performer */}
+                                {worstHolding && worstHolding.ticker !== topHolding?.ticker && (
+                                    <div className="quantum-card rounded-2xl p-5 border-l-4 border-blue-400">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">📉 최저 종목</p>
+                                        <p className="text-sm font-black text-white truncate">{worstHolding.name}</p>
+                                        <p className="text-2xl font-black font-grotesk text-blue-400 mt-1">{fmtPct(worstHolding.pnlPct)}</p>
+                                        <p className="text-[10px] text-slate-600 mt-1 font-mono">{worstHolding.ticker}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+
+                    {/* ── SECTION 5: QUICK ACCESS ── */}
+                    <div className="quantum-card rounded-2xl p-5">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-1.5 h-4 rounded-full bg-amber-400"></div>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">토스증권 퀵 링크</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                            {[
+                                { label: '홈', href: 'https://www.tossinvest.com', emoji: '🏠', desc: '토스증권 메인' },
+                                { label: '내 계좌', href: 'https://www.tossinvest.com/mypage', emoji: '📊', desc: '계좌 현황' },
+                                { label: '거래 내역', href: 'https://www.tossinvest.com/mypage/trading-history', emoji: '📋', desc: '매매 이력' },
+                                { label: '관심 종목', href: 'https://www.tossinvest.com/watchlist', emoji: '⭐', desc: '관심 목록' },
+                            ].map(link => (
+                                <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer"
+                                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group">
+                                    <span className="text-2xl">{link.emoji}</span>
+                                    <span className="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">{link.label}</span>
+                                    <span className="text-[9px] text-slate-600">{link.desc}</span>
+                                </a>
+                            ))}
+                        </div>
+                        {/* Stock Search */}
+                        <div className="flex gap-2">
+                            <input id="toss-search-input" type="text" placeholder="종목명 또는 티커 검색 (예: 삼성전자, AAPL)..."
+                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-cyan-500/40 focus:bg-white/8 transition-all"
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter' && e.target.value.trim()) {
+                                        window.open(`https://www.tossinvest.com/search?query=${encodeURIComponent(e.target.value.trim())}`, '_blank');
+                                    }
+                                }}
+                            />
+                            <button
+                                onClick={() => {
+                                    const q = document.getElementById('toss-search-input')?.value?.trim();
+                                    if (q) window.open(`https://www.tossinvest.com/search?query=${encodeURIComponent(q)}`, '_blank');
+                                }}
+                                className="px-4 py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold hover:bg-cyan-500/20 transition-all">
+                                검색
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const InvestmentPortfolio = ({ data, onUpdate, triggerSync, googleToken, googleSpreadsheetId, sheetSyncStatus }) => {
+
             const portfolio = data.portfolio || generateInitialData().portfolio;
             const priceCache = portfolio.priceCache || {};
             const exchangeRate = portfolio.exchangeRate || 1380;
@@ -5753,6 +6131,7 @@
                 {id: 'dashboard', label: 'Dashboard', icon: Icons.LayoutDashboard}, 
                 {id: 'reports',   label: 'Reports',   icon: Icons.Activity},
                 {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart},
+                {id: 'tossinvest', label: 'Toss Invest', icon: Icons.CandlestickChart},
                 {id: 'lottogen', label: 'Lotto Gen', icon: Icons.Ticket},
                 {id: 'datasource', label: 'Data Source', icon: Icons.Database}
             ];
@@ -6059,6 +6438,7 @@
                                             sheetSyncStatus={sheetSyncStatus}
                                         />
                                     )}
+                                    {activeTab === 'tossinvest' && <TossInvestView data={financialData} />}
                                     {activeTab === 'lottogen' && <LottoGen lottoSheetData={financialData.lottoSheet} />}
                                     {activeTab === 'datasource' && (
                                         <DataSourceSettings 
