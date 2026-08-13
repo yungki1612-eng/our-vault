@@ -2413,7 +2413,7 @@
             );
         };
 
-        const CompactScoreCard = ({ title, value, yoy, mom, momDiff, compareMode, onToggleCompare, icon: Icon, colorClass, tooltip, breakdown }) => {
+        const CompactScoreCard = ({ title, value, yoy, mom, momDiff, yoyDiff, compareMode, onToggleCompare, icon: Icon, colorClass, tooltip, breakdown }) => {
             const isCompareYoY = !compareMode || compareMode === 'yoy';
             const activeRate = isCompareYoY ? yoy : mom;
             
@@ -2430,7 +2430,7 @@
             if (title.toLowerCase().includes('liabilities') || title.toLowerCase().includes('debt')) valueColor = 'text-rose-400';
             
             const isNoHover = title === "Total Assets" || title === "Net Worth";
-            const diffVal = isCompareYoY ? null : momDiff;
+            const diffVal = isCompareYoY ? yoyDiff : momDiff;
             const diffPositive = diffVal !== null ? diffVal >= 0 : null;
             
             return (
@@ -2522,7 +2522,7 @@
                             )}
                             <div>
                                 <span className="block text-[11px] sm:text-xs font-semibold text-slate-500 tracking-wider font-grotesk truncate">
-                                    {isCompareYoY ? '직전 대비' : '전월비'}
+                                    {isCompareYoY ? '전년 대비' : '직전 대비'}
                                 </span>
                                 <span className={`text-sm sm:text-base font-bold mt-0.5 font-grotesk block truncate ${diffVal !== null ? (diffPositive ? 'text-rose-400' : 'text-blue-400') : 'text-slate-500'}`}>
                                     {diffVal !== null ? `${diffPositive ? '▲ +' : '▼ '}${formatCurrency(Math.abs(diffVal))}` : '—'}
@@ -3303,8 +3303,8 @@
 
             const renderScoreCard = (id) => {
                  switch(id) {
-                    case 'total': return <CompactScoreCard title="총 자산" value={totalAssets} yoy={calcYoY(totalAssets, prevTotalAssets)} mom={calcMoM(totalAssets, prevMonthAssets)} momDiff={prevMonthAssets !== null ? totalAssets - prevMonthAssets : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Wallet} breakdown={assetBreakdown} />;
-                    case 'net': return <CompactScoreCard title="순자산" value={netWorth} yoy={calcYoY(netWorth, prevNetWorth)} mom={calcMoM(netWorth, prevMonthNetWorth)} momDiff={prevMonthNetWorth !== null ? netWorth - prevMonthNetWorth : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Sparkles} colorClass="text-emerald-400" breakdown={[{label: '총 자산', value: totalAssets}, {label: '부채', value: -liabilitiesExclJeonse}]} />;
+                    case 'total': return <CompactScoreCard title="총 자산" value={totalAssets} yoy={calcYoY(totalAssets, prevTotalAssets)} mom={calcMoM(totalAssets, prevMonthAssets)} momDiff={prevMonthAssets !== null ? totalAssets - prevMonthAssets : null} yoyDiff={prevTotalAssets !== null ? totalAssets - prevTotalAssets : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Wallet} breakdown={assetBreakdown} />;
+                    case 'net': return <CompactScoreCard title="순자산" value={netWorth} yoy={calcYoY(netWorth, prevNetWorth)} mom={calcMoM(netWorth, prevMonthNetWorth)} momDiff={prevMonthNetWorth !== null ? netWorth - prevMonthNetWorth : null} yoyDiff={prevNetWorth !== null ? netWorth - prevNetWorth : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Sparkles} colorClass="text-emerald-400" breakdown={[{label: '총 자산', value: totalAssets}, {label: '부채', value: -liabilitiesExclJeonse}]} />;
                     case 'debt': return <CompactScoreCard title="총 부채 (전세 제외)" value={liabilitiesExclJeonse} yoy={calcYoY(liabilitiesExclJeonse, prevLiabilities)} mom={calcMoM(liabilitiesExclJeonse, prevMonthData ? (prevMonthData.loans||[]).filter(l=>normalizeCategory(l.category,'loans')!=='LEASE'&&!isItemHidden(l,'loans',safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount)||0),0)+reStats.ownedDebt : null)} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.CreditCard} colorClass="text-rose-400" />;
                     case 'invest': return <CompactScoreCard title="투자자산" value={totalStockAssets} yoy={calcYoY(totalStockAssets, prevTotalStockAssets)} mom={calcMoM(totalStockAssets, prevMonthData ? (prevMonthData.assets||[]).filter(a=>normalizeCategory(a.category,'assets')==='INVESTMENT'&&!isItemHidden(a,'assets',safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.value)||0),0) : null)} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.CandlestickChart} colorClass="text-violet-400" />;
                     case 'emergency': return (
@@ -3348,6 +3348,7 @@
                             yoy={calcYoY(currentMonthInvestProfit, prevYearInvestProfit)} 
                             mom={calcMoM(currentMonthInvestProfit, prevMonthInvestProfit)} 
                             momDiff={prevMonthData ? currentMonthInvestProfit - prevMonthInvestProfit : null} 
+                            yoyDiff={prevYearData ? currentMonthInvestProfit - prevYearInvestProfit : null} 
                             compareMode={compareMode} 
                             onToggleCompare={toggleCompare} 
                             icon={Icons.CandlestickChart} 
@@ -3789,7 +3790,7 @@
                                         animationDelay: `${index * 45}ms` 
                                     }}
                                     className={`${colSpanClass} transition-all duration-300 relative group animate-slide-up-fade ${
-                                        isBeingDragged ? 'opacity-40 scale-[0.97] border-2 border-[#3182f6]/40 border-dashed rounded-xl bg-[#3182f6]/5 z-50 shadow-inner' : ''
+                                        isBeingDragged ? 'opacity-40' : ''
                                     }`}
                                 >
                                     {/* Drag handle icon in bottom-right, activates dragging only on hover of handle */}
