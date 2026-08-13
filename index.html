@@ -70,6 +70,21 @@
             animation: fade-in 0.5s ease-out forwards;
         }
 
+        @keyframes slideUpFade {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-up-fade {
+            animation: slideUpFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
         /* ===== Quantum Glassmorphism Theme ===== */
         .quantum-card {
             background: rgba(255, 255, 255, 0.03) !important;
@@ -77,14 +92,14 @@
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08) !important;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .quantum-card:hover {
             background: rgba(255, 255, 255, 0.05) !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
-            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45) !important;
-            transform: translateY(-1px);
+            border-color: rgba(49, 130, 246, 0.25) !important;
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45), 0 0 24px 0 rgba(49, 130, 246, 0.12) !important;
+            transform: translateY(-2px);
         }
 
         .quantum-btn {
@@ -3754,12 +3769,13 @@
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                         {cardOrder.map((cardId, index) => {
                             const cardContent = renderDashboardCard(cardId);
                             if (!cardContent) return null;
                             const colSpanClass = getCardColSpan(cardId);
                             const isDraggable = draggableCardId === cardId;
+                            const isBeingDragged = draggedIndex === index;
                             
                             return (
                                 <div 
@@ -3769,7 +3785,12 @@
                                     onDragOver={(e) => handleDragOver(e, index)}
                                     onDrop={(e) => handleDrop(e, index)}
                                     onDragEnd={handleDragEnd}
-                                    className={`${colSpanClass} transition-all duration-300 relative group`}
+                                    style={{ 
+                                        animationDelay: `${index * 45}ms` 
+                                    }}
+                                    className={`${colSpanClass} transition-all duration-300 relative group animate-slide-up-fade ${
+                                        isBeingDragged ? 'opacity-40 scale-[0.97] border-2 border-[#3182f6]/40 border-dashed rounded-xl bg-[#3182f6]/5 z-50 shadow-inner' : ''
+                                    }`}
                                 >
                                     {/* Drag handle icon in bottom-right, activates dragging only on hover of handle */}
                                     <div 
