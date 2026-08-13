@@ -85,6 +85,40 @@
             animation: slideUpFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
+        /* ===== Recharts Tooltip Glassmorphism Customization ===== */
+        .recharts-tooltip-wrapper {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .recharts-tooltip-wrapper:focus, .recharts-tooltip-wrapper:active {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .recharts-default-tooltip {
+            background: rgba(15, 23, 42, 0.85) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 15px 0 rgba(49, 130, 246, 0.15) !important;
+            padding: 8px 12px !important;
+            color: #cbd5e1 !important;
+            outline: none !important;
+        }
+        .recharts-tooltip-label {
+            color: #f8fafc !important;
+            font-weight: 700 !important;
+            font-size: 11px !important;
+            margin-bottom: 4px !important;
+            font-family: 'Space Grotesk', sans-serif !important;
+        }
+        .recharts-tooltip-item {
+            font-size: 11px !important;
+            padding: 1px 0 !important;
+        }
+
         /* Gyroscope/Mobile 3D Spinner */
         .gyro-container {
             width: 14px;
@@ -3262,9 +3296,9 @@
                 const netAssets = assets - loans;
                 let dr = 0;
                 if (netAssets <= 0) {
-                    dr = loans > 0 ? 200 : 0;
+                    dr = loans > 0 ? 300 : 0;
                 } else {
-                    dr = Math.min((loans / netAssets) * 100, 200);
+                    dr = Math.min((loans / netAssets) * 100, 300);
                 }
                 return { name: month, assets: assets, netWorth: netAssets, debtRatio: parseFloat(dr.toFixed(1)) };
             });
