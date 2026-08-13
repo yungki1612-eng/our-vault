@@ -3763,8 +3763,8 @@ return (safeData.meta && safeData.meta.dashboardLayout) ? safeData.meta.dashboar
                                     onDragEnd={handleDragEnd}
                                     className={`${colSpanClass} transition-all duration-300 relative group`}
                                 >
-                                    {/* Drag handle icon overlay on hover */}
-                                    <div className="absolute top-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-50 p-1 bg-slate-900/80 rounded border border-white/10 text-slate-400 hover:text-white" title="드래그하여 카드 위치 변경">
+                                    {/* Drag handle icon overlay - always visible at opacity-60, highlights on hover */}
+                                    <div className="absolute top-3 left-3 opacity-60 group-hover:opacity-100 transition-all duration-200 cursor-grab active:cursor-grabbing z-50 p-1.5 bg-slate-950/80 rounded-lg border border-white/10 text-slate-400 hover:text-[#3182f6] hover:border-[#3182f6]/30 shadow-lg" title="드래그하여 카드 위치 변경">
                                         <Icons.GripVertical className="w-3.5 h-3.5" />
                                     </div>
                                     {cardContent}
