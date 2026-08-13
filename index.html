@@ -2990,6 +2990,7 @@
         };
 
                 const Dashboard = ({ data = {}, onUpdate, viewDate: viewDateProp, setViewDate: setViewDateProp }) => {
+            const safeData = data || {};
             // --- Card Drag & Drop Layout Order ---
             const DEFAULT_CARD_ORDER = [
                 'telemetry', 'net_worth', 'invest_profit',
@@ -3001,7 +3002,342 @@
                 'memo'
             ];
             const [cardOrder, setCardOrder] = useState(() => {
-                            const renderDashboardCard = (cardId) => {
+                return (safeData.meta && safeData.meta.dashboardLayout) ? safeData.meta.dashboardLayout : DEFAULT_CARD_ORDER;
+            });
+            useEffect(() => {
+                if (safeData.meta && safeData.meta.dashboardLayout) {
+                    setCardOrder(safeData.meta.dashboardLayout);
+                }
+            }, [safeData.meta?.dashboardLayout]);
+
+            const saveLayout = (newOrder) => {
+                const nextData = JSON.parse(JSON.stringify(safeData));
+                if (!nextData.meta) nextData.meta = {};
+                nextData.meta.dashboardLayout = newOrder;
+                onUpdate(nextData);
+            };
+
+            const [draggedIndex, setDraggedIndex] = useState(null);
+
+            const handleDragStart = (e, index) => {
+                setDraggedIndex(index);
+                e.dataTransfer.effectAllowed = 'move';
+                e.currentTarget.style.opacity = '0.4';
+            };
+
+            const handleDragOver = (e, index) => {
+                e.preventDefault();
+            };
+
+            const handleDrop = (e, index) => {
+                e.preventDefault();
+                if (draggedIndex === null || draggedIndex === index) return;
+                
+                const newOrder = [...cardOrder];
+                const draggedItem = newOrder[draggedIndex];
+                newOrder.splice(draggedIndex, 1);
+                newOrder.splice(index, 0, draggedItem);
+                
+                setCardOrder(newOrder);
+                saveLayout(newOrder);
+            };
+
+            const handleDragEnd = (e) => {
+                e.currentTarget.style.opacity = '1';
+                setDraggedIndex(null);
+            };
+
+            const getCardColSpan = (cardId) => {
+                switch (cardId) {
+                    case 'asset_flow':
+                    case 'allocation_strategy':
+                        return 'col-span-1 lg:col-span-2';
+                    case 'lifetime_earnings':
+                    case 'memo':
+                        return 'col-span-1 lg:col-span-3';
+                    default:
+                        return 'col-span-1 lg:col-span-1';
+                }
+            };
+            const allMonths = Object.keys(safeData).filter(isMonthKey).sort();
+            const [viewDateLocal, setViewDateLocal] = useState(() => {
+                const today = new Date();
+                const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                return allMonths.includes(key) ? key : (allMonths[allMonths.length - 1] || '2024-01');
+            });
+            const viewDate = viewDateProp !== undefined ? viewDateProp : viewDateLocal;
+            const setViewDate = setViewDateProp !== undefined ? setViewDateProp : setViewDateLocal;
+            const viewYear = viewDate.split('-')[0];
+            const todayStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const currentData = safeData[viewDate] || { assets: [], loans: [], budget: [], stockProfit: [] };
+            // YoY: 1년 전 같은 달 (예: 2025-08 → 2024-08)
+            const prevYearDate = (() => {
+                const [y, m] = viewDate.split('-').map(Number);
+                return `${y - 1}-${String(m).padStart(2, '0')}`;
+            })();
+            const prevYearData = safeData[prevYearDate] || null;
+
+            // YoY / MoM 비교 모드 state
+            const [compareMode, setCompareMode] = useState('yoy'); // 'yoy' | 'mom'
+            const toggleCompare = () => setCompareMode(prev => prev === 'yoy' ? 'mom' : 'yoy');
+
+            // 차트 줌 state
+            const [chartZoom, setChartZoom] = useState('ALL'); // '1Y' | '3Y' | '5Y' | 'ALL'
+            
+            // Lifetime Earnings Calculations
+            const salaryData = useMemo(() => {
+                return safeData.salary || { 
+                    years: Array.from({length: 12}, (_, i) => String(2014 + i)), 
+                    items: [
+                        { id: 1, name: 'Yungki', values: {} }, 
+                        { id: 2, name: 'Sua', values: {} }
+                    ] 
+                };
+            }, [safeData.salary]);
+            
+            const salaryYears = salaryData.years || [];
+            
+            const salaryChartData = useMemo(() => {
+                return salaryYears.map(year => { 
+                    const point = { year }; 
+                    salaryData.items.forEach(item => point[item.name] = item.values[year] || 0); 
+                    return point; 
+                });
+            }, [salaryYears, salaryData.items]);
+            
+            const salaryItemTotals = useMemo(() => {
+                return salaryData.items.map(item => ({ 
+                    id: item.id, 
+                    name: item.name, 
+                    total: Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0) 
+                }));
+            }, [salaryData.items]);
+            
+            const salaryGrandTotal = useMemo(() => {
+                return salaryItemTotals.reduce((acc, curr) => acc + curr.total, 0);
+            }, [salaryItemTotals]);
+            
+            const getSalaryLevel = (total) => {
+                if (total > 2000000000) return { label: 'Generational Wealth Owner', color: 'text-amber-400', emoji: '🏰' };
+                if (total > 1000000000) return { label: 'Rising Capitalist', color: 'text-emerald-400', emoji: '🏙️' };
+                if (total > 500000000) return { label: 'Professional Earner', color: 'text-cyan-400', emoji: '☕' };
+                if (total > 100000000) return { label: 'Diligent Ant', color: 'text-blue-400', emoji: '🐜' };
+                return { label: 'Passion-Filled Rookie', color: 'text-slate-500', emoji: '🥚' };
+            };
+            
+            const salaryMainLevel = useMemo(() => {
+                return getSalaryLevel(salaryGrandTotal);
+            }, [salaryGrandTotal]);
+
+            const reStats = useMemo(() => {
+                const list = safeData.realEstate || [];
+                return {
+                    totalValue: list.reduce((acc, item) => acc + (evaluateFormula(item.currentValue) || 0), 0),
+                    totalDebt: list.reduce((acc, item) => acc + (evaluateFormula(item.loan) || 0) + (evaluateFormula(item.deposit) || 0), 0),
+                    ownedDebt: list.filter(item => item.ownershipType === 'OWN' || !item.ownershipType).reduce((acc, item) => acc + (evaluateFormula(item.loan) || 0) + (evaluateFormula(item.deposit) || 0), 0)
+                };
+            }, [safeData.realEstate]);
+
+            const assetBreakdown = Object.keys(ASSET_CATEGORIES).map(catKey => {
+                let sum = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === catKey && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+                if (catKey === 'REAL_ESTATE') sum += reStats.totalValue;
+                return { label: ASSET_CATEGORIES[catKey].label, value: sum };
+            }).filter(i => i.value > 0);
+
+            const totalAssets = (currentData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue;
+            const prevTotalAssets = prevYearData ? (prevYearData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue : totalAssets;
+
+            // 전월 데이터 계산 (MoM 비교용)
+            const prevMonthDate = (() => { const [y, m] = viewDate.split('-').map(Number); let py = y, pm = m - 1; if (pm === 0) { py--; pm = 12; } return `${py}-${String(pm).padStart(2, '0')}`; })();
+            const prevMonthData = safeData[prevMonthDate] || null;
+            const prevMonthAssets = prevMonthData ? (prevMonthData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue : null;
+            const prevMonthNetWorth = prevMonthData ? (() => { const pa = prevMonthAssets || 0; const pl = (prevMonthData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt; return pa - pl; })() : null;
+            
+            const liabilitiesExclJeonse = (currentData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt;
+            const prevLiabilities = prevYearData ? (prevYearData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt : liabilitiesExclJeonse;
+            const netWorth = totalAssets - liabilitiesExclJeonse;
+            const prevNetWorth = prevTotalAssets - prevLiabilities;
+            const calcYoY = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / prev) * 100 : 0;
+            const totalStockAssets = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+            const prevTotalStockAssets = prevYearData ? (prevYearData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) : 0;
+            
+            // 신규 지표: 비상금 지수 (Months of coverage)
+            const liquidAssets = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+            const monthlyExpense = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+            const emergencyIndex = monthlyExpense > 0 ? (liquidAssets / monthlyExpense).toFixed(1) : '∞';
+
+            const annualData = useMemo(() => {
+                const months = allMonths.filter(m => m.startsWith(viewYear));
+                let profit = 0, dividend = 0;
+                months.forEach(m => {
+                    const d = safeData[m]?.stockProfit || [];
+                    profit += d.filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
+                    dividend += d.filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
+                });
+                return { profit, dividend, year: viewYear };
+            }, [safeData, viewYear, allMonths]);
+            const totalIncome = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+            const totalExpense = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
+            const fullGrowthData = allMonths.map(month => {
+                const d = safeData[month];
+                const assets = (d?.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
+                const loans = (d?.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const netAssets = assets - loans;
+                let dr = 0;
+                if (netAssets <= 0) {
+                    dr = loans > 0 ? 200 : 0;
+                } else {
+                    dr = Math.min((loans / netAssets) * 100, 200);
+                }
+                return { name: month, assets: assets, netWorth: netAssets, debtRatio: parseFloat(dr.toFixed(1)) };
+            });
+            const recentMonths = allMonths.slice(Math.max(0, allMonths.indexOf(viewDate) - 11), allMonths.indexOf(viewDate) + 1);
+            const assetGrowthData = recentMonths.map(month => {
+                const d = safeData[month];
+                const result = { name: month };
+                Object.keys(ASSET_CATEGORIES).forEach(key => {
+                    result[ASSET_CATEGORIES[key].label] = (d?.assets || []).filter(a => normalizeCategory(a.category, 'assets') === key && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
+                });
+                return result;
+            });
+            const cashFlowData = recentMonths.map(month => {
+                const d = safeData[month];
+                const income = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const expense = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const saving = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'SAVING' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                const invest = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
+                
+                return {
+                    name: month,
+                    income: income,
+                    expenses: expense,
+                    savings: saving,
+                    investment: invest,
+                    savingsRate: income > 0 ? parseFloat(((income - expense) / income * 100).toFixed(1)) : 0,
+                    investmentShare: income > 0 ? parseFloat((invest / income * 100).toFixed(1)) : 0
+                };
+            });
+            const portfolioData = Object.keys(ASSET_CATEGORIES).map(catKey => {
+                const categoryItems = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === catKey && !isItemHidden(a, 'assets', safeData.meta));
+                let val = categoryItems.reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
+                if (catKey === 'REAL_ESTATE') val += reStats.totalValue;
+                return { name: ASSET_CATEGORIES[catKey].label, value: val, color: ASSET_CATEGORIES[catKey].color };
+            }).filter(i => i.value > 0);
+
+            const currentLoans = (currentData.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
+
+            const allLoanNamesSet = new Set();
+            recentMonths.forEach(month => {
+                const loans = (safeData[month]?.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
+                loans.forEach(l => {
+                    if (l.name) allLoanNamesSet.add(l.name);
+                });
+            });
+            const allLoanNames = Array.from(allLoanNamesSet);
+            const loanColors = ['#e42939', '#1b64da', '#3182f6', '#10b981', '#f59e0b', '#ef4444', '#4e5968', '#14b8a6', '#f43f5e', '#84cc16'];
+            const loanColorMap = {};
+            allLoanNames.forEach((name, i) => loanColorMap[name] = loanColors[i % loanColors.length]);
+
+            const loanPieData = currentLoans.map((l, i) => ({
+                name: l.name || 'Unknown',
+                value: evaluateFormula(l.amount) || 0,
+                color: loanColorMap[l.name] || loanColors[i % loanColors.length]
+            })).filter(l => l.value > 0).sort((a,b) => b.value - a.value);
+
+            const loanTrendData = recentMonths.map(month => {
+                const d = safeData[month];
+                const loans = (d?.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
+                const dataPoint = { name: month };
+                allLoanNames.forEach(name => dataPoint[name] = 0);
+                loans.forEach(l => {
+                    if (l.name) {
+                        dataPoint[l.name] += evaluateFormula(l.amount) || 0;
+                    }
+                });
+                return dataPoint;
+            });
+
+            const [activeItem, setActiveIndex] = useState(null); 
+            const updateGoal = (type, value) => {
+                const newData = JSON.parse(JSON.stringify(safeData));
+                if (!newData.meta) newData.meta = {};
+                if (!newData.meta.goals) newData.meta.goals = { loan: 30, invest: 30, netWorth: 1000000000 };
+                newData.meta.goals[type] = value;
+                onUpdate(newData);
+            };
+            const loanGoal = safeData.meta?.goals?.loan || 30;
+            const investGoal = safeData.meta?.goals?.invest || 30;
+            const netWorthGoal = safeData.meta?.goals?.netWorth || 1000000000;
+            const handleMonthChange = (direction) => {
+                const idx = allMonths.indexOf(viewDate);
+                if (idx === -1) return;
+                const newIdx = idx + direction;
+                if (newIdx >= 0 && newIdx < allMonths.length) setViewDate(allMonths[newIdx]);
+            };
+            // MoM 계산 헬퍼
+            const calcMoM = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / Math.abs(prev)) * 100 : 0;
+
+            const renderScoreCard = (id) => {
+                 switch(id) {
+                    case 'total': return <CompactScoreCard title="총 자산" value={totalAssets} yoy={calcYoY(totalAssets, prevTotalAssets)} mom={calcMoM(totalAssets, prevMonthAssets)} momDiff={prevMonthAssets !== null ? totalAssets - prevMonthAssets : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Wallet} breakdown={assetBreakdown} />;
+                    case 'net': return <CompactScoreCard title="순자산" value={netWorth} yoy={calcYoY(netWorth, prevNetWorth)} mom={calcMoM(netWorth, prevMonthNetWorth)} momDiff={prevMonthNetWorth !== null ? netWorth - prevMonthNetWorth : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Sparkles} colorClass="text-emerald-400" breakdown={[{label: '총 자산', value: totalAssets}, {label: '부채', value: -liabilitiesExclJeonse}]} />;
+                    case 'debt': return <CompactScoreCard title="총 부채 (전세 제외)" value={liabilitiesExclJeonse} yoy={calcYoY(liabilitiesExclJeonse, prevLiabilities)} mom={calcMoM(liabilitiesExclJeonse, prevMonthData ? (prevMonthData.loans||[]).filter(l=>normalizeCategory(l.category,'loans')!=='LEASE'&&!isItemHidden(l,'loans',safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount)||0),0)+reStats.ownedDebt : null)} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.CreditCard} colorClass="text-rose-400" />;
+                    case 'invest': return <CompactScoreCard title="투자자산" value={totalStockAssets} yoy={calcYoY(totalStockAssets, prevTotalStockAssets)} mom={calcMoM(totalStockAssets, prevMonthData ? (prevMonthData.assets||[]).filter(a=>normalizeCategory(a.category,'assets')==='INVESTMENT'&&!isItemHidden(a,'assets',safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.value)||0),0) : null)} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.CandlestickChart} colorClass="text-violet-400" />;
+                    case 'emergency': return (
+                        <GlassCard className="p-3 group hover:-translate-y-1 transition-transform border-l-4 border-emerald-400 h-full">
+                            <div className="flex flex-col justify-between h-full min-h-[90px] relative">
+                                <div className="flex justify-between items-center mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="p-1 rounded bg-cyan-500/20 text-cyan-400"><Icons.ShieldCheck className="w-3.5 h-3.5" /></div>
+                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">비상금 지수</span>
+                                    </div>
+                                    <div className="group/tip relative flex items-center">
+                                        <Icons.Info className="w-3 h-3 text-slate-500 hover:text-cyan-400 cursor-help" />
+                                        <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900/95 backdrop-blur-sm text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl border border-white/10 leading-relaxed">
+                                            유동자산(예금)을 월 지출로 나눈 값. 6개월 이상 권장.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-3xl font-black text-cyan-300 font-grotesk">{emergencyIndex}<span className="text-sm font-bold ml-1 text-cyan-500"> 개월</span></p>
+                                    <p className="text-[9px] text-slate-500 mt-1">권장: 6개월 이상</p>
+                                </div>
+                            </div>
+                        </GlassCard>
+                    );
+                    case 'annual': {
+                        const currentMonthStockProfit = (currentData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
+                        const currentMonthDividend = (currentData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
+                        const currentMonthInvestProfit = currentMonthStockProfit + currentMonthDividend;
+
+                        const prevMonthStockProfit = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
+                        const prevMonthDividend = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
+                        const prevMonthInvestProfit = prevMonthStockProfit + prevMonthDividend;
+
+                        const prevYearStockProfit = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
+                        const prevYearDividend = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
+                        const prevYearInvestProfit = prevYearStockProfit + prevYearDividend;
+
+                        return <CompactScoreCard 
+                            title="투자수익" 
+                            value={currentMonthInvestProfit} 
+                            yoy={calcYoY(currentMonthInvestProfit, prevYearInvestProfit)} 
+                            mom={calcMoM(currentMonthInvestProfit, prevMonthInvestProfit)} 
+                            momDiff={prevMonthData ? currentMonthInvestProfit - prevMonthInvestProfit : null} 
+                            compareMode={compareMode} 
+                            onToggleCompare={toggleCompare} 
+                            icon={Icons.CandlestickChart} 
+                            colorClass="text-fuchsia-400" 
+                            breakdown={[
+                                { label: '실현손익', value: currentMonthStockProfit },
+                                { label: '배당금', value: currentMonthDividend }
+                            ]}
+                        />;
+                    }
+                    default: return null;
+                 }
+            };
+            const renderDashboardCard = (cardId) => {
                 switch (cardId) {
                     case 'telemetry':
                         return (
@@ -3395,344 +3731,6 @@
                     default:
                         return null;
                 }
-            };
-return (safeData.meta && safeData.meta.dashboardLayout) ? safeData.meta.dashboardLayout : DEFAULT_CARD_ORDER;
-            });
-            useEffect(() => {
-                if (safeData.meta && safeData.meta.dashboardLayout) {
-                    // Sync cardOrder if it changes in database
-                    setCardOrder(safeData.meta.dashboardLayout);
-                }
-            }, [safeData.meta?.dashboardLayout]);
-
-            const saveLayout = (newOrder) => {
-                const nextData = JSON.parse(JSON.stringify(safeData));
-                if (!nextData.meta) nextData.meta = {};
-                nextData.meta.dashboardLayout = newOrder;
-                onUpdate(nextData);
-            };
-
-            const [draggedIndex, setDraggedIndex] = useState(null);
-
-            const handleDragStart = (e, index) => {
-                setDraggedIndex(index);
-                e.dataTransfer.effectAllowed = 'move';
-                // Pass visual indicator
-                e.currentTarget.style.opacity = '0.4';
-            };
-
-            const handleDragOver = (e, index) => {
-                e.preventDefault();
-            };
-
-            const handleDrop = (e, index) => {
-                e.preventDefault();
-                if (draggedIndex === null || draggedIndex === index) return;
-                
-                const newOrder = [...cardOrder];
-                const draggedItem = newOrder[draggedIndex];
-                newOrder.splice(draggedIndex, 1);
-                newOrder.splice(index, 0, draggedItem);
-                
-                setCardOrder(newOrder);
-                saveLayout(newOrder);
-            };
-
-            const handleDragEnd = (e) => {
-                e.currentTarget.style.opacity = '1';
-                setDraggedIndex(null);
-            };
-
-            const getCardColSpan = (cardId) => {
-                switch (cardId) {
-                    case 'asset_flow':
-                    case 'allocation_strategy':
-                        return 'col-span-1 lg:col-span-2';
-                    case 'lifetime_earnings':
-                    case 'memo':
-                        return 'col-span-1 lg:col-span-3';
-                    default:
-                        return 'col-span-1 lg:col-span-1';
-                }
-            };
-            const safeData = data || {};
-            const allMonths = Object.keys(safeData).filter(isMonthKey).sort();
-            const [viewDateLocal, setViewDateLocal] = useState(() => {
-                const today = new Date();
-                const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-                return allMonths.includes(key) ? key : (allMonths[allMonths.length - 1] || '2024-01');
-            });
-            const viewDate = viewDateProp !== undefined ? viewDateProp : viewDateLocal;
-            const setViewDate = setViewDateProp !== undefined ? setViewDateProp : setViewDateLocal;
-            const viewYear = viewDate.split('-')[0];
-            const todayStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-            const currentData = safeData[viewDate] || { assets: [], loans: [], budget: [], stockProfit: [] };
-            // YoY: 1년 전 같은 달 (예: 2025-08 → 2024-08)
-            const prevYearDate = (() => {
-                const [y, m] = viewDate.split('-').map(Number);
-                return `${y - 1}-${String(m).padStart(2, '0')}`;
-            })();
-            const prevYearData = safeData[prevYearDate] || null;
-
-            // YoY / MoM 비교 모드 state
-            const [compareMode, setCompareMode] = useState('yoy'); // 'yoy' | 'mom'
-            const toggleCompare = () => setCompareMode(prev => prev === 'yoy' ? 'mom' : 'yoy');
-
-            // 차트 줌 state
-            const [chartZoom, setChartZoom] = useState('ALL'); // '1Y' | '3Y' | '5Y' | 'ALL'
-            
-            // Lifetime Earnings Calculations
-            const salaryData = useMemo(() => {
-                return safeData.salary || { 
-                    years: Array.from({length: 12}, (_, i) => String(2014 + i)), 
-                    items: [
-                        { id: 1, name: 'Yungki', values: {} }, 
-                        { id: 2, name: 'Sua', values: {} }
-                    ] 
-                };
-            }, [safeData.salary]);
-            
-            const salaryYears = salaryData.years || [];
-            
-            const salaryChartData = useMemo(() => {
-                return salaryYears.map(year => { 
-                    const point = { year }; 
-                    salaryData.items.forEach(item => point[item.name] = item.values[year] || 0); 
-                    return point; 
-                });
-            }, [salaryYears, salaryData.items]);
-            
-            const salaryItemTotals = useMemo(() => {
-                return salaryData.items.map(item => ({ 
-                    id: item.id, 
-                    name: item.name, 
-                    total: Object.values(item.values).reduce((acc, val) => acc + (Number(val) || 0), 0) 
-                }));
-            }, [salaryData.items]);
-            
-            const salaryGrandTotal = useMemo(() => {
-                return salaryItemTotals.reduce((acc, curr) => acc + curr.total, 0);
-            }, [salaryItemTotals]);
-            
-            const getSalaryLevel = (total) => {
-                if (total > 2000000000) return { label: 'Generational Wealth Owner', color: 'text-amber-400', emoji: '🏰' };
-                if (total > 1000000000) return { label: 'Rising Capitalist', color: 'text-emerald-400', emoji: '🏙️' };
-                if (total > 500000000) return { label: 'Professional Earner', color: 'text-cyan-400', emoji: '☕' };
-                if (total > 100000000) return { label: 'Diligent Ant', color: 'text-blue-400', emoji: '🐜' };
-                return { label: 'Passion-Filled Rookie', color: 'text-slate-500', emoji: '🥚' };
-            };
-            
-            const salaryMainLevel = useMemo(() => {
-                return getSalaryLevel(salaryGrandTotal);
-            }, [salaryGrandTotal]);
-
-            const reStats = useMemo(() => {
-                const list = safeData.realEstate || [];
-                return {
-                    totalValue: list.reduce((acc, item) => acc + (evaluateFormula(item.currentValue) || 0), 0),
-                    totalDebt: list.reduce((acc, item) => acc + (evaluateFormula(item.loan) || 0) + (evaluateFormula(item.deposit) || 0), 0),
-                    ownedDebt: list.filter(item => item.ownershipType === 'OWN' || !item.ownershipType).reduce((acc, item) => acc + (evaluateFormula(item.loan) || 0) + (evaluateFormula(item.deposit) || 0), 0)
-                };
-            }, [safeData.realEstate]);
-
-            const assetBreakdown = Object.keys(ASSET_CATEGORIES).map(catKey => {
-                let sum = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === catKey && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
-                if (catKey === 'REAL_ESTATE') sum += reStats.totalValue;
-                return { label: ASSET_CATEGORIES[catKey].label, value: sum };
-            }).filter(i => i.value > 0);
-
-            const totalAssets = (currentData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue;
-            const prevTotalAssets = prevYearData ? (prevYearData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue : totalAssets;
-
-            // 전월 데이터 계산 (MoM 비교용)
-            const prevMonthDate = (() => { const [y, m] = viewDate.split('-').map(Number); let py = y, pm = m - 1; if (pm === 0) { py--; pm = 12; } return `${py}-${String(pm).padStart(2, '0')}`; })();
-            const prevMonthData = safeData[prevMonthDate] || null;
-            const prevMonthAssets = prevMonthData ? (prevMonthData.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) + reStats.totalValue : null;
-            const prevMonthNetWorth = prevMonthData ? (() => { const pa = prevMonthAssets || 0; const pl = (prevMonthData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt; return pa - pl; })() : null;
-            
-            const liabilitiesExclJeonse = (currentData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt;
-            const prevLiabilities = prevYearData ? (prevYearData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.amount) || 0), 0) + reStats.ownedDebt : liabilitiesExclJeonse;
-            const netWorth = totalAssets - liabilitiesExclJeonse;
-            const prevNetWorth = prevTotalAssets - prevLiabilities;
-            const calcYoY = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / prev) * 100 : 0;
-            const totalStockAssets = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
-            const prevTotalStockAssets = prevYearData ? (prevYearData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'INVESTMENT' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0) : 0;
-            
-            // 신규 지표: 비상금 지수 (Months of coverage)
-            const liquidAssets = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
-            const monthlyExpense = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
-            const emergencyIndex = monthlyExpense > 0 ? (liquidAssets / monthlyExpense).toFixed(1) : '∞';
-
-            const annualData = useMemo(() => {
-                const months = allMonths.filter(m => m.startsWith(viewYear));
-                let profit = 0, dividend = 0;
-                months.forEach(m => {
-                    const d = safeData[m]?.stockProfit || [];
-                    profit += d.filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
-                    dividend += d.filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
-                });
-                return { profit, dividend, year: viewYear };
-            }, [safeData, viewYear, allMonths]);
-            const totalIncome = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
-            const totalExpense = (currentData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta)).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0);
-            const fullGrowthData = allMonths.map(month => {
-                const d = safeData[month];
-                const assets = (d?.assets || []).filter(a => !isItemHidden(a, 'assets', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
-                const loans = (d?.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                const netAssets = assets - loans;
-                let dr = 0;
-                if (netAssets <= 0) {
-                    dr = loans > 0 ? 200 : 0;
-                } else {
-                    dr = Math.min((loans / netAssets) * 100, 200);
-                }
-                return { name: month, assets: assets, netWorth: netAssets, debtRatio: parseFloat(dr.toFixed(1)) };
-            });
-            const recentMonths = allMonths.slice(Math.max(0, allMonths.indexOf(viewDate) - 11), allMonths.indexOf(viewDate) + 1);
-            const assetGrowthData = recentMonths.map(month => {
-                const d = safeData[month];
-                const result = { name: month };
-                Object.keys(ASSET_CATEGORIES).forEach(key => {
-                    result[ASSET_CATEGORIES[key].label] = (d?.assets || []).filter(a => normalizeCategory(a.category, 'assets') === key && !isItemHidden(a, 'assets', safeData.meta)).reduce((acc, cur) => acc + (evaluateFormula(cur.value) || 0), 0);
-                });
-                return result;
-            });
-            const cashFlowData = recentMonths.map(month => {
-                const d = safeData[month];
-                const income = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                const expense = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                const saving = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'SAVING' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                const invest = (d?.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount) || 0), 0);
-                
-                return {
-                    name: month,
-                    income: income,
-                    expenses: expense,
-                    savings: saving,
-                    investment: invest,
-                    savingsRate: income > 0 ? parseFloat(((income - expense) / income * 100).toFixed(1)) : 0,
-                    investmentShare: income > 0 ? parseFloat((invest / income * 100).toFixed(1)) : 0
-                };
-            });
-            const portfolioData = Object.keys(ASSET_CATEGORIES).map(catKey => {
-                const categoryItems = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === catKey && !isItemHidden(a, 'assets', safeData.meta));
-                let val = categoryItems.reduce((a,b)=>a+(evaluateFormula(b.value) || 0), 0);
-                if (catKey === 'REAL_ESTATE') val += reStats.totalValue;
-                return { name: ASSET_CATEGORIES[catKey].label, value: val, color: ASSET_CATEGORIES[catKey].color };
-            }).filter(i => i.value > 0);
-
-            const currentLoans = (currentData.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
-
-            const allLoanNamesSet = new Set();
-            recentMonths.forEach(month => {
-                const loans = (safeData[month]?.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
-                loans.forEach(l => {
-                    if (l.name) allLoanNamesSet.add(l.name);
-                });
-            });
-            const allLoanNames = Array.from(allLoanNamesSet);
-            const loanColors = ['#e42939', '#1b64da', '#3182f6', '#10b981', '#f59e0b', '#ef4444', '#4e5968', '#14b8a6', '#f43f5e', '#84cc16'];
-            const loanColorMap = {};
-            allLoanNames.forEach((name, i) => loanColorMap[name] = loanColors[i % loanColors.length]);
-
-            const loanPieData = currentLoans.map((l, i) => ({
-                name: l.name || 'Unknown',
-                value: evaluateFormula(l.amount) || 0,
-                color: loanColorMap[l.name] || loanColors[i % loanColors.length]
-            })).filter(l => l.value > 0).sort((a,b) => b.value - a.value);
-
-            const loanTrendData = recentMonths.map(month => {
-                const d = safeData[month];
-                const loans = (d?.loans || []).filter(l => !isItemHidden(l, 'loans', safeData.meta));
-                const dataPoint = { name: month };
-                allLoanNames.forEach(name => dataPoint[name] = 0);
-                loans.forEach(l => {
-                    if (l.name) {
-                        dataPoint[l.name] += evaluateFormula(l.amount) || 0;
-                    }
-                });
-                return dataPoint;
-            });
-
-            const [activeItem, setActiveIndex] = useState(null); 
-            const updateGoal = (type, value) => {
-                const newData = JSON.parse(JSON.stringify(safeData));
-                if (!newData.meta) newData.meta = {};
-                if (!newData.meta.goals) newData.meta.goals = { loan: 30, invest: 30, netWorth: 1000000000 };
-                newData.meta.goals[type] = value;
-                onUpdate(newData);
-            };
-            const loanGoal = safeData.meta?.goals?.loan || 30;
-            const investGoal = safeData.meta?.goals?.invest || 30;
-            const netWorthGoal = safeData.meta?.goals?.netWorth || 1000000000;
-            const handleMonthChange = (direction) => {
-                const idx = allMonths.indexOf(viewDate);
-                if (idx === -1) return;
-                const newIdx = idx + direction;
-                if (newIdx >= 0 && newIdx < allMonths.length) setViewDate(allMonths[newIdx]);
-            };
-            // MoM 계산 헬퍼
-            const calcMoM = (curr, prev) => (prev && prev !== 0) ? ((curr - prev) / Math.abs(prev)) * 100 : 0;
-
-            const renderScoreCard = (id) => {
-                 switch(id) {
-                    case 'total': return <CompactScoreCard title="총 자산" value={totalAssets} yoy={calcYoY(totalAssets, prevTotalAssets)} mom={calcMoM(totalAssets, prevMonthAssets)} momDiff={prevMonthAssets !== null ? totalAssets - prevMonthAssets : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Wallet} breakdown={assetBreakdown} />;
-                    case 'net': return <CompactScoreCard title="순자산" value={netWorth} yoy={calcYoY(netWorth, prevNetWorth)} mom={calcMoM(netWorth, prevMonthNetWorth)} momDiff={prevMonthNetWorth !== null ? netWorth - prevMonthNetWorth : null} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.Sparkles} colorClass="text-emerald-400" breakdown={[{label: '총 자산', value: totalAssets}, {label: '부채', value: -liabilitiesExclJeonse}]} />;
-                    case 'debt': return <CompactScoreCard title="총 부채 (전세 제외)" value={liabilitiesExclJeonse} yoy={calcYoY(liabilitiesExclJeonse, prevLiabilities)} mom={calcMoM(liabilitiesExclJeonse, prevMonthData ? (prevMonthData.loans||[]).filter(l=>normalizeCategory(l.category,'loans')!=='LEASE'&&!isItemHidden(l,'loans',safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.amount)||0),0)+reStats.ownedDebt : null)} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.CreditCard} colorClass="text-rose-400" />;
-                    case 'invest': return <CompactScoreCard title="투자자산" value={totalStockAssets} yoy={calcYoY(totalStockAssets, prevTotalStockAssets)} mom={calcMoM(totalStockAssets, prevMonthData ? (prevMonthData.assets||[]).filter(a=>normalizeCategory(a.category,'assets')==='INVESTMENT'&&!isItemHidden(a,'assets',safeData.meta)).reduce((a,b)=>a+(evaluateFormula(b.value)||0),0) : null)} compareMode={compareMode} onToggleCompare={toggleCompare} icon={Icons.CandlestickChart} colorClass="text-violet-400" />;
-                    case 'emergency': return (
-                        <GlassCard className="p-3 group hover:-translate-y-1 transition-transform border-l-4 border-emerald-400 h-full">
-                            <div className="flex flex-col justify-between h-full min-h-[90px] relative">
-                                <div className="flex justify-between items-center mb-1">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="p-1 rounded bg-cyan-500/20 text-cyan-400"><Icons.ShieldCheck className="w-3.5 h-3.5" /></div>
-                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">비상금 지수</span>
-                                    </div>
-                                    <div className="group/tip relative flex items-center">
-                                        <Icons.Info className="w-3 h-3 text-slate-500 hover:text-cyan-400 cursor-help" />
-                                        <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900/95 backdrop-blur-sm text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-xl border border-white/10 leading-relaxed">
-                                            유동자산(예금)을 월 지출로 나눈 값. 6개월 이상 권장.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-3xl font-black text-cyan-300 font-grotesk">{emergencyIndex}<span className="text-sm font-bold ml-1 text-cyan-500"> 개월</span></p>
-                                    <p className="text-[9px] text-slate-500 mt-1">권장: 6개월 이상</p>
-                                </div>
-                            </div>
-                        </GlassCard>
-                    );
-                    case 'annual': {
-                        const currentMonthStockProfit = (currentData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
-                        const currentMonthDividend = (currentData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
-                        const currentMonthInvestProfit = currentMonthStockProfit + currentMonthDividend;
-
-                        const prevMonthStockProfit = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
-                        const prevMonthDividend = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
-                        const prevMonthInvestProfit = prevMonthStockProfit + prevMonthDividend;
-
-                        const prevYearStockProfit = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
-                        const prevYearDividend = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
-                        const prevYearInvestProfit = prevYearStockProfit + prevYearDividend;
-
-                        return <CompactScoreCard 
-                            title="투자수익" 
-                            value={currentMonthInvestProfit} 
-                            yoy={calcYoY(currentMonthInvestProfit, prevYearInvestProfit)} 
-                            mom={calcMoM(currentMonthInvestProfit, prevMonthInvestProfit)} 
-                            momDiff={prevMonthData ? currentMonthInvestProfit - prevMonthInvestProfit : null} 
-                            compareMode={compareMode} 
-                            onToggleCompare={toggleCompare} 
-                            icon={Icons.CandlestickChart} 
-                            colorClass="text-fuchsia-400" 
-                            breakdown={[
-                                { label: '실현손익', value: currentMonthStockProfit },
-                                { label: '배당금', value: currentMonthDividend }
-                            ]}
-                        />;
-                    }
-                    default: return null;
-                 }
             };
             return (
                 <div className="space-y-6 pb-12 animate-fade-in select-none">
