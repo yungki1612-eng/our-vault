@@ -85,6 +85,59 @@
             animation: slideUpFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
+        /* Gyroscope/Mobile 3D Spinner */
+        .gyro-container {
+            width: 14px;
+            height: 14px;
+            position: relative;
+            perspective: 80px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .gyro-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(49, 130, 246, 0.4);
+            border-radius: 50%;
+        }
+        .gyro-ring-1 {
+            animation: gyro-rotate-1 2.5s linear infinite;
+            border-color: rgba(16, 185, 129, 0.6); /* emerald */
+        }
+        .gyro-ring-2 {
+            animation: gyro-rotate-2 2.5s linear infinite;
+            border-color: rgba(49, 130, 246, 0.6); /* blue */
+        }
+        .gyro-ring-3 {
+            animation: gyro-rotate-3 2.5s linear infinite;
+            border-color: rgba(236, 72, 153, 0.6); /* pink */
+        }
+        .gyro-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 3px;
+            height: 3px;
+            background-color: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #10b981;
+        }
+
+        @keyframes gyro-rotate-1 {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: rotateX(360deg) rotateY(180deg) rotateZ(360deg); }
+        }
+        @keyframes gyro-rotate-2 {
+            0% { transform: rotateX(120deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: rotateX(480deg) rotateY(360deg) rotateZ(180deg); }
+        }
+        @keyframes gyro-rotate-3 {
+            0% { transform: rotateX(240deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: rotateX(600deg) rotateY(180deg) rotateZ(540deg); }
+        }
+
         /* ===== Quantum Glassmorphism Theme ===== */
         .quantum-card {
             background: rgba(255, 255, 255, 0.03) !important;
@@ -3759,14 +3812,26 @@
             };
             return (
                 <div className="space-y-6 pb-12 animate-fade-in select-none">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-2xl font-extrabold text-white tracking-tighter font-grotesk">Dashboard</h2>
-                            <div className="h-6 w-px bg-white/10 mx-2"></div>
-                            <p className="text-slate-400 text-sm font-bold flex items-center gap-2">
-                                {todayStr}
-                                <span className="px-2 py-0.5 bg-[#3182f6]/10 border border-[#3182f6]/30 rounded text-[9px] text-[#3182f6] font-mono tracking-wider font-semibold">TODAY</span>
-                            </p>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white/[0.02] border border-white/5 rounded-2xl p-4 backdrop-blur-md">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-[#3182f6]/10 border border-[#3182f6]/20 text-[#3182f6] shadow-[0_0_15px_rgba(49,130,246,0.15)] animate-pulse-slow">
+                                <Icons.LayoutDashboard className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-lg font-bold text-white tracking-tight font-grotesk">Dashboard</h2>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white/15"></div>
+                                    <p className="text-slate-400 text-xs font-semibold font-grotesk">{todayStr}</p>
+                                </div>
+                                <p className="text-[10px] text-slate-500 mt-0.5 font-medium">실시간 자산 추적 및 포트폴리오 분석 리포트</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 md:ml-0 shrink-0">
+                            {/* TODAY status indicator badge to match the global layout */}
+                            <div className="flex text-[10px] font-semibold bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6] rounded-full px-3 py-1 items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#3182f6] animate-pulse" />
+                                <span>TODAY ACTIVE</span>
+                            </div>
                         </div>
                     </div>
 
@@ -6107,6 +6172,15 @@
                                         <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-[#3182f6]'}`} />
                                         <span>{isSyncing ? '저장 중' : '자동 저장됨'}</span>
                                     </button>
+                                    <div className="hidden sm:flex text-[10px] font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full px-3 py-1 items-center gap-2">
+                                        <div className="gyro-container">
+                                            <div className="gyro-ring gyro-ring-1"></div>
+                                            <div className="gyro-ring gyro-ring-2"></div>
+                                            <div className="gyro-ring gyro-ring-3"></div>
+                                            <div className="gyro-core"></div>
+                                        </div>
+                                        <span>시스템 정상</span>
+                                    </div>
                                     <div className="hidden sm:flex text-[10px] font-semibold bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 rounded-full px-3 py-1 items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400" />
                                         <span>데이터 연결됨</span>
@@ -6146,9 +6220,9 @@
                                             <button 
                                                 key={tab.id} 
                                                 onClick={() => setActiveTab(tab.id)} 
-                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6] shadow-lg shadow-[#3182f6]/5' : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'}`}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6] shadow-lg shadow-[#3182f6]/5' : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'}`}
                                             >
-                                                <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id ? 'text-[#3182f6]' : 'text-slate-500'}`}/> 
+                                                <tab.icon className={`w-[18px] h-[18px] shrink-0 ${activeTab === tab.id ? 'text-[#3182f6]' : 'text-slate-500'}`}/> 
                                                 <span className="font-grotesk">{tab.label}</span>
                                             </button>
                                         ))}
@@ -6156,9 +6230,9 @@
                                             href={`https://docs.google.com/spreadsheets/d/${googleSpreadsheetId}/edit`} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-emerald-500/20"
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-emerald-500/20"
                                         >
-                                            <Icons.ExternalLink className="w-4 h-4 shrink-0"/> 
+                                            <Icons.ExternalLink className="w-[18px] h-[18px] shrink-0"/> 
                                             <span className="font-grotesk">Google Sheets 열기</span>
                                         </a>
                                     </div>
