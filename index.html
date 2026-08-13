@@ -3001,13 +3001,22 @@
                 'lifetime_earnings',
                 'memo'
             ];
+
+            const getValidCardOrder = (layout) => {
+                if (!layout || !Array.isArray(layout) || layout.length === 0) return DEFAULT_CARD_ORDER;
+                const validCards = layout.filter(id => DEFAULT_CARD_ORDER.includes(id));
+                const missingCards = DEFAULT_CARD_ORDER.filter(id => !validCards.includes(id));
+                return [...validCards, ...missingCards];
+            };
+
             const [cardOrder, setCardOrder] = useState(() => {
-                return (safeData.meta && safeData.meta.dashboardLayout) ? safeData.meta.dashboardLayout : DEFAULT_CARD_ORDER;
+                const rawLayout = safeData.meta?.dashboardLayout;
+                return getValidCardOrder(rawLayout);
             });
+
             useEffect(() => {
-                if (safeData.meta && safeData.meta.dashboardLayout) {
-                    setCardOrder(safeData.meta.dashboardLayout);
-                }
+                const rawLayout = safeData.meta?.dashboardLayout;
+                setCardOrder(getValidCardOrder(rawLayout));
             }, [safeData.meta?.dashboardLayout]);
 
             const saveLayout = (newOrder) => {
