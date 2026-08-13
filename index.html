@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Master (Final v19 - Scroll Fixed & AI Design)</title>
+    <title>Our Vault | 우리 자산을 한눈에</title>
 
     <!-- React & ReactDOM -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -18,11 +18,6 @@
 
     <!-- Babel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-
-    <!-- Google Fonts: Outfit & Space Grotesk -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -362,6 +357,7 @@
         .text-3xl { font-size: 2rem !important; }
         .text-4xl { font-size: 2.4rem !important; }
     </style>
+    <link rel="stylesheet" href="toss-theme.css">
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Google API Client -->
@@ -1048,8 +1044,8 @@
             const portfolio = {
                 exchangeRate: exchangeRateToUse,
                 persons: {
-                    sua: { name: '수아', color: '#ec4899', accounts: [], debts: [] },
-                    yungki: { name: '융기', color: '#06b6d4', accounts: [], debts: [] }
+                    sua: { name: '수아', color: '#8b95a1', accounts: [], debts: [] },
+                    yungki: { name: '융기', color: '#3182f6', accounts: [], debts: [] }
                 },
                 priceCache: {},
                 lastPriceUpdate: new Date().toISOString()
@@ -2599,13 +2595,13 @@
             const [editValue, setEditValue] = useState('');
 
             const allocationPlan = [
-                { label: '주식', color: '#818cf8', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
+                { label: '주식', color: '#1b64da', bgColor: 'bg-indigo-500/10', textColor: 'text-indigo-400', borderColor: 'border-indigo-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && (b.name.trim() === '주식' || b.name.trim() === 'ISA' || b.name.trim().includes('주식') || b.name.trim().includes('ISA'))).reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: '가상자산', color: '#f59e0b', bgColor: 'bg-amber-500/10', textColor: 'text-amber-400', borderColor: 'border-amber-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'INVEST' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '가상자산').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
                 { label: '대출 상환', color: '#f43f5e', bgColor: 'bg-rose-500/10', textColor: 'text-rose-400', borderColor: 'border-rose-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '대출이자/상환' && (b.category2||'').trim() === 'Joint').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
-                { label: '신용카드', isLimit: true, color: '#06b6d4', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
+                { label: '신용카드', isLimit: true, color: '#3182f6', bgColor: 'bg-cyan-500/10', textColor: 'text-cyan-400', borderColor: 'border-cyan-500/20',
                   getActual: (budget) => budget.filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', data.meta) && b.name && b.name.trim() === '신용카드').reduce((a,b) => a + (evaluateFormula(b.amount) || 0), 0) },
             ].map(p => ({ ...p, targetRatio: getTarget(p.label) }));
 
@@ -3145,7 +3141,7 @@
                 });
             });
             const allLoanNames = Array.from(allLoanNamesSet);
-            const loanColors = ['#ec4899', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#14b8a6', '#f43f5e', '#84cc16'];
+            const loanColors = ['#e42939', '#1b64da', '#3182f6', '#10b981', '#f59e0b', '#ef4444', '#4e5968', '#14b8a6', '#f43f5e', '#84cc16'];
             const loanColorMap = {};
             allLoanNames.forEach((name, i) => loanColorMap[name] = loanColors[i % loanColors.length]);
 
@@ -3283,22 +3279,22 @@
                                         })()}>
                                             <defs>
                                                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                                                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                                                    <stop offset="5%" stopColor="#3182f6" stopOpacity={0.22}/>
+                                                    <stop offset="95%" stopColor="#3182f6" stopOpacity={0}/>
                                                 </linearGradient>
                                                 <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                                                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                                    <stop offset="5%" stopColor="#1b64da" stopOpacity={0.16}/>
+                                                    <stop offset="95%" stopColor="#1b64da" stopOpacity={0}/>
                                                 </linearGradient>
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                             <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={10} axisLine={false} tickLine={false} />
                                             <YAxis yAxisId="left" fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
                                             <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#64748b" unit="%" domain={[0, 200]} axisLine={false} tickLine={false} />
-                                            <RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
-                                            <Area yAxisId="left" type="monotone" dataKey="assets" name="총 자산" stroke="#06b6d4" strokeWidth={2} fill="url(#colorTotal)" />
-                                            <Line yAxisId="left" type="monotone" dataKey="netWorth" name="순자산" stroke="#8b5cf6" strokeWidth={2.5} dot={false} />
-                                            <Line yAxisId="right" type="monotone" dataKey="debtRatio" name="부채비율" stroke="#ec4899" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+                                            <RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
+                                            <Area yAxisId="left" type="monotone" dataKey="assets" name="총 자산" stroke="#3182f6" strokeWidth={2} fill="url(#colorTotal)" />
+                                            <Line yAxisId="left" type="monotone" dataKey="netWorth" name="순자산" stroke="#1b64da" strokeWidth={2.5} dot={false} />
+                                            <Line yAxisId="right" type="monotone" dataKey="debtRatio" name="부채비율" stroke="#e42939" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
                                         </ComposedChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -3319,7 +3315,7 @@
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                         <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={5} axisLine={false} tickLine={false} />
                                         <YAxis fontSize={10} width={40} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '6px 10px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                        <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
                                         {Object.keys(ASSET_CATEGORIES).map((key) => (
                                             <Line key={key} type="monotone" dataKey={ASSET_CATEGORIES[key].label} stroke={ASSET_CATEGORIES[key].color} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />
@@ -3335,12 +3331,12 @@
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                         <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
                                         <YAxis fontSize={10} width={40} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(1)}M` : val >= 1000 ? `${(val/1000).toFixed(0)}k` : val} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.02)'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '6px 10px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                        <RechartsTooltip cursor={{fill: '#f2f4f6'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
                                         <Legend wrapperStyle={{fontSize:'10px'}} />
-                                        <Bar dataKey="income" name="수입" fill="#06b6d4" radius={[4,4,0,0]} barSize={12} />
-                                        <Bar dataKey="expenses" name="지출" stackId="out" fill="#ec4899" barSize={12} />
+                                        <Bar dataKey="income" name="수입" fill="#3182f6" radius={[4,4,0,0]} barSize={12} />
+                                        <Bar dataKey="expenses" name="지출" stackId="out" fill="#e42939" barSize={12} />
                                         <Bar dataKey="savings" name="저축" stackId="out" fill="#10b981" barSize={12} />
-                                        <Bar dataKey="investment" name="투자" stackId="out" fill="#8b5cf6" radius={[4,4,0,0]} barSize={12} />
+                                        <Bar dataKey="investment" name="투자" stackId="out" fill="#1b64da" radius={[4,4,0,0]} barSize={12} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -3496,7 +3492,7 @@
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                         <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
                                         <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip cursor={{stroke: 'rgba(255,255,255,0.05)'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', padding: '6px 10px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                        <RechartsTooltip cursor={{stroke: '#e5e8eb'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
                                         <Legend wrapperStyle={{fontSize:'10px', paddingTop:'10px'}} iconType="circle" />
                                         {allLoanNames.map(name => (
                                             <Line key={name} type="monotone" dataKey={name} stroke={loanColorMap[name]} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />
@@ -3555,10 +3551,10 @@
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                                 <XAxis dataKey="year" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
                                                 <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
-                                                <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
+                                                <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
                                                 <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                                <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#06b6d4" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#0f1026'}} activeDot={{r: 6, strokeWidth: 0}} />
-                                                <Line type="monotone" dataKey="Sua" name="Sua" stroke="#ec4899" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#0f1026'}} activeDot={{r: 6, strokeWidth: 0}} />
+                                                <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#3182f6" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
+                                                <Line type="monotone" dataKey="Sua" name="Sua" stroke="#8b95a1" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
                                             </LineChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -3592,10 +3588,10 @@
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                         <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
                                         <YAxis fontSize={10} width={30} stroke="#64748b" unit="%" axisLine={false} tickLine={false} />
-                                        <RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }} />
+                                        <RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                                         <Bar dataKey="savingsRate" name="저축률" fill="#10b981" radius={[4,4,0,0]} barSize={16} />
-                                        <Line type="monotone" dataKey="investmentShare" name="투자 비중" stroke="#8b5cf6" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} />
+                                        <Line type="monotone" dataKey="investmentShare" name="투자 비중" stroke="#1b64da" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} />
                                     </ComposedChart>
                                 </ResponsiveContainer>
                             </div>
@@ -3680,7 +3676,7 @@
                 if (isHub) fill = '#00f2fe'; // cyan/blue neon
                 else if (name.includes('Expenses')) fill = '#f43f5e'; // rose-500
                 else if (name.includes('Savings')) fill = '#10b981'; // emerald-500
-                else if (name.includes('Investment')) fill = '#8b5cf6'; // violet-500
+                else if (name.includes('Investment')) fill = '#1b64da';
 
                 return (
                     <Layer key={`CustomNode${index}`}>
@@ -4632,7 +4628,7 @@
                                         <RechartsTooltip 
                                             cursor={{fill: 'rgba(255, 255, 255, 0.02)'}}
                                             formatter={(v) => formatCurrency(v)}
-                                            contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)', color: '#e2e8f0' }}
+                                            contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }}
                                         />
                                         <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px' }} />
                                         <Bar dataKey="Principal" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
@@ -4665,7 +4661,7 @@
                 return point;
             }), [data, months]);
 
-            const colors = ['#f43f5e', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#06b6d4'];
+            const colors = ['#e42939', '#1b64da', '#3182f6', '#10b981', '#f59e0b', '#8b95a1', '#4e5968'];
 
             return (
                 <GlassCard className="p-6 h-full">
@@ -4686,7 +4682,7 @@
                                 <YAxis fontSize={10} width={60} stroke="#94a3b8" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(1)}M` : val >= 1000 ? `${(val/1000).toFixed(0)}k` : val} axisLine={false} tickLine={false} />
                                 <RechartsTooltip 
                                     formatter={(val, name) => [formatCurrency(val), name]} 
-                                    contentStyle={{ background: 'rgba(10, 11, 22, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', color: '#e2e8f0' }} 
+                                    contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', color: '#191f28' }}
                                 />
                                 <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
                                 {uniqueLoanNames.map((loanName, index) => (
@@ -5402,8 +5398,8 @@
             const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('portfolio_gemini_key') || '');
             const [keyInput, setKeyInput] = useState(geminiKey);
 
-            const sua = portfolio.persons?.sua || { name: '수아', color: '#ec4899', accounts: [], debts: [] };
-            const yungki = portfolio.persons?.yungki || { name: '융기', color: '#06b6d4', accounts: [], debts: [] };
+            const sua = portfolio.persons?.sua || { name: '수아', color: '#8b95a1', accounts: [], debts: [] };
+            const yungki = portfolio.persons?.yungki || { name: '융기', color: '#3182f6', accounts: [], debts: [] };
 
             const suaTotalValue = getPersonTotalValue(sua, priceCache, exchangeRate);
             const yungkiTotalValue = getPersonTotalValue(yungki, priceCache, exchangeRate);
@@ -5836,11 +5832,11 @@
             }, [googleToken, googleSpreadsheetId, autoRefreshInterval, triggerSync]);
 
             const TABS = [
-                {id: 'dashboard', label: 'Dashboard', icon: Icons.LayoutDashboard}, 
-                {id: 'reports',   label: 'Reports',   icon: Icons.Activity},
-                {id: 'portfolio', label: 'Portfolio', icon: Icons.PieChart},
-                {id: 'lottogen', label: 'Lotto Gen', icon: Icons.Ticket},
-                {id: 'datasource', label: 'Data Source', icon: Icons.Database}
+                {id: 'dashboard', label: '자산 홈', icon: Icons.LayoutDashboard},
+                {id: 'reports',   label: '리포트',   icon: Icons.Activity},
+                {id: 'portfolio', label: '투자', icon: Icons.PieChart},
+                {id: 'lottogen', label: '로또 번호', icon: Icons.Ticket},
+                {id: 'datasource', label: '데이터 연결', icon: Icons.Database}
             ];
             const [activeTab, setActiveTab] = useState('dashboard');
             const dashboardAllMonths = Object.keys(financialData).filter(isMonthKey).sort();
@@ -5856,7 +5852,7 @@
 
             return (
                 <ErrorBoundary>
-                    <div className="h-screen font-sans overflow-hidden flex flex-col transition-all duration-300 quantum-bg relative">
+                    <div className="h-screen font-sans overflow-hidden flex flex-col transition-all duration-300 quantum-bg relative toss-app">
                         {/* Background Animated Blobs */}
                         <div className="blob blob-blue"></div>
                         <div className="blob blob-purple"></div>
@@ -5867,14 +5863,14 @@
                             <div className="flex items-center h-16 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
                                 <div className="flex items-center gap-2 sm:gap-4 lg:gap-8 flex-1 min-w-0">
                                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                                        <div className="relative w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-400 to-fuchsia-500 p-0.5">
-                                            <div className="w-full h-full rounded-full bg-[#0a0b16] flex items-center justify-center">
-                                                <span className="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-400">V</span>
+                                        <div className="vault-logo relative w-8 h-8 rounded-full p-0.5">
+                                            <div className="w-full h-full rounded-full flex items-center justify-center">
+                                                <span className="text-xs font-black">V</span>
                                             </div>
                                         </div>
                                         <div>
                                             <h1 className="text-md font-bold tracking-tight font-grotesk text-white leading-none">Our-Vault</h1>
-                                            <p className="hidden sm:block text-[8px] text-white/40 uppercase tracking-widest mt-0.5 leading-none">Holographic Telemetry Console</p>
+                                            <p className="hidden sm:block text-[9px] text-slate-500 mt-1 leading-none">우리 자산을 한눈에</p>
                                         </div>
                                     </div>
                                     {/* Month selector - desktop/tablet only (mobile is in tab bar) */}
@@ -5902,11 +5898,11 @@
                                     {/* Desktop: full QUANTUM_LINK button */}
                                     <button onClick={() => setShowSyncModal(true)} className="hidden sm:flex text-[10px] font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full px-3 py-1 items-center gap-1.5 transition-all hover:bg-cyan-500/20">
                                         <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-cyan-400'}`} />
-                                        <span>QUANTUM_LINK: {isSyncing ? 'SYNCING' : 'ACTIVE'}</span>
+                                        <span>{isSyncing ? '저장 중' : '자동 저장됨'}</span>
                                     </button>
                                     <div className="hidden sm:flex text-[10px] font-semibold bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 rounded-full px-3 py-1 items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400" />
-                                        <span>DB_SYNCED</span>
+                                        <span>데이터 연결됨</span>
                                     </div>
                                     <button onClick={handleResetData} className="hidden sm:flex text-slate-500 hover:text-rose-500 transition-colors p-1.5 rounded-lg border border-white/5 hover:border-rose-500/30 hover:bg-rose-500/10" title="Reset All Data">
                                         <Icons.RefreshCw className="w-3.5 h-3.5"/>
@@ -5937,7 +5933,7 @@
                             {/* Left Side Console Menu for desktop viewports */}
                             <aside className="hidden lg:flex flex-col w-64 border-r border-white/5 bg-black/25 backdrop-blur-xl p-6 overflow-y-auto shrink-0 justify-between">
                                 <div className="space-y-6">
-                                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] font-grotesk pl-2">Console Menu</div>
+                                    <div className="text-[11px] text-slate-500 font-bold tracking-wide font-grotesk pl-2">메뉴</div>
                                     <div className="space-y-1.5">
                                         {TABS.map(tab => (
                                             <button 
@@ -5956,18 +5952,18 @@
                                             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-emerald-500/20"
                                         >
                                             <Icons.ExternalLink className="w-4 h-4 shrink-0"/> 
-                                            <span className="font-grotesk">Google Data</span>
+                                            <span className="font-grotesk">Google Sheets 열기</span>
                                         </a>
                                     </div>
 
                                     <GlassCard className="p-4 border-cyan-500/20">
                                         <div className="flex justify-between items-center mb-2">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-grotesk">Quantum Status</span>
-                                            <span className="text-[9px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">ONLINE</span>
+                                            <span className="text-[10px] font-bold text-slate-400 tracking-wide font-grotesk">동기화 상태</span>
+                                            <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">정상</span>
                                         </div>
                                         <div className="flex items-center justify-between text-xs font-mono text-slate-300 mb-2">
-                                            <span>DB Latency</span>
-                                            <span className="text-cyan-400">14 ms</span>
+                                            <span>클라우드 연결</span>
+                                            <span className="text-cyan-400">안정적</span>
                                         </div>
                                         <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
                                             <div className="bg-gradient-to-r from-cyan-400 to-indigo-500 h-full w-[85%] rounded-full shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
