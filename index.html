@@ -2981,7 +2981,11 @@
             const viewYear = viewDate.split('-')[0];
             const todayStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
             const currentData = safeData[viewDate] || { assets: [], loans: [], budget: [], stockProfit: [] };
-            const prevYearDate = getPreviousMonth(viewDate);
+            // YoY: 1년 전 같은 달 (예: 2025-08 → 2024-08)
+            const prevYearDate = (() => {
+                const [y, m] = viewDate.split('-').map(Number);
+                return `${y - 1}-${String(m).padStart(2, '0')}`;
+            })();
             const prevYearData = safeData[prevYearDate] || null;
 
             // YoY / MoM 비교 모드 state
