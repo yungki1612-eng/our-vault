@@ -183,19 +183,19 @@
             --ss-hdr-bg: rgba(25, 27, 50, 0.7);
             --ss-hdr-text: #94a3b8;
             --ss-hdr-border: rgba(255, 255, 255, 0.08);
-            --ss-hdr-border-strong: rgba(6, 182, 212, 0.4);
+            --ss-hdr-border-strong: rgba(49, 130, 246, 0.4);
             --ss-cell-bg: rgba(255, 255, 255, 0.02);
             --ss-cell-bg-alt: rgba(255, 255, 255, 0.01);
             --ss-cell-border: rgba(255, 255, 255, 0.05);
             --ss-sticky-bg: rgba(15, 16, 32, 0.75);
             --ss-sum-bg: rgba(10, 11, 22, 0.85);
-            --ss-sum-border: rgba(6, 182, 212, 0.4);
+            --ss-sum-border: rgba(49, 130, 246, 0.4);
         }
 
         /* Neon linear border */
         .neon-border-cyan {
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15), inset 0 0 10px rgba(6, 182, 212, 0.05);
-            border-color: rgba(6, 182, 212, 0.4) !important;
+            box-shadow: 0 0 15px rgba(49, 130, 246, 0.15), inset 0 0 10px rgba(49, 130, 246, 0.05);
+            border-color: rgba(49, 130, 246, 0.4) !important;
         }
 
         .pulse-ambient {
@@ -343,28 +343,23 @@
             /* Firefox */
         }
 
-        /* ===== Global Font Size Increase ===== */
+        /* ===== Global Font Settings ===== */
         html {
-            font-size: 16px;
+            font-size: 14px;
         }
-
-        body, .text-xs { font-size: 0.85rem !important; }
-        .text-sm { font-size: 0.95rem !important; }
-        .text-base { font-size: 1.05rem !important; }
-        .text-lg { font-size: 1.2rem !important; }
-        .text-xl { font-size: 1.35rem !important; }
-        .text-2xl { font-size: 1.6rem !important; }
-        .text-3xl { font-size: 2rem !important; }
-        .text-4xl { font-size: 2.4rem !important; }
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
     </style>
-    <link rel="stylesheet" href="toss-theme.css">
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Google API Client -->
     <script src="https://apis.google.com/js/api.js" async defer></script>
 </head>
 
-<body class="bg-slate-200/60 text-slate-800 font-sans selection:bg-indigo-500/30 overflow-hidden">
+<body class="bg-[#08090e] text-slate-200 font-sans selection:bg-indigo-500/30 overflow-hidden">
     <div id="root"></div>
 
     <!-- Firebase Compat SDK -->
@@ -1713,24 +1708,24 @@
 
         // --- Base UI Components ---
         const GlassCard = ({ children, className = "", onClick }) => (
-            <div onClick={onClick} className={`quantum-card rounded-2xl transition-all duration-300 ${className}`}>
+            <div onClick={onClick} className={`quantum-card rounded-xl transition-all duration-300 ${className}`}>
                 {children}
             </div>
         );
 
         const GlassButton = ({ children, onClick, active, className = "", disabled }) => (
-            <button onClick={onClick} disabled={disabled} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all duration-200 ${active ? 'bg-indigo-600 text-white border border-indigo-500 shadow-sm' : 'quantum-btn text-slate-700 dark:text-slate-300'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
+            <button onClick={onClick} disabled={disabled} className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all duration-200 ${active ? 'bg-[#3182f6] text-white border border-[#3182f6] shadow-md shadow-[#3182f6]/20' : 'quantum-btn text-slate-300 hover:text-white'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}>
                 {children}
             </button>
         );
 
-        const CollapsibleCard = ({ title, icon: Icon, children, className = "", initialOpen = true, headerExtra, noPadding = false }) => {
+        const CollapsibleCard = ({ title, icon: Icon, children, className = "", initialOpen = true, headerExtra, noPadding = false, iconColor = "text-[#3182f6]" }) => {
             const [isOpen, setIsOpen] = useState(initialOpen);
             return (
                 <GlassCard className={`flex flex-col transition-all duration-300 ${isOpen ? '' : 'h-auto'} ${className}`}>
-                    <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-t-2xl transition-colors select-none" onClick={() => setIsOpen(!isOpen)}>
+                    <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-t-xl transition-colors select-none" onClick={() => setIsOpen(!isOpen)}>
                         <div className="flex items-center gap-2">
-                            {Icon && <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400"><Icon className="w-4 h-4" /></div>}
+                            {Icon && <div className={`p-1.5 rounded-lg bg-white/5 border border-white/10 ${iconColor}`}><Icon className="w-4 h-4" /></div>}
                             <h3 className="font-bold text-slate-200 text-xs sm:text-sm uppercase tracking-wider font-grotesk">{title}</h3>
                         </div>
                         <div className="flex items-center gap-2">
@@ -2427,7 +2422,7 @@
                 <GlassCard className={`p-3 flex flex-col justify-between h-full min-h-[90px] relative overflow-visible ${isNoHover ? '' : 'group hover:-translate-y-1 transition-transform'} ${title === 'Total Assets' ? 'neon-border-cyan' : ''}`}>
                     {title === 'Total Assets' && (
                         <div className="absolute right-0 top-0 w-20 h-20 opacity-20 pointer-events-none">
-                            <svg viewBox="0 0 100 100" className="w-full h-full text-cyan-400">
+                            <svg viewBox="0 0 100 100" className="w-full h-full text-[#3182f6]">
                                 <circle cx="100" cy="0" r="80" fill="none" stroke="currentColor" stroke-dasharray="3,3" strokeWidth="1.5"/>
                                 <circle cx="100" cy="0" r="50" fill="none" stroke="currentColor" strokeWidth="1"/>
                             </svg>
@@ -2435,19 +2430,19 @@
                     )}
                     <div className="flex justify-between items-center mb-1 relative z-10">
                         <div className="flex items-center gap-1.5 relative">
-                            <div className="p-1 rounded bg-white/5 text-slate-400 group-hover:text-cyan-400 transition-colors">
+                            <div className="p-1 rounded bg-white/5 text-slate-400 group-hover:text-[#3182f6] transition-colors">
                                 {Icon ? <Icon className="w-3.5 h-3.5" /> : <Icons.Wallet className="w-3.5 h-3.5"/>}
                             </div>
-                            <span className={`text-xs font-bold uppercase tracking-widest ${title === 'Total Assets' ? 'text-cyan-400 font-grotesk' : 'text-slate-400'}`}>
+                            <span className={`text-xs font-bold uppercase tracking-widest ${title === 'Total Assets' ? 'text-[#3182f6] font-grotesk' : 'text-slate-400'}`}>
                                 {title === 'Total Assets' ? 'PORTFOLIO_WORTH' : title}
                             </span>
                             {(tooltip || breakdown) && !isNoHover && (
                                 <div className="group/tip relative flex items-center">
-                                    <Icons.Info className="w-3 h-3 text-slate-500 hover:text-cyan-400 cursor-help" />
+                                    <Icons.Info className="w-3 h-3 text-slate-500 hover:text-[#3182f6] cursor-help" />
                                     <div className="absolute left-0 top-full mt-2 w-48 bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl border border-white/10">
                                         {breakdown ? (
                                             <div className="space-y-1.5">
-                                                <div className="font-bold text-cyan-400 border-b border-white/10 pb-1 mb-1 font-grotesk">{title} COMPOSITION</div>
+                                                <div className="font-bold text-[#3182f6] border-b border-white/10 pb-1 mb-1 font-grotesk">{title} COMPOSITION</div>
                                                 {breakdown.map((item, idx) => (
                                                     <div key={idx} className="flex justify-between items-center">
                                                         <span className="text-slate-400">{item.label}</span>
@@ -2885,7 +2880,7 @@
             const momDiff = totalAssets - (prevMonthAssets || totalAssets);
             
             let trendColor = 'text-slate-400', trendBg = 'bg-white/5', TrendIcon = Icons.TrendingUp;
-            if (activeRate > 0) { trendColor = 'text-cyan-400'; trendBg = 'bg-cyan-500/10'; TrendIcon = Icons.TrendingUp; } 
+            if (activeRate > 0) { trendColor = 'text-rose-400'; trendBg = 'bg-rose-500/10'; TrendIcon = Icons.TrendingUp; } 
             else if (activeRate < 0) { trendColor = 'text-blue-400'; trendBg = 'bg-blue-500/10'; TrendIcon = Icons.TrendingDown; }
 
             const formatFullValue = (val) => {
@@ -2898,9 +2893,9 @@
             };
 
             return (
-                <div className="relative overflow-hidden bg-black/30 backdrop-blur-md border border-white/10 rounded-3xl p-6 flex flex-col justify-between w-full h-full shadow-xl shadow-black/20 group">
+                <div className="relative overflow-hidden bg-[#3182f6]/5 backdrop-blur-md border border-[#3182f6]/20 rounded-xl p-6 flex flex-col justify-between w-full h-full shadow-lg shadow-[#3182f6]/5 transition-all duration-300 hover:border-[#3182f6]/40 group">
                     <div className="absolute right-0 top-0 w-32 h-32 opacity-25 pointer-events-none transition-transform duration-700 group-hover:scale-105">
-                        <svg viewBox="0 0 100 100" className="w-full h-full text-cyan-400/30">
+                        <svg viewBox="0 0 100 100" className="w-full h-full text-[#3182f6]/30">
                             <circle cx="100" cy="0" r="80" fill="none" stroke="currentColor" strokeDasharray="3,3" strokeWidth="1"/>
                             <circle cx="100" cy="0" r="60" fill="none" stroke="currentColor" strokeWidth="0.75"/>
                             <circle cx="100" cy="0" r="40" fill="none" stroke="currentColor" strokeDasharray="5,5" strokeWidth="0.5"/>
@@ -2910,7 +2905,7 @@
 
                     <div className="relative z-10 space-y-4">
                         <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-cyan-400 tracking-[0.15em] font-grotesk uppercase">
+                            <span className="text-xs font-bold text-[#3182f6] tracking-[0.15em] font-grotesk uppercase">
                                 총 보유자산
                             </span>
                             {activeRate !== 0 && (
@@ -5834,6 +5829,7 @@
             const TABS = [
                 {id: 'dashboard', label: '자산 홈', icon: Icons.LayoutDashboard},
                 {id: 'reports',   label: '리포트',   icon: Icons.Activity},
+                {id: 'realestate', label: '부동산', icon: Icons.Home},
                 {id: 'portfolio', label: '투자', icon: Icons.PieChart},
                 {id: 'lottogen', label: '로또 번호', icon: Icons.Ticket},
                 {id: 'datasource', label: '데이터 연결', icon: Icons.Database}
@@ -5877,14 +5873,14 @@
                                     {activeTab === 'dashboard' && (
                                         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 shadow-sm shrink-0">
                                             <button onClick={() => handleDashboardMonthChange(-1)} className="p-0.5 rounded-full transition-colors text-slate-400 hover:bg-white/10"><Icons.ChevronLeft className="w-4 h-4"/></button>
-                                            <span className="text-sm font-extrabold min-w-[72px] text-center text-cyan-400 font-grotesk">{dashboardViewDate}</span>
+                                            <span className="text-sm font-extrabold min-w-[72px] text-center text-[#3182f6] font-grotesk">{dashboardViewDate}</span>
                                             <button onClick={() => handleDashboardMonthChange(1)} className="p-0.5 rounded-full transition-colors text-slate-400 hover:bg-white/10"><Icons.ChevronRight className="w-4 h-4"/></button>
                                         </div>
                                     )}
                                     <nav className="hidden md:flex lg:hidden items-center gap-1.5 overflow-x-auto no-scrollbar">
                                         {TABS.map(tab => (
-                                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-lg shadow-cyan-500/5' : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'}`}>
-                                                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-cyan-400' : 'text-slate-500'}`}/> 
+                                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6] shadow-lg shadow-[#3182f6]/5' : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'}`}>
+                                                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[#3182f6]' : 'text-slate-500'}`}/> 
                                                 {tab.label}
                                             </button>
                                         ))}
@@ -5892,12 +5888,12 @@
                                 </div>
                                 <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2 sm:ml-4">
                                     {/* Mobile: icon-only sync button */}
-                                    <button onClick={() => setShowSyncModal(true)} className="sm:hidden text-cyan-400 p-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center" title="Sync">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-cyan-400'}`} />
+                                    <button onClick={() => setShowSyncModal(true)} className="sm:hidden text-[#3182f6] p-1.5 rounded-full bg-[#3182f6]/10 border border-[#3182f6]/30 flex items-center" title="Sync">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-[#3182f6]'}`} />
                                     </button>
                                     {/* Desktop: full QUANTUM_LINK button */}
-                                    <button onClick={() => setShowSyncModal(true)} className="hidden sm:flex text-[10px] font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-full px-3 py-1 items-center gap-1.5 transition-all hover:bg-cyan-500/20">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-cyan-400'}`} />
+                                    <button onClick={() => setShowSyncModal(true)} className="hidden sm:flex text-[10px] font-semibold bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6] rounded-full px-3 py-1 items-center gap-1.5 transition-all hover:bg-[#3182f6]/20">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-fuchsia-500 animate-pulse' : 'bg-[#3182f6]'}`} />
                                         <span>{isSyncing ? '저장 중' : '자동 저장됨'}</span>
                                     </button>
                                     <div className="hidden sm:flex text-[10px] font-semibold bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-400 rounded-full px-3 py-1 items-center gap-1.5">
@@ -5912,7 +5908,7 @@
                             {/* Mobile tab bar with month selector for dashboard */}
                             <div className="md:hidden overflow-x-auto no-scrollbar px-3 py-2 border-t flex items-center gap-2 relative z-10 border-white/5 bg-[#0f1026]/40 backdrop-blur-xl">
                                 {TABS.map(tab => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400' : 'text-slate-400 bg-white/5'}`}>
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6]' : 'text-slate-400 bg-white/5'}`}>
                                         {tab.label}
                                     </button>
                                 ))}
@@ -5923,7 +5919,7 @@
                                 {activeTab === 'dashboard' && (
                                     <div className="flex-shrink-0 ml-auto flex items-center gap-1 px-2 py-1 rounded-full border border-white/10 bg-white/5">
                                         <button onClick={() => handleDashboardMonthChange(-1)} className="p-0.5 rounded-full transition-colors text-slate-400 active:bg-white/10"><Icons.ChevronLeft className="w-3.5 h-3.5"/></button>
-                                        <span className="text-xs font-extrabold min-w-[60px] text-center text-cyan-400 font-grotesk">{dashboardViewDate}</span>
+                                        <span className="text-xs font-extrabold min-w-[60px] text-center text-[#3182f6] font-grotesk">{dashboardViewDate}</span>
                                         <button onClick={() => handleDashboardMonthChange(1)} className="p-0.5 rounded-full transition-colors text-slate-400 active:bg-white/10"><Icons.ChevronRight className="w-3.5 h-3.5"/></button>
                                     </div>
                                 )}
@@ -5939,9 +5935,9 @@
                                             <button 
                                                 key={tab.id} 
                                                 onClick={() => setActiveTab(tab.id)} 
-                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-lg shadow-cyan-500/5' : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'}`}
+                                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6] shadow-lg shadow-[#3182f6]/5' : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'}`}
                                             >
-                                                <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id ? 'text-cyan-400' : 'text-slate-500'}`}/> 
+                                                <tab.icon className={`w-4 h-4 shrink-0 ${activeTab === tab.id ? 'text-[#3182f6]' : 'text-slate-500'}`}/> 
                                                 <span className="font-grotesk">{tab.label}</span>
                                             </button>
                                         ))}
@@ -5956,17 +5952,17 @@
                                         </a>
                                     </div>
 
-                                    <GlassCard className="p-4 border-cyan-500/20">
+                                    <GlassCard className="p-4 border-[#3182f6]/20">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-[10px] font-bold text-slate-400 tracking-wide font-grotesk">동기화 상태</span>
-                                            <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">정상</span>
+                                            <span className="text-[10px] text-[#3182f6] bg-[#3182f6]/10 px-1.5 py-0.5 rounded">정상</span>
                                         </div>
                                         <div className="flex items-center justify-between text-xs font-mono text-slate-300 mb-2">
                                             <span>클라우드 연결</span>
-                                            <span className="text-cyan-400">안정적</span>
+                                            <span className="text-[#3182f6]">안정적</span>
                                         </div>
                                         <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
-                                            <div className="bg-gradient-to-r from-cyan-400 to-indigo-500 h-full w-[85%] rounded-full shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
+                                            <div className="bg-gradient-to-r from-[#3182f6] to-indigo-500 h-full w-[85%] rounded-full shadow-[0_0_8px_rgba(49,130,246,0.5)]"></div>
                                         </div>
                                     </GlassCard>
 
