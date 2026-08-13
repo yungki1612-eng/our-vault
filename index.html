@@ -3296,9 +3296,9 @@
                 const netAssets = assets - loans;
                 let dr = 0;
                 if (netAssets <= 0) {
-                    dr = loans > 0 ? 300 : 0;
+                    dr = loans > 0 ? 400 : 0;
                 } else {
-                    dr = Math.min((loans / netAssets) * 100, 300);
+                    dr = Math.min((loans / netAssets) * 100, 400);
                 }
                 return { name: month, assets: assets, netWorth: netAssets, debtRatio: parseFloat(dr.toFixed(1)) };
             });
@@ -3512,7 +3512,7 @@
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                             <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={10} axisLine={false} tickLine={false} />
                                             <YAxis yAxisId="left" fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                            <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#64748b" unit="%" domain={[0, 300]} axisLine={false} tickLine={false} />
+                                            <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#64748b" unit="%" domain={[0, 400]} axisLine={false} tickLine={false} />
                                             <RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
                                             <Area yAxisId="left" type="monotone" dataKey="assets" name="총 자산" stroke="#3182f6" strokeWidth={2} fill="url(#colorTotal)" />
                                             <Line yAxisId="left" type="monotone" dataKey="netWorth" name="순자산" stroke="#10b981" strokeWidth={2.5} dot={false} />
