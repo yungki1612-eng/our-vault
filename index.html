@@ -2419,7 +2419,7 @@
             const diffPositive = diffVal !== null ? diffVal >= 0 : null;
             
             return (
-                <GlassCard className={`p-6 flex flex-col justify-between h-full min-h-[140px] relative overflow-visible ${isNoHover ? '' : 'group hover:-translate-y-1 transition-transform'} ${title === 'Total Assets' ? 'neon-border-cyan' : ''}`}>
+                <GlassCard className={`p-6 flex flex-col justify-between h-full min-h-[160px] relative overflow-visible ${isNoHover ? '' : 'group hover:-translate-y-1 transition-transform'} ${title === 'Total Assets' ? 'neon-border-cyan' : ''}`}>
                     {title === 'Total Assets' && (
                         <div className="absolute right-0 top-0 w-20 h-20 opacity-20 pointer-events-none">
                             <svg viewBox="0 0 100 100" className="w-full h-full text-[#3182f6]">
@@ -2476,26 +2476,43 @@
 
                         <div className="w-full h-px bg-white/10 my-2"></div>
 
-                        <div className="min-h-[20px] flex items-center justify-between w-full">
+                        <div className="grid grid-cols-3 gap-4 pt-1 h-[40px] items-center">
                             {breakdown ? (
-                                <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                                    {breakdown.map((item, idx) => (
-                                        <div key={idx} className="flex items-center gap-1">
-                                            <span className="text-[10px] font-bold text-slate-500 tracking-wider font-grotesk">{item.label}</span>
-                                            <span className="text-[10px] font-bold text-slate-300 font-grotesk">₩{formatNumberWithCommas(Math.abs(item.value))}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                <>
+                                    <div>
+                                        <span className="block text-[10px] font-bold text-slate-500 tracking-wider font-grotesk truncate">
+                                            {breakdown[0] ? breakdown[0].label : ''}
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-bold text-slate-300 mt-0.5 font-grotesk block truncate">
+                                            {breakdown[0] ? `₩${formatNumberWithCommas(Math.abs(breakdown[0].value))}` : '—'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-[10px] font-bold text-slate-500 tracking-wider font-grotesk truncate">
+                                            {breakdown[1] ? breakdown[1].label : ''}
+                                        </span>
+                                        <span className={`text-xs sm:text-sm font-bold mt-0.5 font-grotesk block truncate ${breakdown[1] && breakdown[1].label === '부채' ? 'text-rose-400' : 'text-slate-300'}`}>
+                                            {breakdown[1] ? `₩${formatNumberWithCommas(Math.abs(breakdown[1].value))}` : '—'}
+                                        </span>
+                                    </div>
+                                </>
                             ) : (
-                                <div className="text-[10px] font-bold text-slate-500 tracking-wider font-grotesk">
-                                    {title === '연간 투자수익' ? '실현손익 + 배당금 합산' : '상세 정보 없음'}
-                                </div>
+                                <>
+                                    <div>
+                                        <span className="block text-[10px] font-bold text-slate-500 tracking-wider font-grotesk truncate">상세 정보</span>
+                                        <span className="text-xs sm:text-sm font-bold text-slate-400 mt-0.5 font-grotesk block truncate">—</span>
+                                    </div>
+                                    <div></div>
+                                </>
                             )}
-                            {diffVal !== null && (
-                                <span className={`text-[10px] font-bold font-grotesk ${diffPositive ? 'text-rose-400' : 'text-blue-400'}`}>
-                                    {diffPositive ? '▲ +' : '▼ '}{formatCurrency(diffVal)}
+                            <div>
+                                <span className="block text-[10px] font-bold text-slate-500 tracking-wider font-grotesk truncate">
+                                    {isCompareYoY ? '직전 대비' : '전월비'}
                                 </span>
-                            )}
+                                <span className={`text-xs sm:text-sm font-bold mt-0.5 font-grotesk block truncate ${diffVal !== null ? (diffPositive ? 'text-rose-400' : 'text-blue-400') : 'text-slate-500'}`}>
+                                    {diffVal !== null ? `${diffPositive ? '▲ +' : '▼ '}${formatCurrency(Math.abs(diffVal))}` : '—'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </GlassCard>
@@ -2947,22 +2964,22 @@
 
                         <div className="w-full h-px bg-white/10 my-2"></div>
 
-                        <div className="grid grid-cols-3 gap-4 pt-1">
+                        <div className="grid grid-cols-3 gap-4 pt-1 h-[40px] items-center">
                             <div>
                                 <span className="block text-[10px] font-bold text-slate-500 tracking-wider font-grotesk">유동자산</span>
-                                <span className="text-xs sm:text-sm font-bold text-slate-300 mt-0.5 font-grotesk block">
+                                <span className="text-xs sm:text-sm font-bold text-slate-300 mt-0.5 font-grotesk block truncate">
                                     {formatFullValue(liquidAssets)}
                                 </span>
                             </div>
                             <div>
                                 <span className="block text-[10px] font-bold text-slate-500 tracking-wider font-grotesk">비유동자산</span>
-                                <span className="text-xs sm:text-sm font-bold text-slate-300 mt-0.5 font-grotesk block">
+                                <span className="text-xs sm:text-sm font-bold text-slate-300 mt-0.5 font-grotesk block truncate">
                                     {formatFullValue(stakedAssets)}
                                 </span>
                             </div>
                             <div>
                                 <span className="block text-[10px] font-bold text-slate-500 tracking-wider font-grotesk">총 부채</span>
-                                <span className="text-xs sm:text-sm font-bold text-rose-400 mt-0.5 font-grotesk block">
+                                <span className="text-xs sm:text-sm font-bold text-rose-400 mt-0.5 font-grotesk block truncate">
                                     {formatFullValue(liabilities)}
                                 </span>
                             </div>
