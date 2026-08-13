@@ -3220,7 +3220,35 @@
                             </div>
                         </GlassCard>
                     );
-                    case 'annual': return <CompactScoreCard title="연간 투자수익" value={annualData.profit + annualData.dividend} icon={Icons.CandlestickChart} colorClass="text-fuchsia-400" />;
+                    case 'annual': {
+                        const currentMonthStockProfit = (currentData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
+                        const currentMonthDividend = (currentData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
+                        const currentMonthInvestProfit = currentMonthStockProfit + currentMonthDividend;
+
+                        const prevMonthStockProfit = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
+                        const prevMonthDividend = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
+                        const prevMonthInvestProfit = prevMonthStockProfit + prevMonthDividend;
+
+                        const prevYearStockProfit = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
+                        const prevYearDividend = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
+                        const prevYearInvestProfit = prevYearStockProfit + prevYearDividend;
+
+                        return <CompactScoreCard 
+                            title="투자수익" 
+                            value={currentMonthInvestProfit} 
+                            yoy={calcYoY(currentMonthInvestProfit, prevYearInvestProfit)} 
+                            mom={calcMoM(currentMonthInvestProfit, prevMonthInvestProfit)} 
+                            momDiff={prevMonthData ? currentMonthInvestProfit - prevMonthInvestProfit : null} 
+                            compareMode={compareMode} 
+                            onToggleCompare={toggleCompare} 
+                            icon={Icons.CandlestickChart} 
+                            colorClass="text-fuchsia-400" 
+                            breakdown={[
+                                { label: '실현손익', value: currentMonthStockProfit },
+                                { label: '배당금', value: currentMonthDividend }
+                            ]}
+                        />;
+                    }
                     default: return null;
                  }
             };
