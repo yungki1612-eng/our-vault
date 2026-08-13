@@ -2990,6 +2990,471 @@
         };
 
                 const Dashboard = ({ data = {}, onUpdate, viewDate: viewDateProp, setViewDate: setViewDateProp }) => {
+            // --- Card Drag & Drop Layout Order ---
+            const DEFAULT_CARD_ORDER = [
+                'telemetry', 'net_worth', 'invest_profit',
+                'asset_flow', 'allocation_strategy',
+                'growth', 'cashflow', 'portfolio',
+                'yearly_ratio', 'emergency', 'financial_indicators',
+                'loan_status', 'loan_trend', 'savings_trend',
+                'lifetime_earnings',
+                'memo'
+            ];
+            const [cardOrder, setCardOrder] = useState(() => {
+                            const renderDashboardCard = (cardId) => {
+                switch (cardId) {
+                    case 'telemetry':
+                        return (
+                            <CombinedAssetTelemetry 
+                                totalAssets={totalAssets} 
+                                liquidAssets={liquidAssets} 
+                                liabilities={liabilitiesExclJeonse} 
+                                prevTotalAssets={prevTotalAssets}
+                                prevMonthAssets={prevMonthAssets}
+                                calcYoY={calcYoY}
+                                compareMode={compareMode}
+                                onToggleCompare={toggleCompare}
+                            />
+                        );
+                    case 'net_worth':
+                        return renderScoreCard('net');
+                    case 'invest_profit':
+                        return renderScoreCard('annual');
+                    case 'asset_flow':
+                        return (
+                            <CollapsibleCard
+                                title="자산 흐름"
+                                icon={Icons.Activity}
+                                className="h-full min-h-[500px]"
+                                headerExtra={
+                                    <div className="flex items-center gap-1">
+                                        {['1Y','3Y','5Y','ALL'].map(z => (
+                                            <button
+                                                key={z}
+                                                onClick={() => setChartZoom(z)}
+                                                className={`px-2 py-0.5 rounded text-[10px] font-bold font-grotesk transition-all ${
+                                                    chartZoom === z
+                                                        ? 'bg-[#3182f6]/20 text-[#3182f6] border border-[#3182f6]/40'
+                                                        : 'bg-white/5 text-slate-500 border border-white/10 hover:text-slate-300 hover:bg-white/10'
+                                                }`}
+                                            >
+                                                {z}
+                                            </button>
+                                        ))}
+                                    </div>
+                                }
+                            >
+                                <div className="flex-1 min-h-[380px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <ComposedChart data={(() => {
+                                            if (chartZoom === 'ALL') return fullGrowthData;
+                                            const monthsBack = chartZoom === '1Y' ? 12 : chartZoom === '3Y' ? 36 : 60;
+                                            return fullGrowthData.slice(Math.max(0, fullGrowthData.length - monthsBack));
+                                        })()}>
+                                            <defs>
+                                                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#3182f6" stopOpacity={0.22}/>
+                                                    <stop offset="95%" stopColor="#3182f6" stopOpacity={0}/>
+                                                </linearGradient>
+                                                <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#1b64da" stopOpacity={0.16}/>
+                                                    <stop offset="95%" stopColor="#1b64da" stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                            <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={10} axisLine={false} tickLine={false} />
+                                            <YAxis yAxisId="left" fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
+                                            <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#64748b" unit="%" domain={[0, 200]} axisLine={false} tickLine={false} />
+                                            <RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
+                                            <Area yAxisId="left" type="monotone" dataKey="assets" name="총 자산" stroke="#3182f6" strokeWidth={2} fill="url(#colorTotal)" />
+                                            <Line yAxisId="left" type="monotone" dataKey="netWorth" name="순자산" stroke="#1b64da" strokeWidth={2.5} dot={false} />
+                                            <Line yAxisId="right" type="monotone" dataKey="debtRatio" name="부채비율" stroke="#e42939" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+                                        </ComposedChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'allocation_strategy':
+                        return (
+                            <CollapsibleCard title="자산배분 전략" icon={Icons.Target} className="h-full min-h-[500px]" headerExtra={<span className="text-[10px] text-slate-500 font-medium font-grotesk">{viewDate} 기준</span>}>
+                                <MonthlyAssetRatioCard date={viewDate} data={safeData} isWrapped onUpdate={onUpdate} />
+                            </CollapsibleCard>
+                        );
+                    case 'growth':
+                        return (
+                            <CollapsibleCard title="자산군별 성장" icon={Icons.Activity} className="h-full min-h-[256px]">
+                                <div className="h-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={assetGrowthData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                            <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={5} axisLine={false} tickLine={false} />
+                                            <YAxis fontSize={10} width={40} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
+                                            <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                            <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                            {Object.keys(ASSET_CATEGORIES).map((key) => (
+                                                <Line key={key} type="monotone" dataKey={ASSET_CATEGORIES[key].label} stroke={ASSET_CATEGORIES[key].color} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />
+                                            ))}
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'cashflow':
+                        return (
+                            <CollapsibleCard title="현금흐름 내역" icon={Icons.Banknote} className="h-full min-h-[256px]">
+                                <div className="h-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={cashFlowData} barGap={4}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                            <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
+                                            <YAxis fontSize={10} width={40} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(1)}M` : val >= 1000 ? `${(val/1000).toFixed(0)}k` : val} axisLine={false} tickLine={false} />
+                                            <RechartsTooltip cursor={{fill: '#f2f4f6'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                            <Legend wrapperStyle={{fontSize:'10px'}} />
+                                            <Bar dataKey="income" name="수입" fill="#3182f6" radius={[4,4,0,0]} barSize={12} />
+                                            <Bar dataKey="expenses" name="지출" stackId="out" fill="#e42939" barSize={12} />
+                                            <Bar dataKey="savings" name="저축" stackId="out" fill="#10b981" barSize={12} />
+                                            <Bar dataKey="investment" name="투자" stackId="out" fill="#1b64da" radius={[4,4,0,0]} barSize={12} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'portfolio':
+                        return (
+                            <CollapsibleCard title="자산 포트폴리오" icon={Icons.PieChart} className="h-full min-h-[256px]" headerExtra={<span className="text-[10px] text-slate-500 font-bold font-grotesk">{viewDate} 현황</span>}>
+                                <div className="flex-1 flex items-center gap-2 min-h-0">
+                                    <div className="w-2/5 h-full relative">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={portfolioData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem === null ? -1 : activeItem} activeShape={renderActiveShape}>
+                                                    {portfolioData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}
+                                                </Pie>
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                                            <span className="text-[9px] font-bold text-slate-500 font-grotesk tracking-widest">TOTAL</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar">
+                                        <div className="space-y-1">
+                                            {portfolioData.map((entry, index) => (
+                                                <div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === index ? 'bg-white/5' : ''}`} onMouseEnter={() => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)}>
+                                                    <div className="flex items-center gap-1.5 overflow-hidden">
+                                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div>
+                                                        <span className="font-bold text-slate-300 truncate" title={entry.name}>{entry.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <span className="font-bold text-slate-200">{formatCurrency(entry.value)}</span>
+                                                        <span className="text-slate-500 font-mono w-8 text-right">{((entry.value/totalAssets)*100).toFixed(0)}%</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'yearly_ratio':
+                        return (
+                            <CollapsibleCard title="연간 적립 비율" icon={Icons.PieChart} className="h-full min-h-[256px]">
+                                <YearlyRatioCard year={viewYear} data={safeData} isWrapped />
+                            </CollapsibleCard>
+                        );
+                    case 'emergency':
+                        return (
+                            <CollapsibleCard title="비상금 지수 & 월간 현황" icon={Icons.ShieldCheck} className="h-full min-h-[256px]">
+                                <div className="flex flex-col gap-3 h-full">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                                            <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest font-grotesk mb-1">비상금 지수</p>
+                                            <p className="text-2xl font-black text-emerald-300 font-grotesk">{emergencyIndex}<span className="text-xs font-bold ml-1 text-emerald-500"> 개월</span></p>
+                                            <p className="text-[9px] text-emerald-500 mt-0.5 font-medium">권장: 6개월 이상</p>
+                                        </div>
+                                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
+                                            <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest font-grotesk mb-1">월 저축률</p>
+                                            <p className={`text-2xl font-black font-grotesk ${totalIncome > 0 ? (((totalIncome-totalExpense)/totalIncome*100) >= 20 ? 'text-emerald-300' : 'text-amber-300') : 'text-slate-500'}`}>{totalIncome > 0 ? ((totalIncome-totalExpense)/totalIncome*100).toFixed(1) : '—'}<span className="text-xs font-bold ml-0.5">{totalIncome > 0 ? '%' : ''}</span></p>
+                                            <p className="text-[9px] text-indigo-400 mt-0.5 font-medium">권장: 20% 이상</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex-1">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-grotesk mb-2">{viewYear} 누적 투자 손익</p>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-[9px] text-slate-500">실현손익</p>
+                                                <p className={`text-sm font-black font-grotesk ${annualData.profit >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>{formatCurrency(annualData.profit)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] text-slate-500">배당금</p>
+                                                <p className="text-sm font-black font-grotesk text-emerald-400">{formatCurrency(annualData.dividend)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] text-slate-500">합계</p>
+                                                <p className={`text-sm font-black font-grotesk ${(annualData.profit+annualData.dividend) >= 0 ? 'text-cyan-400' : 'text-blue-400'}`}>{formatCurrency(annualData.profit + annualData.dividend)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'financial_indicators':
+                        return (
+                            <CollapsibleCard title="재무건전성 지표" icon={Icons.Activity} className="h-full min-h-[256px]">
+                                <div className="flex flex-col gap-2.5 h-full justify-center">
+                                    {/* 부채비율 */}
+                                    {(() => {
+                                        const dr = netWorth > 0 ? (liabilitiesExclJeonse / netWorth) * 100 : (liabilitiesExclJeonse > 0 ? 999 : 0);
+                                        const drStatus = (netWorth <= 0 && liabilitiesExclJeonse > 0) || dr > 100 ? {label:'DANGER', c:'text-rose-400', bg:'bg-rose-500', range: 100} : dr > 40 ? {label:'WARNING', c:'text-amber-400', bg:'bg-amber-500', range: Math.min(dr/2, 100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range: Math.min(dr/2, 100)};
+                                        const sr = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+                                        const srStatus = sr < 0 ? {label:'DEFICIT', c:'text-rose-400', bg:'bg-rose-500', range:0} : sr < 20 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:Math.min(sr,100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:Math.min(sr,100)};
+                                        const liqRatio = totalAssets > 0 ? (liquidAssets / totalAssets * 100) : 0;
+                                        const liqStatus = liqRatio < 10 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:liqRatio} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:liqRatio};
+                                        const items = [
+                                            { label: '부채비율', value: (netWorth <= 0 && liabilitiesExclJeonse > 0) ? '자본잠식' : dr.toFixed(1)+'%', status: drStatus, desc: '순자산 대비 부채 (경고 >40%, 위험 >100%)' },
+                                            { label: '저축률', value: sr.toFixed(1)+'%', status: srStatus, desc: '수입 대비 잉여금 (권장 >20%)' },
+                                            { label: '유동비율', value: liqRatio.toFixed(1)+'%', status: liqStatus, desc: '자산 중 현금성 비중 (권장 >10%)' },
+                                        ];
+                                        return items.map((item, i) => (
+                                            <div key={i} className="space-y-1">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[10px] font-bold text-slate-400">{item.label}</span>
+                                                        <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${item.status.c} bg-white/5 border border-white/10`}>{item.status.label}</span>
+                                                    </div>
+                                                    <span className={`text-[11px] font-extrabold ${item.status.c} font-grotesk`}>{item.value}</span>
+                                                </div>
+                                                <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                                                    <div className={`h-full rounded-full transition-all duration-700 ${item.status.bg}`} style={{ width: `${Math.min(item.status.range, 100)}%` }} />
+                                                </div>
+                                                <p className="text-[8px] text-slate-500">{item.desc}</p>
+                                            </div>
+                                        ));
+                                    })()}
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'loan_status':
+                        return (
+                            <CollapsibleCard title="대출 현황" icon={Icons.CreditCard} className="h-full min-h-[256px]" headerExtra={<span className="text-[10px] text-slate-500 font-bold font-grotesk">{viewDate} 기준</span>}>
+                                <div className="flex-1 flex items-center gap-2 min-h-0 h-full">
+                                    <div className="w-2/5 h-full relative">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie data={loanPieData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(`loan-${index}`)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem !== null && typeof activeItem === 'string' && activeItem.startsWith('loan-') ? parseInt(activeItem.split('-')[1]) : -1} activeShape={renderActiveShape}>
+                                                    {loanPieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}
+                                                </Pie>
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 flex-col">
+                                            <span className="text-[9px] font-bold text-slate-500 font-grotesk tracking-widest">총 부채</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar">
+                                        <div className="space-y-1">
+                                            {loanPieData.length === 0 && <div className="text-xs text-slate-500 text-center py-4">대출 내역 없음</div>}
+                                            {loanPieData.map((entry, index) => {
+                                                const total = loanPieData.reduce((acc, cur) => acc + cur.value, 0);
+                                                return (
+                                                <div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === `loan-${index}` ? 'bg-white/5' : ''}`} onMouseEnter={() => setActiveIndex(`loan-${index}`)} onMouseLeave={() => setActiveIndex(null)}>
+                                                    <div className="flex items-center gap-1.5 overflow-hidden">
+                                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div>
+                                                        <span className="font-bold text-slate-300 truncate" title={entry.name}>{entry.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <span className="font-bold text-slate-200">{formatCurrency(entry.value)}</span>
+                                                        <span className="text-slate-500 font-mono w-8 text-right">{total > 0 ? ((entry.value/total)*100).toFixed(0) : 0}%</span>
+                                                    </div>
+                                                </div>
+                                            )})}
+                                        </div>
+                                    </div>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'loan_trend':
+                        return (
+                            <CollapsibleCard title="대출 추이 (12개월)" icon={Icons.TrendingDown} className="h-full min-h-[256px]">
+                                <div className="h-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={loanTrendData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                            <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
+                                            <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
+                                            <RechartsTooltip cursor={{stroke: '#e5e8eb'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
+                                            <Legend wrapperStyle={{fontSize:'10px', paddingTop:'10px'}} iconType="circle" />
+                                            {allLoanNames.map(name => (
+                                                <Line key={name} type="monotone" dataKey={name} stroke={loanColorMap[name]} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />
+                                            ))}
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'savings_trend':
+                        return (
+                            <CollapsibleCard 
+                                title="저축률 & 투자 비중 추이" 
+                                icon={Icons.TrendingUp} 
+                                className="h-full min-h-[256px]"
+                                headerExtra={
+                                    <div className="group/tip relative flex items-center">
+                                        <Icons.Info className="w-3.5 h-3.5 text-slate-500 hover:text-[#3182f6] cursor-help" />
+                                        <div className="absolute right-0 top-full mt-2 w-56 bg-slate-955/95 backdrop-blur-md text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl border border-white/10 leading-relaxed font-normal">
+                                            <p className="font-bold text-[#3182f6] border-b border-white/10 pb-1 mb-1.5 font-grotesk">산출 기준</p>
+                                            <div className="space-y-1">
+                                                <p><span className="text-slate-400">저축률:</span> (수입 - 지출) / 수입 * 100</p>
+                                                <p><span className="text-slate-400">투자 비중:</span> 투자 / 수입 * 100</p>
+                                                <p className="text-[9px] text-slate-500">* 수입, 지출, 투자 항목 기준</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            >
+                                <div className="h-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <ComposedChart data={cashFlowData}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                            <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
+                                            <YAxis fontSize={10} width={30} stroke="#64748b" unit="%" axisLine={false} tickLine={false} />
+                                            <RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
+                                            <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                            <Bar dataKey="savingsRate" name="저축률" fill="#10b981" radius={[4,4,0,0]} barSize={16} />
+                                            <Line type="monotone" dataKey="investmentShare" name="투자 비중" stroke="#1b64da" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} />
+                                        </ComposedChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'lifetime_earnings':
+                        return (
+                            <CollapsibleCard title="평생 소득 & 이력" icon={Icons.TrendingUp} initialOpen={true} className="h-full">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Left Column: Cumulative Stats */}
+                                    <div className="lg:col-span-1 flex flex-col gap-4">
+                                        <div className="bg-gradient-to-r from-cyan-950/60 to-fuchsia-950/60 border border-white/10 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden flex-1 flex flex-col justify-between min-h-[140px]">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                                            <div className="relative z-10">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 font-grotesk">우리의 평생 소득</span>
+                                                <h3 className="text-3xl font-black tracking-tight font-grotesk mt-1">{formatCurrency(salaryGrandTotal)}</h3>
+                                            </div>
+                                            <div className="relative z-10 mt-4">
+                                                <span className="text-[10px] font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                                                    <span>{salaryMainLevel.emoji}</span>
+                                                    <span className="font-grotesk">{salaryMainLevel.label}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {salaryItemTotals.map(it => { 
+                                                const lv = getSalaryLevel(it.total); 
+                                                const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
+                                                return (
+                                                    <GlassCard key={it.id} className="p-4 flex flex-col justify-between min-h-[110px]">
+                                                        <div>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">누적 소득 ({displayName})</span>
+                                                            <h4 className="text-lg font-black text-white tracking-tight mt-0.5 font-grotesk">{formatCurrency(it.total)}</h4>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <div className={`text-[9px] font-bold ${lv.color} bg-white/5 border border-white/10 px-2 py-0.5 rounded inline-block font-grotesk`}>{lv.emoji} {lv.label}</div>
+                                                        </div>
+                                                    </GlassCard>
+                                                ); 
+                                            })}
+                                        </div>
+                                    </div>
+                                    {/* Right Column: Chart */}
+                                    <div className="lg:col-span-2">
+                                        <GlassCard className="p-5 h-full flex flex-col justify-between">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-sm font-bold text-white flex items-center gap-1.5 font-grotesk"><Icons.TrendingUp className="w-4 h-4 text-[#3182f6]"/> 연도별 소득 추이</h4>
+                                                <span className="text-[9px] text-slate-500 font-bold uppercase font-grotesk">소득 이력 차트</span>
+                                            </div>
+                                            <div className="h-56">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <LineChart data={salaryChartData}>
+                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                                        <XAxis dataKey="year" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
+                                                        <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+                                                        <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
+                                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
+                                                        <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#3182f6" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
+                                                        <Line type="monotone" dataKey="Sua" name="Sua" stroke="#8b95a1" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
+                                                    </LineChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </GlassCard>
+                                    </div>
+                                </div>
+                            </CollapsibleCard>
+                        );
+                    case 'memo':
+                        return (
+                            <CollapsibleCard title="Console Memo" icon={Icons.Edit2} className="h-full min-h-[192px]">
+                                <MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} isWrapped />
+                            </CollapsibleCard>
+                        );
+                    default:
+                        return null;
+                }
+            };
+return (safeData.meta && safeData.meta.dashboardLayout) ? safeData.meta.dashboardLayout : DEFAULT_CARD_ORDER;
+            });
+            useEffect(() => {
+                if (safeData.meta && safeData.meta.dashboardLayout) {
+                    // Sync cardOrder if it changes in database
+                    setCardOrder(safeData.meta.dashboardLayout);
+                }
+            }, [safeData.meta?.dashboardLayout]);
+
+            const saveLayout = (newOrder) => {
+                const nextData = JSON.parse(JSON.stringify(safeData));
+                if (!nextData.meta) nextData.meta = {};
+                nextData.meta.dashboardLayout = newOrder;
+                onUpdate(nextData);
+            };
+
+            const [draggedIndex, setDraggedIndex] = useState(null);
+
+            const handleDragStart = (e, index) => {
+                setDraggedIndex(index);
+                e.dataTransfer.effectAllowed = 'move';
+                // Pass visual indicator
+                e.currentTarget.style.opacity = '0.4';
+            };
+
+            const handleDragOver = (e, index) => {
+                e.preventDefault();
+            };
+
+            const handleDrop = (e, index) => {
+                e.preventDefault();
+                if (draggedIndex === null || draggedIndex === index) return;
+                
+                const newOrder = [...cardOrder];
+                const draggedItem = newOrder[draggedIndex];
+                newOrder.splice(draggedIndex, 1);
+                newOrder.splice(index, 0, draggedItem);
+                
+                setCardOrder(newOrder);
+                saveLayout(newOrder);
+            };
+
+            const handleDragEnd = (e) => {
+                e.currentTarget.style.opacity = '1';
+                setDraggedIndex(null);
+            };
+
+            const getCardColSpan = (cardId) => {
+                switch (cardId) {
+                    case 'asset_flow':
+                    case 'allocation_strategy':
+                        return 'col-span-1 lg:col-span-2';
+                    case 'lifetime_earnings':
+                    case 'memo':
+                        return 'col-span-1 lg:col-span-3';
+                    default:
+                        return 'col-span-1 lg:col-span-1';
+                }
+            };
             const safeData = data || {};
             const allMonths = Object.keys(safeData).filter(isMonthKey).sort();
             const [viewDateLocal, setViewDateLocal] = useState(() => {
@@ -3270,385 +3735,42 @@
                  }
             };
             return (
-                <div className="space-y-6 pb-12 animate-fade-in">
+                <div className="space-y-6 pb-12 animate-fade-in select-none">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
                         <div className="flex items-center gap-4">
                             <h2 className="text-2xl font-extrabold text-white tracking-tighter font-grotesk">Dashboard</h2>
                             <div className="h-6 w-px bg-white/10 mx-2"></div>
                             <p className="text-slate-400 text-sm font-bold flex items-center gap-2">
                                 {todayStr}
-                                <span className="px-2 py-0.5 bg-cyan-500/10 border border-cyan-500/30 rounded text-[9px] text-cyan-400 font-mono tracking-wider font-semibold">TODAY</span>
+                                <span className="px-2 py-0.5 bg-[#3182f6]/10 border border-[#3182f6]/30 rounded text-[9px] text-[#3182f6] font-mono tracking-wider font-semibold">TODAY</span>
                             </p>
                         </div>
                     </div>
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-                        <CombinedAssetTelemetry 
-                            totalAssets={totalAssets} 
-                            liquidAssets={liquidAssets} 
-                            liabilities={liabilitiesExclJeonse} 
-                            prevTotalAssets={prevTotalAssets}
-                            prevMonthAssets={prevMonthAssets}
-                            calcYoY={calcYoY}
-                            compareMode={compareMode}
-                            onToggleCompare={toggleCompare}
-                        />
-                        {renderScoreCard('net')}
-                        {renderScoreCard('annual')}
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2">
-                            <CollapsibleCard
-                                title="자산 흐름"
-                                icon={Icons.Activity}
-                                className="h-[500px]"
-                                headerExtra={
-                                    <div className="flex items-center gap-1">
-                                        {['1Y','3Y','5Y','ALL'].map(z => (
-                                            <button
-                                                key={z}
-                                                onClick={() => setChartZoom(z)}
-                                                className={`px-2 py-0.5 rounded text-[10px] font-bold font-grotesk transition-all ${
-                                                    chartZoom === z
-                                                        ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
-                                                        : 'bg-white/5 text-slate-500 border border-white/10 hover:text-slate-300 hover:bg-white/10'
-                                                }`}
-                                            >
-                                                {z}
-                                            </button>
-                                        ))}
+                        {cardOrder.map((cardId, index) => {
+                            const cardContent = renderDashboardCard(cardId);
+                            if (!cardContent) return null;
+                            const colSpanClass = getCardColSpan(cardId);
+                            
+                            return (
+                                <div 
+                                    key={cardId}
+                                    draggable="true"
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragOver={(e) => handleDragOver(e, index)}
+                                    onDrop={(e) => handleDrop(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                    className={`${colSpanClass} transition-all duration-300 relative group`}
+                                >
+                                    {/* Drag handle icon overlay on hover */}
+                                    <div className="absolute top-2.5 left-2.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-50 p-1 bg-slate-900/80 rounded border border-white/10 text-slate-400 hover:text-white" title="드래그하여 카드 위치 변경">
+                                        <Icons.GripVertical className="w-3.5 h-3.5" />
                                     </div>
-                                }
-                            >
-                                <div className="flex-1">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart data={(() => {
-                                            if (chartZoom === 'ALL') return fullGrowthData;
-                                            const monthsBack = chartZoom === '1Y' ? 12 : chartZoom === '3Y' ? 36 : 60;
-                                            return fullGrowthData.slice(Math.max(0, fullGrowthData.length - monthsBack));
-                                        })()}>
-                                            <defs>
-                                                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#3182f6" stopOpacity={0.22}/>
-                                                    <stop offset="95%" stopColor="#3182f6" stopOpacity={0}/>
-                                                </linearGradient>
-                                                <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#1b64da" stopOpacity={0.16}/>
-                                                    <stop offset="95%" stopColor="#1b64da" stopOpacity={0}/>
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                            <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={10} axisLine={false} tickLine={false} />
-                                            <YAxis yAxisId="left" fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                            <YAxis yAxisId="right" orientation="right" fontSize={10} width={30} stroke="#64748b" unit="%" domain={[0, 200]} axisLine={false} tickLine={false} />
-                                            <RechartsTooltip formatter={(val, name) => name === '부채비율' ? `${val}%` : formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
-                                            <Area yAxisId="left" type="monotone" dataKey="assets" name="총 자산" stroke="#3182f6" strokeWidth={2} fill="url(#colorTotal)" />
-                                            <Line yAxisId="left" type="monotone" dataKey="netWorth" name="순자산" stroke="#1b64da" strokeWidth={2.5} dot={false} />
-                                            <Line yAxisId="right" type="monotone" dataKey="debtRatio" name="부채비율" stroke="#e42939" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
+                                    {cardContent}
                                 </div>
-                            </CollapsibleCard>
-                        </div>
-                        <div className="lg:col-span-1">
-                            <CollapsibleCard title="자산배분 전략" icon={Icons.Target} className="h-[500px]" headerExtra={<span className="text-[10px] text-slate-500 font-medium font-grotesk">{viewDate} 기준</span>}>
-                                <MonthlyAssetRatioCard date={viewDate} data={safeData} isWrapped onUpdate={onUpdate} />
-                            </CollapsibleCard>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <CollapsibleCard title="자산군별 성장" icon={Icons.Activity} className="h-64">
-                            <div className="h-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={assetGrowthData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                        <XAxis dataKey="name" fontSize={10} stroke="#64748b" tickMargin={5} axisLine={false} tickLine={false} />
-                                        <YAxis fontSize={10} width={40} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
-                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
-                                        {Object.keys(ASSET_CATEGORIES).map((key) => (
-                                            <Line key={key} type="monotone" dataKey={ASSET_CATEGORIES[key].label} stroke={ASSET_CATEGORIES[key].color} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />
-                                        ))}
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CollapsibleCard>
-                        <CollapsibleCard title="현금흐름 내역" icon={Icons.Banknote} className="h-64">
-                            <div className="h-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={cashFlowData} barGap={4}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                        <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
-                                        <YAxis fontSize={10} width={40} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(1)}M` : val >= 1000 ? `${(val/1000).toFixed(0)}k` : val} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip cursor={{fill: '#f2f4f6'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
-                                        <Legend wrapperStyle={{fontSize:'10px'}} />
-                                        <Bar dataKey="income" name="수입" fill="#3182f6" radius={[4,4,0,0]} barSize={12} />
-                                        <Bar dataKey="expenses" name="지출" stackId="out" fill="#e42939" barSize={12} />
-                                        <Bar dataKey="savings" name="저축" stackId="out" fill="#10b981" barSize={12} />
-                                        <Bar dataKey="investment" name="투자" stackId="out" fill="#1b64da" radius={[4,4,0,0]} barSize={12} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CollapsibleCard>
-                        <CollapsibleCard title="자산 포트폴리오" icon={Icons.PieChart} className="h-64" headerExtra={<span className="text-[10px] text-slate-500 font-bold font-grotesk">{viewDate} 현황</span>}>
-                            <div className="flex-1 flex items-center gap-2 min-h-0">
-                                <div className="w-2/5 h-full relative">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={portfolioData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem === null ? -1 : activeItem} activeShape={renderActiveShape}>
-                                                {portfolioData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}
-                                            </Pie>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                                        <span className="text-[9px] font-bold text-slate-500 font-grotesk tracking-widest">TOTAL</span>
-                                    </div>
-                                </div>
-                                <div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar">
-                                    <div className="space-y-1">
-                                        {portfolioData.map((entry, index) => (
-                                            <div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === index ? 'bg-white/5' : ''}`} onMouseEnter={() => setActiveIndex(index)} onMouseLeave={() => setActiveIndex(null)}>
-                                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div>
-                                                    <span className="font-bold text-slate-300 truncate" title={entry.name}>{entry.name}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 flex-shrink-0">
-                                                    <span className="font-bold text-slate-200">{formatCurrency(entry.value)}</span>
-                                                    <span className="text-slate-500 font-mono w-8 text-right">{((entry.value/totalAssets)*100).toFixed(0)}%</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </CollapsibleCard>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <CollapsibleCard title="연간 적립 비율" icon={Icons.PieChart} className="h-64">
-                            <YearlyRatioCard year={viewYear} data={safeData} isWrapped />
-                        </CollapsibleCard>
-                        <CollapsibleCard title="비상금 지수 & 월간 현황" icon={Icons.ShieldCheck} className="h-64">
-                            <div className="flex flex-col gap-3 h-full">
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                                        <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest font-grotesk mb-1">비상금 지수</p>
-                                        <p className="text-2xl font-black text-emerald-300 font-grotesk">{emergencyIndex}<span className="text-xs font-bold ml-1 text-emerald-500"> 개월</span></p>
-                                        <p className="text-[9px] text-emerald-500 mt-0.5 font-medium">권장: 6개월 이상</p>
-                                    </div>
-                                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
-                                        <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest font-grotesk mb-1">월 저축률</p>
-                                        <p className={`text-2xl font-black font-grotesk ${totalIncome > 0 ? (((totalIncome-totalExpense)/totalIncome*100) >= 20 ? 'text-emerald-300' : 'text-amber-300') : 'text-slate-500'}`}>{totalIncome > 0 ? ((totalIncome-totalExpense)/totalIncome*100).toFixed(1) : '—'}<span className="text-xs font-bold ml-0.5">{totalIncome > 0 ? '%' : ''}</span></p>
-                                        <p className="text-[9px] text-indigo-400 mt-0.5 font-medium">권장: 20% 이상</p>
-                                    </div>
-                                </div>
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex-1">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-grotesk mb-2">{viewYear} 누적 투자 손익</p>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-[9px] text-slate-500">실현손익</p>
-                                            <p className={`text-sm font-black font-grotesk ${annualData.profit >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>{formatCurrency(annualData.profit)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] text-slate-500">배당금</p>
-                                            <p className="text-sm font-black font-grotesk text-emerald-400">{formatCurrency(annualData.dividend)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] text-slate-500">합계</p>
-                                            <p className={`text-sm font-black font-grotesk ${(annualData.profit+annualData.dividend) >= 0 ? 'text-cyan-400' : 'text-blue-400'}`}>{formatCurrency(annualData.profit + annualData.dividend)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </CollapsibleCard>
-                        <CollapsibleCard title="재무건전성 지표" icon={Icons.Activity} className="h-64">
-                            <div className="flex flex-col gap-2.5 h-full justify-center">
-                                {/* 부채비율 */}
-                                {(() => {
-                                    const dr = netWorth > 0 ? (liabilitiesExclJeonse / netWorth) * 100 : (liabilitiesExclJeonse > 0 ? 999 : 0);
-                                    const drStatus = (netWorth <= 0 && liabilitiesExclJeonse > 0) || dr > 100 ? {label:'DANGER', c:'text-rose-400', bg:'bg-rose-500', range: 100} : dr > 40 ? {label:'WARNING', c:'text-amber-400', bg:'bg-amber-500', range: Math.min(dr/2, 100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range: Math.min(dr/2, 100)};
-                                    const sr = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
-                                    const srStatus = sr < 0 ? {label:'DEFICIT', c:'text-rose-400', bg:'bg-rose-500', range:0} : sr < 20 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:Math.min(sr,100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:Math.min(sr,100)};
-                                    const liqRatio = totalAssets > 0 ? (liquidAssets / totalAssets * 100) : 0;
-                                    const liqStatus = liqRatio < 10 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:liqRatio} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:liqRatio};
-                                    const items = [
-                                        { label: '부채비율', value: (netWorth <= 0 && liabilitiesExclJeonse > 0) ? '자본잠식' : dr.toFixed(1)+'%', status: drStatus, desc: '순자산 대비 부채 (경고 >40%, 위험 >100%)' },
-                                        { label: '저축률', value: sr.toFixed(1)+'%', status: srStatus, desc: '수입 대비 잉여금 (권장 >20%)' },
-                                        { label: '유동비율', value: liqRatio.toFixed(1)+'%', status: liqStatus, desc: '자산 중 현금성 비중 (권장 >10%)' },
-                                    ];
-                                    return items.map((item, i) => (
-                                        <div key={i} className="space-y-1">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="text-[10px] font-bold text-slate-400">{item.label}</span>
-                                                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${item.status.c} bg-white/5 border border-white/10`}>{item.status.label}</span>
-                                                </div>
-                                                <span className={`text-[11px] font-extrabold ${item.status.c} font-grotesk`}>{item.value}</span>
-                                            </div>
-                                            <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
-                                                <div className={`h-full rounded-full transition-all duration-700 ${item.status.bg}`} style={{ width: `${Math.min(item.status.range, 100)}%` }} />
-                                            </div>
-                                            <p className="text-[8px] text-slate-500">{item.desc}</p>
-                                        </div>
-                                    ));
-                                })()}
-                            </div>
-                        </CollapsibleCard>
-                    </div>
-
-
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch mb-6">
-                        <CollapsibleCard title="대출 현황" icon={Icons.CreditCard} className="h-64" headerExtra={<span className="text-[10px] text-slate-500 font-bold font-grotesk">{viewDate} 기준</span>}>
-                            <div className="flex-1 flex items-center gap-2 min-h-0 h-full">
-                                <div className="w-2/5 h-full relative">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={loanPieData} cx="50%" cy="50%" innerRadius="60%" outerRadius="90%" paddingAngle={2} dataKey="value" cornerRadius={3} onMouseEnter={(_, index) => setActiveIndex(`loan-${index}`)} onMouseLeave={() => setActiveIndex(null)} activeIndex={activeItem !== null && typeof activeItem === 'string' && activeItem.startsWith('loan-') ? parseInt(activeItem.split('-')[1]) : -1} activeShape={renderActiveShape}>
-                                                {loanPieData.map((entry, index) => (<Cell key={`cell-${index}`} fill={entry.color} stroke="none" />))}
-                                            </Pie>
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 flex-col">
-                                        <span className="text-[9px] font-bold text-slate-500 font-grotesk tracking-widest">총 부채</span>
-                                    </div>
-                                </div>
-                                <div className="w-3/5 h-full flex flex-col justify-center pr-1 overflow-y-auto custom-scrollbar">
-                                    <div className="space-y-1">
-                                        {loanPieData.length === 0 && <div className="text-xs text-slate-500 text-center py-4">대출 내역 없음</div>}
-                                        {loanPieData.map((entry, index) => {
-                                            const total = loanPieData.reduce((acc, cur) => acc + cur.value, 0);
-                                            return (
-                                            <div key={index} className={`flex justify-between items-center text-[10px] p-1 rounded transition-colors ${activeItem === `loan-${index}` ? 'bg-white/5' : ''}`} onMouseEnter={() => setActiveIndex(`loan-${index}`)} onMouseLeave={() => setActiveIndex(null)}>
-                                                <div className="flex items-center gap-1.5 overflow-hidden">
-                                                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }}></div>
-                                                    <span className="font-bold text-slate-300 truncate" title={entry.name}>{entry.name}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 flex-shrink-0">
-                                                    <span className="font-bold text-slate-200">{formatCurrency(entry.value)}</span>
-                                                    <span className="text-slate-500 font-mono w-8 text-right">{total > 0 ? ((entry.value/total)*100).toFixed(0) : 0}%</span>
-                                                </div>
-                                            </div>
-                                        )})}
-                                    </div>
-                                </div>
-                            </div>
-                        </CollapsibleCard>
-                        
-                        <CollapsibleCard title="대출 추이 (12개월)" icon={Icons.TrendingDown} className="h-64">
-                            <div className="h-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={loanTrendData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                        <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
-                                        <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000000 ? `${(val/1000000000).toFixed(1)}B` : val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : val} axisLine={false} tickLine={false} />
-                                        <RechartsTooltip cursor={{stroke: '#e5e8eb'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '8px', padding: '6px 10px', boxShadow: 'none', color: '#191f28' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '2px' }} />
-                                        <Legend wrapperStyle={{fontSize:'10px', paddingTop:'10px'}} iconType="circle" />
-                                        {allLoanNames.map(name => (
-                                            <Line key={name} type="monotone" dataKey={name} stroke={loanColorMap[name]} strokeWidth={2} dot={{r:0}} activeDot={{r:4}} />
-                                        ))}
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CollapsibleCard>
-
-                        <CollapsibleCard 
-                            title="저축률 & 투자 비중 추이" 
-                            icon={Icons.TrendingUp} 
-                            className="h-64"
-                            headerExtra={
-                                <div className="group/tip relative flex items-center">
-                                    <Icons.Info className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400 cursor-help" />
-                                    <div className="absolute right-0 top-full mt-2 w-56 bg-slate-955/95 backdrop-blur-sm text-white text-[10px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl border border-white/10 leading-relaxed">
-                                        <p className="font-bold text-cyan-400 border-b border-white/10 pb-1 mb-1.5 font-grotesk">산출 기준</p>
-                                        <div className="space-y-1">
-                                            <p><span className="text-slate-400">저축률:</span> (수입 - 지출) / 수입 * 100</p>
-                                            <p><span className="text-slate-400">투자 비중:</span> 투자 / 수입 * 100</p>
-                                            <p className="text-[9px] text-slate-500">* 수입, 지출, 투자 항목 기준</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        >
-                            <div className="h-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <ComposedChart data={cashFlowData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                        <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
-                                        <YAxis fontSize={10} width={30} stroke="#64748b" unit="%" axisLine={false} tickLine={false} />
-                                        <RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
-                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                        <Bar dataKey="savingsRate" name="저축률" fill="#10b981" radius={[4,4,0,0]} barSize={16} />
-                                        <Line type="monotone" dataKey="investmentShare" name="투자 비중" stroke="#1b64da" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} />
-                                    </ComposedChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CollapsibleCard>
-                    </div>
-
-                    <CollapsibleCard title="평생 소득 & 이력" icon={Icons.TrendingUp} initialOpen={true} className="mb-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* Left Column: Cumulative Stats */}
-                            <div className="lg:col-span-1 flex flex-col gap-4">
-                                <div className="bg-gradient-to-r from-cyan-950/60 to-fuchsia-950/60 border border-white/10 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden flex-1 flex flex-col justify-between min-h-[140px]">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-                                    <div className="relative z-10">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60 font-grotesk">우리의 평생 소득</span>
-                                        <h3 className="text-3xl font-black tracking-tight font-grotesk mt-1">{formatCurrency(salaryGrandTotal)}</h3>
-                                    </div>
-                                    <div className="relative z-10 mt-4">
-                                        <span className="text-[10px] font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
-                                            <span>{salaryMainLevel.emoji}</span>
-                                            <span className="font-grotesk">{salaryMainLevel.label}</span>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    {salaryItemTotals.map(it => { 
-                                        const lv = getSalaryLevel(it.total); 
-                                        const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
-                                        return (
-                                            <GlassCard key={it.id} className="p-4 flex flex-col justify-between min-h-[110px]">
-                                                <div>
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">누적 소득 ({displayName})</span>
-                                                    <h4 className="text-lg font-black text-white tracking-tight mt-0.5 font-grotesk">{formatCurrency(it.total)}</h4>
-                                                </div>
-                                                <div className="mt-3">
-                                                    <div className={`text-[9px] font-bold ${lv.color} bg-white/5 border border-white/10 px-2 py-0.5 rounded inline-block font-grotesk`}>{lv.emoji} {lv.label}</div>
-                                                </div>
-                                            </GlassCard>
-                                        ); 
-                                    })}
-                                </div>
-                            </div>
-                            {/* Right Column: Chart */}
-                            <div className="lg:col-span-2">
-                                <GlassCard className="p-5 h-full flex flex-col justify-between">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-sm font-bold text-white flex items-center gap-1.5 font-grotesk"><Icons.TrendingUp className="w-4 h-4 text-cyan-400"/> 연도별 소득 추이</h4>
-                                        <span className="text-[9px] text-slate-500 font-bold uppercase font-grotesk">소득 이력 차트</span>
-                                    </div>
-                                    <div className="h-56">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart data={salaryChartData}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                                <XAxis dataKey="year" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
-                                                <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
-                                                <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
-                                                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                                <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#3182f6" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
-                                                <Line type="monotone" dataKey="Sua" name="Sua" stroke="#8b95a1" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </GlassCard>
-                            </div>
-                        </div>
-                    </CollapsibleCard>
-
-                    <div className="grid grid-cols-1 gap-6">
-                        <CollapsibleCard title="Console Memo" icon={Icons.Edit2} className="h-48">
-                            <MemoCard memo={safeData.meta?.dashboardMemo} onUpdate={(val) => { const n = JSON.parse(JSON.stringify(safeData)); if(!n.meta) n.meta={}; n.meta.dashboardMemo=val; onUpdate(n); }} isWrapped />
-                        </CollapsibleCard>
+                            );
+                        })}
                     </div>
                 </div>
             );
