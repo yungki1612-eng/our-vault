@@ -3786,64 +3786,63 @@
                     case 'lifetime_earnings':
                         return (
                             <CollapsibleCard title="평생 소득 & 이력" icon={Icons.TrendingUp} initialOpen={true} className="h-full">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                    {/* Left Column: Cumulative Stats */}
-                                    <div className="lg:col-span-1 flex flex-col gap-4">
-                                        <div className="bg-gradient-to-r from-cyan-950/60 to-fuchsia-950/60 border border-white/10 rounded-2xl p-5 text-white shadow-xl relative overflow-hidden flex-1 flex flex-col justify-between min-h-[140px]">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                                <div className="flex flex-col gap-4">
+                                    {/* Top Row: 3 stat cards */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {/* 우리 소득 합계 */}
+                                        <div className="bg-gradient-to-br from-cyan-950/60 to-fuchsia-950/60 border border-white/10 rounded-2xl p-4 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[100px]">
+                                            <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-400/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
                                             <div className="relative z-10">
                                                 <span className="text-[12px] font-bold uppercase tracking-wider opacity-60 font-grotesk">우리의 평생 소득</span>
-                                                <h3 className="text-3xl font-black tracking-tight font-grotesk mt-1">{formatCurrency(salaryGrandTotal)}</h3>
+                                                <h3 className="text-2xl font-black tracking-tight font-grotesk mt-1">{formatCurrency(salaryGrandTotal)}</h3>
                                             </div>
-                                            <div className="relative z-10 mt-4">
+                                            <div className="relative z-10 mt-3">
                                                 <span className="text-[12px] font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                                                     <span>{salaryMainLevel.emoji}</span>
                                                     <span className="font-grotesk">{salaryMainLevel.label}</span>
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {salaryItemTotals.map(it => { 
-                                                const lv = getSalaryLevel(it.total); 
-                                                const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
-                                                return (
-                                                    <GlassCard key={it.id} className="p-4 flex flex-col justify-between min-h-[110px]">
-                                                        <div>
-                                                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">누적 소득 ({displayName})</span>
-                                                            <h4 className="text-xl font-black text-white tracking-tight mt-0.5 font-grotesk">{formatCurrency(it.total)}</h4>
-                                                        </div>
-                                                        <div className="mt-3">
-                                                            <div className={`text-[11px] font-bold ${lv.color} bg-white/5 border border-white/10 px-2 py-0.5 rounded inline-block font-grotesk`}>{lv.emoji} {lv.label}</div>
-                                                        </div>
-                                                    </GlassCard>
-                                                ); 
-                                            })}
+                                        {/* 개인별 소득 카드 */}
+                                        {salaryItemTotals.map(it => {
+                                            const lv = getSalaryLevel(it.total);
+                                            const displayName = it.name === 'Yungki' ? 'Yungki' : it.name === 'Sua' ? 'Sua' : it.name;
+                                            return (
+                                                <GlassCard key={it.id} className="p-4 flex flex-col justify-between min-h-[100px]">
+                                                    <div>
+                                                        <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">{displayName}</span>
+                                                        <h4 className="text-2xl font-black text-white tracking-tight mt-1 font-grotesk">{formatCurrency(it.total)}</h4>
+                                                    </div>
+                                                    <div className="mt-2">
+                                                        <div className={`text-[11px] font-bold ${lv.color} bg-white/5 border border-white/10 px-2 py-0.5 rounded inline-block font-grotesk`}>{lv.emoji} {lv.label}</div>
+                                                    </div>
+                                                </GlassCard>
+                                            );
+                                        })}
+                                    </div>
+                                    {/* Bottom Row: Full-width chart */}
+                                    <GlassCard className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="text-base font-bold text-white flex items-center gap-1.5 font-grotesk"><Icons.TrendingUp className="w-4 h-4 text-[#3182f6]"/> 연도별 소득 추이</h4>
+                                            <span className="text-[11px] text-slate-500 font-bold uppercase font-grotesk">소득 이력 차트</span>
                                         </div>
-                                    </div>
-                                    {/* Right Column: Chart */}
-                                    <div className="lg:col-span-2">
-                                        <GlassCard className="p-5 h-full flex flex-col justify-between">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h4 className="text-base font-bold text-white flex items-center gap-1.5 font-grotesk"><Icons.TrendingUp className="w-4 h-4 text-[#3182f6]"/> 연도별 소득 추이</h4>
-                                                <span className="text-[11px] text-slate-500 font-bold uppercase font-grotesk">소득 이력 차트</span>
-                                            </div>
-                                            <div className="h-44">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <LineChart data={salaryChartData}>
-                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                                        <XAxis dataKey="year" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
-                                                        <YAxis fontSize={10} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
-                                                        <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
-                                                        <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                                        <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#3182f6" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
-                                                        <Line type="monotone" dataKey="Sua" name="Sua" stroke="#8b95a1" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
-                                                    </LineChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        </GlassCard>
-                                    </div>
+                                        <div className="h-48">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <LineChart data={salaryChartData}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
+                                                    <XAxis dataKey="year" fontSize={11} stroke="#64748b" axisLine={false} tickLine={false} />
+                                                    <YAxis fontSize={11} width={45} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(0)}M` : `${(val/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+                                                    <RechartsTooltip formatter={(val) => formatCurrency(val)} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
+                                                    <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
+                                                    <Line type="monotone" dataKey="Yungki" name="Yungki" stroke="#3182f6" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
+                                                    <Line type="monotone" dataKey="Sua" name="Sua" stroke="#8b95a1" strokeWidth={3} dot={{r: 3, strokeWidth: 1.5, fill: '#ffffff'}} activeDot={{r: 6, strokeWidth: 0}} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </GlassCard>
                                 </div>
                             </CollapsibleCard>
+
                         );
                     case 'memo':
                         return (
