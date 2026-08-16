@@ -3417,32 +3417,43 @@
                         </GlassCard>
                     );
                     case 'annual': {
-                        const currentMonthStockProfit = (currentData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
-                        const currentMonthDividend = (currentData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
-                        const currentMonthInvestProfit = currentMonthStockProfit + currentMonthDividend;
+                        // YTD: 올해 1월~viewDate까지 모든 월 합산
+                        const ytdMonths = allMonths.filter(m => m.startsWith(viewYear) && m <= viewDate);
+                        let ytdStockProfit = 0, ytdDividend = 0;
+                        ytdMonths.forEach(m => {
+                            const d = safeData[m]?.stockProfit || [];
+                            ytdStockProfit += d.filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
+                            ytdDividend   += d.filter(i => i.category === 'DIVIDEND'     && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
+                        });
+                        const ytdInvestProfit = ytdStockProfit + ytdDividend;
 
-                        const prevMonthStockProfit = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
-                        const prevMonthDividend = prevMonthData ? (prevMonthData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
-                        const prevMonthInvestProfit = prevMonthStockProfit + prevMonthDividend;
-
-                        const prevYearStockProfit = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0) : 0;
-                        const prevYearDividend = prevYearData ? (prevYearData.stockProfit || []).filter(i => i.category === 'DIVIDEND' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0) : 0;
-                        const prevYearInvestProfit = prevYearStockProfit + prevYearDividend;
+                        // 전년 동기간(같은 월수) 합산
+                        const prevViewYear = String(Number(viewYear) - 1);
+                        const viewMonth = viewDate.split('-')[1];
+                        const prevYtdMonths = allMonths.filter(m => m.startsWith(prevViewYear) && m <= `${prevViewYear}-${viewMonth}`);
+                        let prevYtdStockProfit = 0, prevYtdDividend = 0;
+                        prevYtdMonths.forEach(m => {
+                            const d = safeData[m]?.stockProfit || [];
+                            prevYtdStockProfit += d.filter(i => i.category === 'STOCK_PROFIT' && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.profit) || 0), 0);
+                            prevYtdDividend    += d.filter(i => i.category === 'DIVIDEND'     && !isItemHidden(i, 'stockProfit', safeData.meta)).reduce((sum, i) => sum + (evaluateFormula(i.dividend) || 0), 0);
+                        });
+                        const prevYtdInvestProfit = prevYtdStockProfit + prevYtdDividend;
+                        const hasPrevYtd = prevYtdMonths.length > 0;
 
                         return <CompactScoreCard 
-                            title="투자수익" 
-                            value={currentMonthInvestProfit} 
-                            yoy={calcYoY(currentMonthInvestProfit, prevYearInvestProfit)} 
-                            mom={calcMoM(currentMonthInvestProfit, prevMonthInvestProfit)} 
-                            momDiff={prevMonthData ? currentMonthInvestProfit - prevMonthInvestProfit : null} 
-                            yoyDiff={prevYearData ? currentMonthInvestProfit - prevYearInvestProfit : null} 
-                            compareMode={compareMode} 
+                            title={`투자수익 (${viewYear} YTD)`}
+                            value={ytdInvestProfit} 
+                            yoy={hasPrevYtd ? calcYoY(ytdInvestProfit, prevYtdInvestProfit) : null} 
+                            mom={null}
+                            momDiff={null}
+                            yoyDiff={hasPrevYtd ? ytdInvestProfit - prevYtdInvestProfit : null} 
+                            compareMode="yoy"
                             onToggleCompare={toggleCompare} 
                             icon={Icons.CandlestickChart} 
                             colorClass="text-fuchsia-400" 
                             breakdown={[
-                                { label: '실현손익', value: currentMonthStockProfit },
-                                { label: '배당금', value: currentMonthDividend }
+                                { label: '실현손익', value: ytdStockProfit },
+                                { label: '배당금', value: ytdDividend }
                             ]}
                         />;
                     }
