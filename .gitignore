@@ -10,3 +10,7 @@ ui-debug.log
 # Env / secrets
 .env
 .env.local
+
+# Build / deps
+node_modules/
+dist/
