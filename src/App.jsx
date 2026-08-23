@@ -3178,29 +3178,59 @@ import 'firebase/compat/firestore';
                                         </div>
                                     }
                                 >
-                                    <div className="flex-1 min-h-[190px] w-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
-                                                <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                                                <PolarAngleAxis
-                                                    dataKey="axis"
-                                                    tick={({ x, y, payload }) => {
-                                                        const d = radarData.find(r => r.axis === payload.value);
-                                                        return (
-                                                            <g>
-                                                                <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill="#94a3b8" fontSize={11} fontWeight={700}>{payload.value}</text>
-                                                                <text x={x} y={y + 14} textAnchor="middle" dominantBaseline="central" fill="#475569" fontSize={10}>{d?.raw}</text>
-                                                            </g>
-                                                        );
-                                                    }}
-                                                />
-                                                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                                                <Radar name="이번 달" dataKey="curr" stroke="#3182f6" fill="#3182f6" fillOpacity={0.18} strokeWidth={2} dot={{ r: 4, fill: '#3182f6', strokeWidth: 0 }} />
-                                                <Radar name="전 달" dataKey="prev" stroke="#64748b" fill="#64748b" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
-                                                <RechartsTooltip content={<CustomRadarTooltip />} />
-                                                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                                            </RadarChart>
-                                        </ResponsiveContainer>
+                                    <div className="flex-1 flex items-center gap-2 min-h-0 h-full">
+                                        {/* 왼쪽: 레이더 차트 */}
+                                        <div className="w-2/5 h-full min-h-[200px]">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <RadarChart data={radarData} margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
+                                                    <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                                                    <PolarAngleAxis
+                                                        dataKey="axis"
+                                                        tick={({ x, y, payload }) => (
+                                                            <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill="#94a3b8" fontSize={10} fontWeight={700}>{payload.value}</text>
+                                                        )}
+                                                    />
+                                                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                                                    <Radar name="이번 달" dataKey="curr" stroke="#3182f6" fill="#3182f6" fillOpacity={0.18} strokeWidth={2} dot={{ r: 3, fill: '#3182f6', strokeWidth: 0 }} />
+                                                    <Radar name="전 달" dataKey="prev" stroke="#64748b" fill="#64748b" fillOpacity={0.07} strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                                                    <RechartsTooltip content={<CustomRadarTooltip />} />
+                                                </RadarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                        {/* 오른쪽: 축별 설명 목록 */}
+                                        <div className="w-3/5 h-full flex flex-col justify-center gap-1 pr-1 overflow-y-auto custom-scrollbar">
+                                            {/* 범례 */}
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3182f6]" /><span className="text-[10px] text-slate-500">이번 달</span></div>
+                                                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-600" /><span className="text-[10px] text-slate-500">전 달</span></div>
+                                            </div>
+                                            {radarData.map((item, i) => {
+                                                const diff = item.curr - item.prev;
+                                                const diffColor = diff > 0 ? '#10b981' : diff < 0 ? '#e42939' : '#64748b';
+                                                const barColor = item.curr >= 70 ? '#10b981' : item.curr >= 40 ? '#f59e0b' : '#e42939';
+                                                return (
+                                                    <div key={i} className="group flex items-center gap-2 py-0.5 rounded-lg px-1 hover:bg-white/5 transition-colors">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between mb-0.5">
+                                                                <span className="text-[11px] font-bold text-slate-300">{item.axis}</span>
+                                                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                    <span className="text-[10px] text-slate-500">{item.raw}</span>
+                                                                    <span className="text-[12px] font-black font-grotesk" style={{ color: barColor }}>{item.curr}</span>
+                                                                    {diff !== 0 && (
+                                                                        <span className="text-[10px] font-bold" style={{ color: diffColor }}>
+                                                                            {diff > 0 ? '↑' : '↓'}{Math.abs(diff)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${item.curr}%`, backgroundColor: barColor + 'cc' }} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </CollapsibleCard>
                             );
