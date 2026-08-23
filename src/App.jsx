@@ -2888,18 +2888,14 @@ import 'firebase/compat/firestore';
                             <CollapsibleCard
                                 title="자산 흐름"
                                 icon={Icons.Activity}
-                                className="h-full min-h-[400px]"
+                                className="h-full min-h-[320px]"
                                 headerExtra={
                                     <div className="flex items-center gap-1">
                                         {['1Y','3Y','5Y','ALL'].map(z => (
                                             <button
                                                 key={z}
                                                 onClick={() => setChartZoom(z)}
-                                                className={`px-2 py-0.5 rounded text-[12px] font-bold font-grotesk transition-all ${
-                                                    chartZoom === z
-                                                        ? 'bg-[#3182f6]/20 text-[#3182f6] border border-[#3182f6]/40'
-                                                        : 'bg-white/5 text-slate-500 border border-white/10 hover:text-slate-300 hover:bg-white/10'
-                                                }`}
+                                                className={`px-2 py-0.5 rounded text-[11px] font-bold font-grotesk transition-all ${chartZoom === z ? 'bg-[#3182f6] text-white shadow-sm' : 'text-slate-400 hover:text-white bg-white/5'}`}
                                             >
                                                 {z}
                                             </button>
@@ -2907,7 +2903,7 @@ import 'firebase/compat/firestore';
                                     </div>
                                 }
                             >
-                                <div className="flex-1 min-h-[380px]">
+                                <div className="flex-1 min-h-[250px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <ComposedChart data={(() => {
                                             if (chartZoom === 'ALL') return fullGrowthData;
@@ -2939,7 +2935,7 @@ import 'firebase/compat/firestore';
                         );
                     case 'allocation_strategy':
                         return (
-                            <CollapsibleCard title="자산배분 전략" icon={Icons.Target} className="h-full min-h-[256px]" headerExtra={<span className="text-[12px] text-slate-500 font-medium font-grotesk">{viewDate} 기준</span>}>
+                            <CollapsibleCard title="자산배분 전략" icon={Icons.Target} className="h-full min-h-[320px]" headerExtra={<span className="text-[12px] text-slate-500 font-medium font-grotesk">{viewDate} 기준</span>}>
                                 <MonthlyAssetRatioCard date={viewDate} data={safeData} isWrapped onUpdate={onUpdate} />
                             </CollapsibleCard>
                         );
@@ -3137,7 +3133,7 @@ import 'firebase/compat/firestore';
                                 <CollapsibleCard
                                     title="재무건전성"
                                     icon={Icons.Activity}
-                                    className="h-full min-h-[400px]"
+                                    className="h-full min-h-[320px]"
                                     headerExtra={
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border" style={{ color: scoreColor, borderColor: scoreColor + '55', background: scoreColor + '15' }}>{scoreLabel}</span>
@@ -3146,11 +3142,11 @@ import 'firebase/compat/firestore';
                                         </div>
                                     }
                                 >
-                                    <div className="flex flex-col gap-2 h-full">
-                                        {/* 상단 2/3: 레이더 차트 */}
-                                        <div style={{height: '220px', flexShrink: 0}}>
-                                            <ResponsiveContainer width="100%" height={220}>
-                                                <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+                                    <div className="flex flex-col justify-between h-full min-h-0">
+                                        {/* 상단: 와이드 레이더 차트 */}
+                                        <div className="w-full flex-1 min-h-[175px]">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <RadarChart data={radarData} outerRadius="76%" cx="50%" cy="50%" margin={{ top: 8, right: 30, bottom: 8, left: 30 }}>
                                                     <PolarGrid stroke="rgba(255,255,255,0.08)" />
                                                     <PolarAngleAxis
                                                         dataKey="axis"
@@ -3159,18 +3155,21 @@ import 'firebase/compat/firestore';
                                                         )}
                                                     />
                                                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                                                    <Radar name="이번 달" dataKey="curr" stroke="#3182f6" fill="#3182f6" fillOpacity={0.18} strokeWidth={2} dot={{ r: 3, fill: '#3182f6', strokeWidth: 0 }} />
+                                                    <Radar name="이번 달" dataKey="curr" stroke="#3182f6" fill="#3182f6" fillOpacity={0.2} strokeWidth={2} dot={{ r: 3, fill: '#3182f6', strokeWidth: 0 }} />
                                                     <Radar name="전 달" dataKey="prev" stroke="#64748b" fill="#64748b" fillOpacity={0.07} strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
                                                     <RechartsTooltip content={<CustomRadarTooltip />} />
                                                 </RadarChart>
                                             </ResponsiveContainer>
                                         </div>
-                                        {/* 하단 1/3: 2열 그리드 요약 */}
-                                        <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-1.5 content-start pr-1">
+                                        {/* 맨 하단: 2열 그리드 요약 */}
+                                        <div className="mt-auto pt-2 border-t border-white/5 grid grid-cols-2 gap-x-4 gap-y-1.5 shrink-0">
                                             {/* 범례 */}
-                                            <div className="col-span-2 flex items-center gap-3 mb-0.5">
-                                                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3182f6]" /><span className="text-[10px] text-slate-500">이번 달</span></div>
-                                                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-600" /><span className="text-[10px] text-slate-500">전 달</span></div>
+                                            <div className="col-span-2 flex items-center justify-between mb-0.5 text-[10px] text-slate-500">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3182f6]" /><span>이번 달</span></div>
+                                                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-600" /><span>전 달</span></div>
+                                                </div>
+                                                <span className="text-[10px] text-slate-500 font-mono">6개 지표 종합</span>
                                             </div>
                                             {radarData.map((item, i) => {
                                                 const diff = item.curr - item.prev;
@@ -3186,7 +3185,7 @@ import 'firebase/compat/firestore';
                                                             </div>
                                                         </div>
                                                         <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
-                                                            <div className="h-full rounded-full" style={{ width: `${item.curr}%`, backgroundColor: barColor + 'cc' }} />
+                                                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${item.curr}%`, backgroundColor: barColor + 'cc' }} />
                                                         </div>
                                                     </div>
                                                 );
