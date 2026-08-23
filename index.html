@@ -1401,11 +1401,7 @@
                 newData[month].stockProfit = profitMonths[month] || [];
             });
 
-            // lotto 시트 데이터 저장 (LottoGen 탭에서 사용)
-            const lottoRows = sheetsData['lotto'] || [];
-            if (lottoRows.length > 1) {
-                newData.lottoSheet = lottoRows;
-            }
+
             
             return newData;
         };
@@ -1507,84 +1503,6 @@
                     if (onError) onError('Google SDKs failed to load. Please check network connection.');
                 }
             }, 100);
-        };
-
-
-        const LottoGen = () => {
-            const [slotGames, setSlotGames] = React.useState([]);
-            const [isSpinning, setIsSpinning] = React.useState(false);
-
-            const generateSlotGame = () => {
-                const nums = [];
-                while(nums.length < 6) {
-                    const r = Math.floor(Math.random() * 45) + 1;
-                    if(!nums.includes(r)) nums.push(r);
-                }
-                return nums.sort((a,b)=>a-b);
-            };
-
-            const handleSpin = () => {
-                setIsSpinning(true);
-                setSlotGames([]);
-                setTimeout(() => {
-                    const games = [];
-                    for(let i=0; i<5; i++) games.push(generateSlotGame());
-                    setSlotGames(games);
-                    setIsSpinning(false);
-                }, 800);
-            };
-
-            const BALL_COLOR = (n) => {
-                if (n >= 1  && n <= 10) return '#fbbf24';
-                if (n >= 11 && n <= 20) return '#38bdf8';
-                if (n >= 21 && n <= 30) return '#f87171';
-                if (n >= 31 && n <= 40) return '#94a3b8';
-                return '#86efac';
-            };
-            const BALL_TEXT = (n) => (n >= 31 && n <= 40) ? '#1e293b' : '#fff';
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <GlassCard className="p-5 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                            <div>
-                                <h3 className="text-xl font-black text-white flex items-center gap-2 font-grotesk">
-                                    <span className="text-2xl">🎰</span> 행운의 슬롯머신
-                                </h3>
-                                <p className="text-sm text-slate-400 mt-1">버튼을 누르면 5게임(각 6개 번호)이 무작위로 추천됩니다.</p>
-                            </div>
-                            <button 
-                                onClick={handleSpin} 
-                                disabled={isSpinning}
-                                className={`px-8 py-4 rounded-2xl font-black text-xl transition-all shadow-xl flex items-center gap-2 ${isSpinning ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white hover:scale-105 hover:shadow-fuchsia-500/25'}`}
-                            >
-                                {isSpinning ? <><Icons.Loader2 className="w-6 h-6 animate-spin" /> 뽑는 중...</> : '슬롯 당기기!'}
-                            </button>
-                        </div>
-
-                        {slotGames.length > 0 && (
-                            <div className="mt-6 space-y-3 animate-fade-in">
-                                {slotGames.map((game, i) => (
-                                    <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-fuchsia-500/20 flex flex-col sm:flex-row items-center gap-4 hover:border-fuchsia-500/40 transition-colors">
-                                        <div className="text-sm font-bold text-fuchsia-400 uppercase tracking-widest shrink-0 w-16 text-center sm:text-left">
-                                            Game {i+1}
-                                        </div>
-                                        <div className="flex gap-2 flex-wrap justify-center flex-1">
-                                            {game.map(n => (
-                                                <div key={n} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-base sm:text-lg font-black shadow-lg"
-                                                    style={{background: BALL_COLOR(n), color: BALL_TEXT(n), boxShadow: `0 4px 12px ${BALL_COLOR(n)}40`}}>
-                                                    {n}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </GlassCard>
-                </div>
-            );
         };
 
 
@@ -6151,7 +6069,7 @@
                 {id: 'reports',   label: '리포트',   icon: Icons.Activity},
                 {id: 'realestate', label: '부동산', icon: Icons.Home},
                 {id: 'portfolio', label: '투자', icon: Icons.PieChart},
-                {id: 'lottogen', label: '로또 번호', icon: Icons.Ticket},
+
                 {id: 'datasource', label: '데이터 연결', icon: Icons.Database}
             ];
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -6466,7 +6384,7 @@
                                             sheetSyncStatus={sheetSyncStatus}
                                         />
                                     )}
-                                    {activeTab === 'lottogen' && <LottoGen lottoSheetData={financialData.lottoSheet} />}
+
                                     {activeTab === 'datasource' && (
                                         <DataSourceSettings 
                                             financialData={financialData}
