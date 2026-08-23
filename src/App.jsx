@@ -2532,9 +2532,9 @@ import 'firebase/compat/firestore';
             // --- Card Drag & Drop Layout Order ---
             const DEFAULT_CARD_ORDER = [
                 'telemetry', 'net_worth', 'invest_profit',
-                'asset_flow', 'allocation_strategy',
+                'asset_flow', 'financial_indicators',
                 'growth', 'cashflow', 'portfolio',
-                'yearly_ratio', 'emergency', 'financial_indicators',
+                'yearly_ratio', 'emergency', 'allocation_strategy',
                 'loan_status', 'loan_trend', 'savings_trend',
                 'lifetime_earnings',
                 'memo'
@@ -2971,7 +2971,7 @@ import 'firebase/compat/firestore';
                         );
                     case 'allocation_strategy':
                         return (
-                            <CollapsibleCard title="자산배분 전략" icon={Icons.Target} className="h-full min-h-[500px]" headerExtra={<span className="text-[12px] text-slate-500 font-medium font-grotesk">{viewDate} 기준</span>}>
+                            <CollapsibleCard title="자산배분 전략" icon={Icons.Target} className="h-full min-h-[256px]" headerExtra={<span className="text-[12px] text-slate-500 font-medium font-grotesk">{viewDate} 기준</span>}>
                                 <MonthlyAssetRatioCard date={viewDate} data={safeData} isWrapped onUpdate={onUpdate} />
                             </CollapsibleCard>
                         );
@@ -3169,7 +3169,7 @@ import 'firebase/compat/firestore';
                                 <CollapsibleCard
                                     title="재무 건전성 레이더"
                                     icon={Icons.Activity}
-                                    className="h-full min-h-[256px]"
+                                    className="h-full min-h-[500px]"
                                     headerExtra={
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border" style={{ color: scoreColor, borderColor: scoreColor + '55', background: scoreColor + '15' }}>{scoreLabel}</span>
@@ -3180,7 +3180,7 @@ import 'firebase/compat/firestore';
                                 >
                                     <div className="flex-1 flex items-center gap-2 min-h-0 h-full">
                                         {/* 왼쪽: 레이더 차트 */}
-                                        <div className="w-2/5 h-full min-h-[200px]">
+                                        <div className="w-2/5 h-full min-h-[400px]">
                                             <ResponsiveContainer width="100%" height="100%">
                                                 <RadarChart data={radarData} margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
                                                     <PolarGrid stroke="rgba(255,255,255,0.08)" />
