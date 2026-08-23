@@ -2920,7 +2920,7 @@ import 'firebase/compat/firestore';
                             <CollapsibleCard
                                 title="자산 흐름"
                                 icon={Icons.Activity}
-                                className="h-full min-h-[500px]"
+                                className="h-full min-h-[400px]"
                                 headerExtra={
                                     <div className="flex items-center gap-1">
                                         {['1Y','3Y','5Y','ALL'].map(z => (
@@ -3169,7 +3169,7 @@ import 'firebase/compat/firestore';
                                 <CollapsibleCard
                                     title="재무 건전성 레이더"
                                     icon={Icons.Activity}
-                                    className="h-full min-h-[500px]"
+                                    className="h-full min-h-[400px]"
                                     headerExtra={
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border" style={{ color: scoreColor, borderColor: scoreColor + '55', background: scoreColor + '15' }}>{scoreLabel}</span>
@@ -3178,10 +3178,10 @@ import 'firebase/compat/firestore';
                                         </div>
                                     }
                                 >
-                                    <div className="flex-1 flex items-center gap-2 min-h-0 h-full">
+                                    <div className="flex-1 flex gap-2 min-h-0" style={{height: '320px'}}>
                                         {/* 왼쪽: 레이더 차트 */}
-                                        <div className="w-2/5 h-full min-h-[400px]">
-                                            <ResponsiveContainer width="100%" height="100%">
+                                        <div className="w-2/5" style={{height: '320px'}}>
+                                            <ResponsiveContainer width="100%" height={320}>
                                                 <RadarChart data={radarData} margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
                                                     <PolarGrid stroke="rgba(255,255,255,0.08)" />
                                                     <PolarAngleAxis
@@ -3198,7 +3198,7 @@ import 'firebase/compat/firestore';
                                             </ResponsiveContainer>
                                         </div>
                                         {/* 오른쪽: 축별 설명 목록 */}
-                                        <div className="w-3/5 h-full flex flex-col justify-center gap-1 pr-1 overflow-y-auto custom-scrollbar">
+                                        <div className="w-3/5 flex flex-col justify-center gap-2 pr-1 overflow-y-auto custom-scrollbar">
                                             {/* 범례 */}
                                             <div className="flex items-center gap-3 mb-1">
                                                 <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3182f6]" /><span className="text-[10px] text-slate-500">이번 달</span></div>
