@@ -2203,80 +2203,48 @@ import 'firebase/compat/firestore';
             }, [date, data, savedTargets]);
 
             const content = (
-                <div className="flex-1 flex flex-col min-h-0 w-full">
-                    {/* 수입 합계 헤더 */}
-                    <div className="flex items-center justify-between mb-3 px-1">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-4 rounded-full bg-emerald-400"></div>
-                            <span className="text-sm font-bold text-slate-400">연간 수입 ({stats.dataMonthCount}개월)</span>
-                        </div>
-                        <span className="text-lg font-black text-emerald-400 font-grotesk">{formatCurrency(stats.income)}</span>
+                <div className="flex-1 flex flex-col justify-between min-h-0 w-full">
+                    {/* 수입 합계 헤더 (컴팩트) */}
+                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-white/5 px-0.5">
+                        <span className="text-[11px] font-bold text-slate-400">연간 수입 ({stats.dataMonthCount}개월)</span>
+                        <span className="text-sm font-extrabold text-emerald-400 font-grotesk">{formatCurrency(stats.income)}</span>
                     </div>
-                    {/* 배분 항목 */}
-                    <div className="flex flex-col gap-2.5 flex-1">
+                    {/* 배분 항목 4개 — 슬림형 */}
+                    <div className="flex flex-col gap-1.5">
                         {stats.items.map((item, idx) => (
-                            <div key={idx} className={`rounded-xl border ${item.borderColor} ${item.bgColor} px-3 py-3 flex-1`}>
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }}></div>
-                                        <span className="text-sm font-bold text-slate-200">{item.label}</span>
-                                        {/* 타겟 뱃지 - 클릭하면 인라인 편집 */}
+                            <div key={idx} className="flex flex-col gap-1 p-1.5 rounded-lg bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                                        <span className="text-[11px] font-bold text-slate-200">{item.label}</span>
                                         {editingLabel === item.label ? (
-                                            <div className="flex items-center gap-1">
-                                                <input
-                                                    autoFocus
-                                                    type="number"
-                                                    min="0" max="100" step="1"
-                                                    value={editValue}
+                                            <div className="flex items-center gap-0.5">
+                                                <input autoFocus type="number" min="0" max="100" step="1" value={editValue}
                                                     onChange={e => setEditValue(e.target.value)}
-                                                    onBlur={() => {
-                                                        const v = parseFloat(editValue);
-                                                        if (!isNaN(v)) updateTarget(item.label, v);
-                                                        setEditingLabel(null);
-                                                    }}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') { const v = parseFloat(editValue); if (!isNaN(v)) updateTarget(item.label, v); setEditingLabel(null); }
-                                                        if (e.key === 'Escape') setEditingLabel(null);
-                                                    }}
-                                                    className="w-12 text-center text-[12px] font-bold bg-black/60 border border-cyan-500/50 rounded px-1 py-0.5 text-cyan-300 outline-none focus:ring-1 focus:ring-cyan-500/50"
-                                                />
-                                                <span className={`text-[11px] font-bold ${item.textColor}`}>%</span>
+                                                    onBlur={() => { const v = parseFloat(editValue); if (!isNaN(v)) updateTarget(item.label, v); setEditingLabel(null); }}
+                                                    onKeyDown={e => { if (e.key === 'Enter') { const v = parseFloat(editValue); if (!isNaN(v)) updateTarget(item.label, v); setEditingLabel(null); } if (e.key === 'Escape') setEditingLabel(null); }}
+                                                    className="w-8 text-center text-[10px] font-bold bg-black/60 border border-cyan-500/50 rounded px-1 text-cyan-300 outline-none" />
+                                                <span className="text-[9px] font-bold text-cyan-400">%</span>
                                             </div>
                                         ) : (
-                                            <button
-                                                onClick={() => { setEditingLabel(item.label); setEditValue(String(item.targetRatio)); }}
-                                                title="클릭해서 타겟 수정"
-                                                className={`group/target flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-full ${item.textColor} bg-white/5 border border-white/10 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-all cursor-pointer`}
-                                            >
-                                                목표 {item.targetRatio}%
-                                                <Icons.Pencil className="w-2.5 h-2.5 opacity-0 group-hover/target:opacity-70 transition-opacity ml-0.5" />
+                                            <button onClick={() => { setEditingLabel(item.label); setEditValue(String(item.targetRatio)); }}
+                                                title="클릭하여 목표 비율 수정"
+                                                className="text-[9px] font-bold px-1 py-0.2 rounded bg-white/5 border border-white/10 text-slate-400 hover:text-cyan-300 hover:border-cyan-500/30 transition-all cursor-pointer">
+                                                {item.targetRatio}%
                                             </button>
                                         )}
                                     </div>
-                                    <div className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${item.achieved ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : (item.isLimit ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-slate-400 border border-white/10')}`}>
-                                        {item.achieved ? (
-                                            <><svg className="w-2.5 h-2.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>달성</>
-                                        ) : (
-                                            <>{item.isLimit ? '한도 초과' : '진행 중'}</>
-                                        )}
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={`text-[11px] font-bold font-grotesk ${item.achieved ? 'text-emerald-400' : 'text-slate-300'}`}>
+                                            {formatCurrency(item.actualAmt)}
+                                        </span>
+                                        <span className={`text-[9px] font-bold px-1 py-0.2 rounded ${item.achieved ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : (item.isLimit ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-slate-400 border border-white/10')}`}>
+                                            {item.achieved ? '✓ 달성' : (item.isLimit ? '초과' : `${item.progress.toFixed(0)}%`)}
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5 mb-2">
-                                    <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-                                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${item.progress}%`, backgroundColor: item.color }}></div>
-                                    </div>
-                                    <span className="text-[11px] font-mono text-slate-400 w-8 text-right font-bold">{item.progress.toFixed(0)}%</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-[12px] text-slate-500 font-medium">목표</span>
-                                        <span className="text-sm font-extrabold text-slate-200 font-grotesk">{formatCurrency(item.targetAmt)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-[12px] text-slate-500 font-medium">실적</span>
-                                        <span className={`text-sm font-extrabold font-grotesk ${item.achieved ? 'text-emerald-400' : item.textColor}`}>{formatCurrency(item.actualAmt)}</span>
-                                        <span className="text-[11px] text-slate-400">({item.actualRatio.toFixed(1)}%)</span>
-                                    </div>
+                                <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(item.progress, 100)}%`, backgroundColor: item.color }} />
                                 </div>
                             </div>
                         ))}
@@ -3167,7 +3135,7 @@ import 'firebase/compat/firestore';
 
                             return (
                                 <CollapsibleCard
-                                    title="재무 건전성 레이더"
+                                    title="재무건전성"
                                     icon={Icons.Activity}
                                     className="h-full min-h-[400px]"
                                     headerExtra={
@@ -3178,11 +3146,11 @@ import 'firebase/compat/firestore';
                                         </div>
                                     }
                                 >
-                                    <div className="flex-1 flex gap-2 min-h-0" style={{height: '320px'}}>
-                                        {/* 왼쪽: 레이더 차트 */}
-                                        <div className="w-2/5" style={{height: '320px'}}>
-                                            <ResponsiveContainer width="100%" height={320}>
-                                                <RadarChart data={radarData} margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
+                                    <div className="flex flex-col gap-2 h-full">
+                                        {/* 상단 2/3: 레이더 차트 */}
+                                        <div style={{height: '220px', flexShrink: 0}}>
+                                            <ResponsiveContainer width="100%" height={220}>
+                                                <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
                                                     <PolarGrid stroke="rgba(255,255,255,0.08)" />
                                                     <PolarAngleAxis
                                                         dataKey="axis"
@@ -3197,10 +3165,10 @@ import 'firebase/compat/firestore';
                                                 </RadarChart>
                                             </ResponsiveContainer>
                                         </div>
-                                        {/* 오른쪽: 축별 설명 목록 */}
-                                        <div className="w-3/5 flex flex-col justify-center gap-2 pr-1 overflow-y-auto custom-scrollbar">
+                                        {/* 하단 1/3: 2열 그리드 요약 */}
+                                        <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-1.5 content-start pr-1">
                                             {/* 범례 */}
-                                            <div className="flex items-center gap-3 mb-1">
+                                            <div className="col-span-2 flex items-center gap-3 mb-0.5">
                                                 <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3182f6]" /><span className="text-[10px] text-slate-500">이번 달</span></div>
                                                 <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-600" /><span className="text-[10px] text-slate-500">전 달</span></div>
                                             </div>
@@ -3209,23 +3177,16 @@ import 'firebase/compat/firestore';
                                                 const diffColor = diff > 0 ? '#10b981' : diff < 0 ? '#e42939' : '#64748b';
                                                 const barColor = item.curr >= 70 ? '#10b981' : item.curr >= 40 ? '#f59e0b' : '#e42939';
                                                 return (
-                                                    <div key={i} className="group flex items-center gap-2 py-0.5 rounded-lg px-1 hover:bg-white/5 transition-colors">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between mb-0.5">
-                                                                <span className="text-[11px] font-bold text-slate-300">{item.axis}</span>
-                                                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                                    <span className="text-[10px] text-slate-500">{item.raw}</span>
-                                                                    <span className="text-[12px] font-black font-grotesk" style={{ color: barColor }}>{item.curr}</span>
-                                                                    {diff !== 0 && (
-                                                                        <span className="text-[10px] font-bold" style={{ color: diffColor }}>
-                                                                            {diff > 0 ? '↑' : '↓'}{Math.abs(diff)}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
+                                                    <div key={i} className="flex flex-col gap-0.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] font-bold text-slate-400">{item.axis}</span>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-[11px] font-black font-grotesk" style={{ color: barColor }}>{item.curr}</span>
+                                                                {diff !== 0 && <span className="text-[9px] font-bold" style={{ color: diffColor }}>{diff > 0 ? '↑' : '↓'}{Math.abs(diff)}</span>}
                                                             </div>
-                                                            <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
-                                                                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${item.curr}%`, backgroundColor: barColor + 'cc' }} />
-                                                            </div>
+                                                        </div>
+                                                        <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
+                                                            <div className="h-full rounded-full" style={{ width: `${item.curr}%`, backgroundColor: barColor + 'cc' }} />
                                                         </div>
                                                     </div>
                                                 );
