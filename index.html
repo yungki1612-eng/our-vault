@@ -459,13 +459,7 @@
             }
         }
         window.onerror = function (msg, url, line, col, err) {
-            showError("Runtime Error", msg + "
-
-File: " + url + "
-Line: " + line + ", Col: " + col + "
-
-Stack:
-" + (err ? err.stack : "No stack"));
+            showError("Runtime Error", msg + "\n\nFile: " + url + "\nLine: " + line + ", Col: " + col + "\n\nStack:\n" + (err ? err.stack : "No stack"));
             return true;
         };
         window.addEventListener("unhandledrejection", function (e) {
