@@ -3169,7 +3169,7 @@ import 'firebase/compat/firestore';
                                 <CollapsibleCard
                                     title="재무 건전성 레이더"
                                     icon={Icons.Activity}
-                                    className="h-full min-h-[320px]"
+                                    className="h-full min-h-[256px]"
                                     headerExtra={
                                         <div className="flex items-center gap-2">
                                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border" style={{ color: scoreColor, borderColor: scoreColor + '55', background: scoreColor + '15' }}>{scoreLabel}</span>
@@ -3178,7 +3178,7 @@ import 'firebase/compat/firestore';
                                         </div>
                                     }
                                 >
-                                    <div className="flex-1 min-h-[260px] w-full">
+                                    <div className="flex-1 min-h-[190px] w-full">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
                                                 <PolarGrid stroke="rgba(255,255,255,0.08)" />
