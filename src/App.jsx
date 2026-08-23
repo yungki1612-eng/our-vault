@@ -3142,11 +3142,11 @@ import 'firebase/compat/firestore';
                                         </div>
                                     }
                                 >
-                                    <div className="flex flex-col justify-between h-full min-h-0">
-                                        {/* 상단: 와이드 레이더 차트 */}
-                                        <div className="w-full flex-1 min-h-[175px]">
+                                    <div className="flex items-center gap-3 h-full min-h-0">
+                                        {/* 왼쪽: 대형 레이더 차트 (가로 약 63%) */}
+                                        <div className="w-[63%] h-full min-h-[220px] flex items-center justify-center">
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <RadarChart data={radarData} outerRadius="76%" cx="50%" cy="50%" margin={{ top: 8, right: 30, bottom: 8, left: 30 }}>
+                                                <RadarChart data={radarData} outerRadius="78%" cx="50%" cy="50%" margin={{ top: 12, right: 20, bottom: 12, left: 20 }}>
                                                     <PolarGrid stroke="rgba(255,255,255,0.08)" />
                                                     <PolarAngleAxis
                                                         dataKey="axis"
@@ -3155,33 +3155,41 @@ import 'firebase/compat/firestore';
                                                         )}
                                                     />
                                                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-                                                    <Radar name="이번 달" dataKey="curr" stroke="#3182f6" fill="#3182f6" fillOpacity={0.2} strokeWidth={2} dot={{ r: 3, fill: '#3182f6', strokeWidth: 0 }} />
+                                                    <Radar name="이번 달" dataKey="curr" stroke="#3182f6" fill="#3182f6" fillOpacity={0.22} strokeWidth={2} dot={{ r: 3, fill: '#3182f6', strokeWidth: 0 }} />
                                                     <Radar name="전 달" dataKey="prev" stroke="#64748b" fill="#64748b" fillOpacity={0.07} strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
                                                     <RechartsTooltip content={<CustomRadarTooltip />} />
                                                 </RadarChart>
                                             </ResponsiveContainer>
                                         </div>
-                                        {/* 맨 하단: 2열 그리드 요약 */}
-                                        <div className="mt-auto pt-2 border-t border-white/5 grid grid-cols-2 gap-x-4 gap-y-1.5 shrink-0">
+
+                                        {/* 오른쪽: 심플 바차트 목록 (가로 약 37%, 세로 6행 균등 배치) */}
+                                        <div className="w-[37%] h-full flex flex-col justify-between py-0.5 border-l border-white/5 pl-3">
                                             {/* 범례 */}
-                                            <div className="col-span-2 flex items-center justify-between mb-0.5 text-[10px] text-slate-500">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#3182f6]" /><span>이번 달</span></div>
-                                                    <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-600" /><span>전 달</span></div>
+                                            <div className="flex items-center justify-between mb-1 pb-1 border-b border-white/5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-[#3182f6]" /><span className="text-[9px] text-slate-400">이번 달</span></div>
+                                                    <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-slate-600" /><span className="text-[9px] text-slate-500">전 달</span></div>
                                                 </div>
-                                                <span className="text-[10px] text-slate-500 font-mono">6개 지표 종합</span>
+                                                <span className="text-[9px] text-slate-500 font-mono">6개 지표</span>
                                             </div>
+
+                                            {/* 6개 지표 항목 */}
                                             {radarData.map((item, i) => {
                                                 const diff = item.curr - item.prev;
                                                 const diffColor = diff > 0 ? '#10b981' : diff < 0 ? '#e42939' : '#64748b';
                                                 const barColor = item.curr >= 70 ? '#10b981' : item.curr >= 40 ? '#f59e0b' : '#e42939';
                                                 return (
-                                                    <div key={i} className="flex flex-col gap-0.5">
+                                                    <div key={i} className="flex flex-col gap-0.5 py-0.5">
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-slate-400">{item.axis}</span>
-                                                            <div className="flex items-center gap-1">
+                                                            <span className="text-[10px] font-bold text-slate-300">{item.axis}</span>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[9px] text-slate-500 font-grotesk">{item.raw}</span>
                                                                 <span className="text-[11px] font-black font-grotesk" style={{ color: barColor }}>{item.curr}</span>
-                                                                {diff !== 0 && <span className="text-[9px] font-bold" style={{ color: diffColor }}>{diff > 0 ? '↑' : '↓'}{Math.abs(diff)}</span>}
+                                                                {diff !== 0 && (
+                                                                    <span className="text-[9px] font-bold" style={{ color: diffColor }}>
+                                                                        {diff > 0 ? '↑' : '↓'}{Math.abs(diff)}
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div className="w-full bg-white/5 rounded-full h-1 overflow-hidden">
