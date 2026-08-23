@@ -3,7 +3,8 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend,
     ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area,
-    Sector, Sankey, Layer, Rectangle
+    Sector, Sankey, Layer, Rectangle,
+    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
@@ -3091,41 +3092,119 @@ import 'firebase/compat/firestore';
                             </CollapsibleCard>
                         );
                     case 'financial_indicators':
-                        return (
-                            <CollapsibleCard title="재무건전성 지표" icon={Icons.Activity} className="h-full min-h-[256px]">
-                                <div className="flex flex-col gap-2.5 h-full justify-center">
-                                    {/* 부채비율 */}
-                                    {(() => {
-                                        const dr = netWorth > 0 ? (liabilitiesExclJeonse / netWorth) * 100 : (liabilitiesExclJeonse > 0 ? 999 : 0);
-                                        const drStatus = (netWorth <= 0 && liabilitiesExclJeonse > 0) || dr > 100 ? {label:'DANGER', c:'text-rose-400', bg:'bg-rose-500', range: 100} : dr > 40 ? {label:'WARNING', c:'text-amber-400', bg:'bg-amber-500', range: Math.min(dr/2, 100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range: Math.min(dr/2, 100)};
-                                        const sr = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
-                                        const srStatus = sr < 0 ? {label:'DEFICIT', c:'text-rose-400', bg:'bg-rose-500', range:0} : sr < 20 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:Math.min(sr,100)} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:Math.min(sr,100)};
-                                        const liqRatio = totalAssets > 0 ? (liquidAssets / totalAssets * 100) : 0;
-                                        const liqStatus = liqRatio < 10 ? {label:'LOW', c:'text-amber-400', bg:'bg-amber-500', range:liqRatio} : {label:'HEALTHY', c:'text-emerald-400', bg:'bg-emerald-500', range:liqRatio};
-                                        const items = [
-                                            { label: '부채비율', value: (netWorth <= 0 && liabilitiesExclJeonse > 0) ? '자본잠식' : dr.toFixed(1)+'%', status: drStatus, desc: '순자산 대비 부채 (경고 >40%, 위험 >100%)' },
-                                            { label: '저축률', value: sr.toFixed(1)+'%', status: srStatus, desc: '수입 대비 잉여금 (권장 >20%)' },
-                                            { label: '유동비율', value: liqRatio.toFixed(1)+'%', status: liqStatus, desc: '자산 중 현금성 비중 (권장 >10%)' },
-                                        ];
-                                        return items.map((item, i) => (
-                                            <div key={i} className="space-y-1">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-[12px] font-bold text-slate-400">{item.label}</span>
-                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${item.status.c} bg-white/5 border border-white/10`}>{item.status.label}</span>
-                                                    </div>
-                                                    <span className={`text-[13px] font-extrabold ${item.status.c} font-grotesk`}>{item.value}</span>
-                                                </div>
-                                                <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
-                                                    <div className={`h-full rounded-full transition-all duration-700 ${item.status.bg}`} style={{ width: `${Math.min(item.status.range, 100)}%` }} />
-                                                </div>
-                                                <p className="text-[10px] text-slate-500">{item.desc}</p>
-                                            </div>
-                                        ));
-                                    })()}
-                                </div>
-                            </CollapsibleCard>
-                        );
+                        return (() => {
+                            // ── 레이더 축 점수 계산 (0~100) ──────────────────────────────
+                            // 1. 저축률: (수입 - 지출) / 수입, 30% 이상 → 100점
+                            const savingsRateVal = totalIncome > 0 ? Math.max(0, (totalIncome - totalExpense) / totalIncome * 100) : 0;
+                            const savingsScore = Math.min(100, (savingsRateVal / 30) * 100);
+
+                            // 2. 부채 건전성: 부채비율이 낮을수록 高 (0% → 100점, 100% 이상 → 0점)
+                            const debtRatioVal = netWorth > 0 ? (liabilitiesExclJeonse / netWorth) * 100 : (liabilitiesExclJeonse > 0 ? 999 : 0);
+                            const debtScore = Math.max(0, 100 - Math.min(debtRatioVal, 100));
+
+                            // 3. 유동성: 비상금 지수 (현금성자산 / 월지출), 6개월 → 100점
+                            const emgNum = monthlyExpense > 0 ? liquidAssets / monthlyExpense : 0;
+                            const liquidityScore = Math.min(100, (emgNum / 6) * 100);
+
+                            // 4. 투자 다각화: 보유 자산 카테고리 수 / 5
+                            const activeCatCount = Object.keys(ASSET_CATEGORIES).filter(k => {
+                                let sum = (currentData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === k && !isItemHidden(a, 'assets', safeData.meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0);
+                                if (k === 'REAL_ESTATE') sum += reStats.totalValue;
+                                return sum > 0;
+                            }).length;
+                            const diversifyScore = Math.min(100, (activeCatCount / 5) * 100);
+
+                            // 5. 자산 성장률 (YoY): 10% 이상 → 100점
+                            const assetGrowthRate = prevTotalAssets > 0 ? ((totalAssets - prevTotalAssets) / prevTotalAssets) * 100 : 0;
+                            const growthScore = Math.min(100, Math.max(0, (assetGrowthRate / 10) * 100));
+
+                            // 6. FIRE 목표 달성률: 현재 순자산 / 목표 순자산
+                            const fireScore = Math.min(100, netWorthGoal > 0 ? (netWorth / netWorthGoal) * 100 : 0);
+
+                            // 전월 점수
+                            const prevLiquid = prevMonthData ? (prevMonthData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', safeData.meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) : 0;
+                            const prevIncome = prevMonthData ? (prevMonthData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'INCOME' && !isItemHidden(b, 'budget', safeData.meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0) : 0;
+                            const prevExpense = prevMonthData ? (prevMonthData.budget || []).filter(b => normalizeCategory(b.category, 'budget') === 'EXPENSE' && !isItemHidden(b, 'budget', safeData.meta)).reduce((s, b) => s + (evaluateFormula(b.amount) || 0), 0) : 0;
+                            const prevNetWorthCalc = prevMonthNetWorth || 0;
+                            const prevLiab = prevMonthData ? (prevMonthData.loans || []).filter(l => normalizeCategory(l.category, 'loans') !== 'LEASE' && !isItemHidden(l, 'loans', safeData.meta)).reduce((s, l) => s + (evaluateFormula(l.amount) || 0), 0) + reStats.ownedDebt : 0;
+                            const prevAssetTotal = prevMonthAssets || 0;
+
+                            const prevSavingsRate = prevIncome > 0 ? Math.max(0, (prevIncome - prevExpense) / prevIncome * 100) : 0;
+                            const prevSavingsScore = Math.min(100, (prevSavingsRate / 30) * 100);
+                            const prevDebtRatio = prevNetWorthCalc > 0 ? (prevLiab / prevNetWorthCalc) * 100 : (prevLiab > 0 ? 999 : 0);
+                            const prevDebtScore = Math.max(0, 100 - Math.min(prevDebtRatio, 100));
+                            const prevEmg = prevExpense > 0 ? prevLiquid / (prevExpense) : 0;
+                            const prevLiquidityScore = Math.min(100, (prevEmg / 6) * 100);
+                            const prevGrowthRate = prevTotalAssets > 0 && prevAssetTotal > 0 ? ((prevAssetTotal - prevTotalAssets) / prevTotalAssets) * 100 : 0;
+                            const prevGrowthScore = Math.min(100, Math.max(0, (prevGrowthRate / 10) * 100));
+                            const prevFireScore = Math.min(100, netWorthGoal > 0 && prevNetWorthCalc > 0 ? (prevNetWorthCalc / netWorthGoal) * 100 : 0);
+
+                            const radarData = [
+                                { axis: '저축률', curr: Math.round(savingsScore), prev: Math.round(prevSavingsScore), fullMark: 100, raw: `${savingsRateVal.toFixed(1)}%`, tip: '목표 30%' },
+                                { axis: '부채건전성', curr: Math.round(debtScore), prev: Math.round(prevDebtScore), fullMark: 100, raw: `DR ${debtRatioVal > 900 ? '∞' : debtRatioVal.toFixed(0)}%`, tip: '낮을수록 好' },
+                                { axis: '유동성', curr: Math.round(liquidityScore), prev: Math.round(prevLiquidityScore), fullMark: 100, raw: `${emgNum.toFixed(1)}개월`, tip: '목표 6개월' },
+                                { axis: '분산투자', curr: Math.round(diversifyScore), prev: Math.round(diversifyScore), fullMark: 100, raw: `${activeCatCount}/5 카테고리`, tip: '5종 보유 시 100점' },
+                                { axis: '자산성장', curr: Math.round(growthScore), prev: Math.round(prevGrowthScore), fullMark: 100, raw: `YoY ${assetGrowthRate.toFixed(1)}%`, tip: '목표 YoY 10%' },
+                                { axis: 'FIRE', curr: Math.round(fireScore), prev: Math.round(prevFireScore), fullMark: 100, raw: `${fireScore.toFixed(1)}%`, tip: '목표 순자산 달성률' },
+                            ];
+
+                            const totalScore = Math.round(radarData.reduce((s, d) => s + d.curr, 0) / radarData.length);
+                            const scoreColor = totalScore >= 70 ? '#10b981' : totalScore >= 40 ? '#f59e0b' : '#e42939';
+                            const scoreLabel = totalScore >= 70 ? 'HEALTHY' : totalScore >= 40 ? 'CAUTION' : 'DANGER';
+
+                            const CustomRadarTooltip = ({ active, payload }) => {
+                                if (!active || !payload || !payload.length) return null;
+                                const d = radarData.find(r => r.axis === payload[0]?.payload?.axis);
+                                return (
+                                    <div style={{ background: 'rgba(15,16,32,0.96)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#e2e8f0' }}>
+                                        <p style={{ fontWeight: 800, color: '#93c5fd', marginBottom: 4 }}>{d?.axis}</p>
+                                        <p>이번 달: <span style={{ color: '#3182f6', fontWeight: 700 }}>{payload.find(p => p.dataKey === 'curr')?.value ?? '—'}점</span></p>
+                                        <p>전 달: <span style={{ color: '#94a3b8', fontWeight: 700 }}>{payload.find(p => p.dataKey === 'prev')?.value ?? '—'}점</span></p>
+                                        <p style={{ color: '#64748b', marginTop: 4, fontSize: 11 }}>{d?.raw} · {d?.tip}</p>
+                                    </div>
+                                );
+                            };
+
+                            return (
+                                <CollapsibleCard
+                                    title="재무 건전성 레이더"
+                                    icon={Icons.Activity}
+                                    className="h-full min-h-[320px]"
+                                    headerExtra={
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full border" style={{ color: scoreColor, borderColor: scoreColor + '55', background: scoreColor + '15' }}>{scoreLabel}</span>
+                                            <span className="text-2xl font-black font-grotesk" style={{ color: scoreColor }}>{totalScore}</span>
+                                            <span className="text-[11px] text-slate-500 font-bold">/ 100</span>
+                                        </div>
+                                    }
+                                >
+                                    <div className="flex-1 min-h-[260px] w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+                                                <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                                                <PolarAngleAxis
+                                                    dataKey="axis"
+                                                    tick={({ x, y, payload }) => {
+                                                        const d = radarData.find(r => r.axis === payload.value);
+                                                        return (
+                                                            <g>
+                                                                <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fill="#94a3b8" fontSize={11} fontWeight={700}>{payload.value}</text>
+                                                                <text x={x} y={y + 14} textAnchor="middle" dominantBaseline="central" fill="#475569" fontSize={10}>{d?.raw}</text>
+                                                            </g>
+                                                        );
+                                                    }}
+                                                />
+                                                <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                                                <Radar name="이번 달" dataKey="curr" stroke="#3182f6" fill="#3182f6" fillOpacity={0.18} strokeWidth={2} dot={{ r: 4, fill: '#3182f6', strokeWidth: 0 }} />
+                                                <Radar name="전 달" dataKey="prev" stroke="#64748b" fill="#64748b" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
+                                                <RechartsTooltip content={<CustomRadarTooltip />} />
+                                                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                                            </RadarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </CollapsibleCard>
+                            );
+                        })();
                     case 'loan_status':
                         return (
                             <CollapsibleCard title="대출 현황" icon={Icons.CreditCard} className="h-full min-h-[256px]" headerExtra={<span className="text-[12px] text-slate-500 font-bold font-grotesk">{viewDate} 기준</span>}>
