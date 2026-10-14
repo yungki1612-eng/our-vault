@@ -2560,7 +2560,7 @@ import 'firebase/compat/firestore';
                 'telemetry', 'net_worth', 'invest_profit',
                 'asset_flow', 'financial_indicators',
                 'growth', 'cashflow', 'portfolio',
-                'yearly_ratio', 'emergency', 'allocation_strategy',
+                'yearly_ratio', 'allocation_strategy',
                 'loan_status', 'loan_trend', 'savings_trend',
                 'lifetime_earnings',
                 'memo'
@@ -2625,6 +2625,8 @@ import 'firebase/compat/firestore';
                 switch (cardId) {
                     case 'asset_flow':
                         return 'col-span-1 lg:col-span-4';
+                    case 'yearly_ratio':
+                    case 'allocation_strategy':
                     case 'lifetime_earnings':
                     case 'memo':
                         return 'col-span-1 lg:col-span-3';
@@ -3077,42 +3079,7 @@ import 'firebase/compat/firestore';
                                 <YearlyRatioCard year={viewYear} data={safeData} isWrapped />
                             </CollapsibleCard>
                         );
-                    case 'emergency':
-                        return (
-                            <CollapsibleCard title="비상금 지수 & 월간 현황" icon={Icons.ShieldCheck} className="h-full min-h-[256px]">
-                                <div className="flex flex-col gap-3 h-full">
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                                            <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest font-grotesk mb-1">비상금 지수</p>
-                                            <p className="text-2xl font-black text-emerald-300 font-grotesk">{emergencyIndex}<span className="text-sm font-bold ml-1 text-emerald-500"> 개월</span></p>
-                                            <p className="text-[11px] text-emerald-500 mt-0.5 font-medium">권장: 6개월 이상</p>
-                                        </div>
-                                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
-                                            <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest font-grotesk mb-1">월 저축률</p>
-                                            <p className={`text-2xl font-black font-grotesk ${totalIncome > 0 ? (((totalIncome-totalExpense)/totalIncome*100) >= 20 ? 'text-emerald-300' : 'text-amber-300') : 'text-slate-500'}`}>{totalIncome > 0 ? ((totalIncome-totalExpense)/totalIncome*100).toFixed(1) : '—'}<span className="text-sm font-bold ml-0.5">{totalIncome > 0 ? '%' : ''}</span></p>
-                                            <p className="text-[11px] text-indigo-400 mt-0.5 font-medium">권장: 20% 이상</p>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex-1">
-                                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-grotesk mb-2">{viewYear} 누적 투자 손익</p>
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-[11px] text-slate-500">실현손익</p>
-                                                <p className={`text-base font-black font-grotesk ${annualData.profit >= 0 ? 'text-rose-400' : 'text-blue-400'}`}>{formatCurrency(annualData.profit)}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[11px] text-slate-500">배당금</p>
-                                                <p className="text-base font-black font-grotesk text-emerald-400">{formatCurrency(annualData.dividend)}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[11px] text-slate-500">합계</p>
-                                                <p className={`text-base font-black font-grotesk ${(annualData.profit+annualData.dividend) >= 0 ? 'text-cyan-400' : 'text-blue-400'}`}>{formatCurrency(annualData.profit + annualData.dividend)}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CollapsibleCard>
-                        );
+
                     case 'financial_indicators':
                         return (() => {
                             // ── 레이더 축 점수 계산 (0~100) ──────────────────────────────
@@ -3426,30 +3393,7 @@ import 'firebase/compat/firestore';
             };
             return (
                 <div className="space-y-6 pb-12 animate-fade-in select-none">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 bg-white/[0.02] border border-white/5 rounded-2xl p-4 backdrop-blur-md">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-[#3182f6]/10 border border-[#3182f6]/20 text-[#3182f6] shadow-[0_0_15px_rgba(49,130,246,0.15)] animate-pulse-slow">
-                                <Icons.LayoutDashboard className="w-5 h-5" />
-                            </div>
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-xl font-bold text-white tracking-tight font-grotesk">Dashboard</h2>
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white/15"></div>
-                                    <p className="text-slate-400 text-sm font-semibold font-grotesk">{todayStr}</p>
-                                </div>
-                                <p className="text-[12px] text-slate-500 mt-0.5 font-medium">실시간 자산 추적 및 포트폴리오 분석 리포트</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 md:ml-0 shrink-0">
-                            {/* TODAY status indicator badge to match the global layout */}
-                            <div className="flex text-[12px] font-semibold bg-[#3182f6]/10 border border-[#3182f6]/30 text-[#3182f6] rounded-full px-3 py-1 items-center gap-1.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#3182f6] animate-pulse" />
-                                <span>TODAY ACTIVE</span>
-                            </div>
-                        </div>
-                    </div>
-
-                                        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 items-stretch">
+                    <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 items-stretch">
                         {cardOrder.map((cardId, index) => {
                             const cardContent = renderDashboardCard(cardId);
                             if (!cardContent) return null;
