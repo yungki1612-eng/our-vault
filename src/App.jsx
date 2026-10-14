@@ -3104,8 +3104,6 @@ import 'firebase/compat/firestore';
                             const assetGrowthRate = prevTotalAssets > 0 ? ((totalAssets - prevTotalAssets) / prevTotalAssets) * 100 : 0;
                             const growthScore = Math.min(100, Math.max(0, (assetGrowthRate / 10) * 100));
 
-                            // 6. FIRE 목표 달성률: 현재 순자산 / 목표 순자산
-                            const fireScore = Math.min(100, netWorthGoal > 0 ? (netWorth / netWorthGoal) * 100 : 0);
 
                             // 전월 점수
                             const prevLiquid = prevMonthData ? (prevMonthData.assets || []).filter(a => normalizeCategory(a.category, 'assets') === 'SAVINGS' && !isItemHidden(a, 'assets', safeData.meta)).reduce((s, a) => s + (evaluateFormula(a.value) || 0), 0) : 0;
@@ -3123,7 +3121,6 @@ import 'firebase/compat/firestore';
                             const prevLiquidityScore = Math.min(100, (prevEmg / 6) * 100);
                             const prevGrowthRate = prevTotalAssets > 0 && prevAssetTotal > 0 ? ((prevAssetTotal - prevTotalAssets) / prevTotalAssets) * 100 : 0;
                             const prevGrowthScore = Math.min(100, Math.max(0, (prevGrowthRate / 10) * 100));
-                            const prevFireScore = Math.min(100, netWorthGoal > 0 && prevNetWorthCalc > 0 ? (prevNetWorthCalc / netWorthGoal) * 100 : 0);
 
                             const radarData = [
                                 { axis: '저축률', curr: Math.round(savingsScore), prev: Math.round(prevSavingsScore), fullMark: 100, raw: `${savingsRateVal.toFixed(1)}%`, tip: '목표 30%' },
@@ -3131,7 +3128,6 @@ import 'firebase/compat/firestore';
                                 { axis: '유동성', curr: Math.round(liquidityScore), prev: Math.round(prevLiquidityScore), fullMark: 100, raw: `${emgNum.toFixed(1)}개월`, tip: '목표 6개월' },
                                 { axis: '분산투자', curr: Math.round(diversifyScore), prev: Math.round(diversifyScore), fullMark: 100, raw: `${activeCatCount}/5 카테고리`, tip: '5종 보유 시 100점' },
                                 { axis: '자산성장', curr: Math.round(growthScore), prev: Math.round(prevGrowthScore), fullMark: 100, raw: `YoY ${assetGrowthRate.toFixed(1)}%`, tip: '목표 YoY 10%' },
-                                { axis: 'FIRE', curr: Math.round(fireScore), prev: Math.round(prevFireScore), fullMark: 100, raw: `${fireScore.toFixed(1)}%`, tip: '목표 순자산 달성률' },
                             ];
 
                             const totalScore = Math.round(radarData.reduce((s, d) => s + d.curr, 0) / radarData.length);
@@ -3192,7 +3188,7 @@ import 'firebase/compat/firestore';
                                                     <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-[#3182f6]" /><span className="text-[9px] text-slate-400">이번 달</span></div>
                                                     <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-slate-600" /><span className="text-[9px] text-slate-500">전 달</span></div>
                                                 </div>
-                                                <span className="text-[9px] text-slate-500 font-mono">6개 지표</span>
+                                                <span className="text-[9px] text-slate-500 font-mono">5개 지표</span>
                                             </div>
 
                                             {/* 6개 지표 항목 */}
