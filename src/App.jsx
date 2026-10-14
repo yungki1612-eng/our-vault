@@ -3020,16 +3020,16 @@ import 'firebase/compat/firestore';
                             <CollapsibleCard title="현금흐름 내역" icon={Icons.Banknote} className="h-full min-h-[256px]">
                                 <div className="h-full">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={cashFlowData} barGap={4}>
+                                        <BarChart data={cashFlowData} barGap={2} barCategoryGap="20%">
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
                                             <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
                                             <YAxis fontSize={10} width={40} stroke="#64748b" tickFormatter={(val) => val >= 1000000 ? `${(val/1000000).toFixed(1)}M` : val >= 1000 ? `${(val/1000).toFixed(0)}k` : val} axisLine={false} tickLine={false} />
                                             <RechartsTooltip cursor={{fill: 'rgba(255, 255, 255, 0.05)'}} formatter={(val) => formatCurrency(val)} contentStyle={{ background: 'rgba(15, 16, 32, 0.95)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '8px 12px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', color: '#f8fafc' }} itemStyle={{ fontSize: '11px', padding: 0 }} labelStyle={{ fontSize: '11px', marginBottom: '4px', color: '#94a3b8', fontWeight: 600 }} />
                                             <Legend wrapperStyle={{fontSize:'10px'}} />
-                                            <Bar dataKey="income" name="수입" fill="#38bdf8" radius={[4,4,0,0]} barSize={12} />
-                                            <Bar dataKey="expenses" name="지출" stackId="out" fill="#f43f5e" barSize={12} />
-                                            <Bar dataKey="savings" name="저축" stackId="out" fill="#10b981" barSize={12} />
-                                            <Bar dataKey="investment" name="투자" stackId="out" fill="#8b5cf6" radius={[4,4,0,0]} barSize={12} />
+                                            <Bar dataKey="income" name="수입" fill="#38bdf8" radius={[3,3,0,0]} barSize={7} />
+                                            <Bar dataKey="expenses" name="지출" stackId="out" fill="#f43f5e" barSize={7} />
+                                            <Bar dataKey="savings" name="저축" stackId="out" fill="#10b981" barSize={7} />
+                                            <Bar dataKey="investment" name="투자" stackId="out" fill="#8b5cf6" radius={[3,3,0,0]} barSize={7} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
