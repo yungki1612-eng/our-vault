@@ -966,9 +966,62 @@ import 'firebase/compat/firestore';
             }
         };
 
+        // ── Google 로그인 세션 유지 (24시간) ──────────────────────────────
+        // GIS 액세스 토큰은 1시간 만료이므로, 토큰과 최초 로그인 시각을 localStorage에 저장하고
+        // 24시간 동안은 새로고침해도 저장된 토큰을 재사용 / 만료 시 무팝업(prompt:'') 재발급합니다.
+        const GOOGLE_SESSION_KEY = 'google_oauth_session';
+        const GOOGLE_SESSION_TTL = 24 * 60 * 60 * 1000;
+
+        const loadGoogleSession = () => {
+            try {
+                const s = JSON.parse(localStorage.getItem(GOOGLE_SESSION_KEY) || 'null');
+                if (!s || !s.loginAt || Date.now() - s.loginAt > GOOGLE_SESSION_TTL) {
+                    localStorage.removeItem(GOOGLE_SESSION_KEY);
+                    return null;
+                }
+                return s;
+            } catch (e) {
+                return null;
+            }
+        };
+
+        // 기존 세션이 유효하면 loginAt(24시간 기준점)을 유지하고 토큰만 교체
+        const saveGoogleSession = (token, expiresIn) => {
+            const prev = loadGoogleSession();
+            const session = {
+                token,
+                expiresAt: Date.now() + (parseInt(expiresIn, 10) || 3600) * 1000,
+                loginAt: prev ? prev.loginAt : Date.now(),
+            };
+            localStorage.setItem(GOOGLE_SESSION_KEY, JSON.stringify(session));
+            return session;
+        };
+
+        const clearGoogleSession = () => localStorage.removeItem(GOOGLE_SESSION_KEY);
+
+        const expireGoogleSessionToken = () => {
+            const s = loadGoogleSession();
+            if (s) localStorage.setItem(GOOGLE_SESSION_KEY, JSON.stringify({ ...s, token: null, expiresAt: 0 }));
+        };
+
+        const isGoogleTokenValid = (s, marginMs = 60 * 1000) => !!(s && s.token && s.expiresAt - marginMs > Date.now());
+
+        // 이미 동의한 계정에 대해 팝업 없이(또는 즉시 닫히는 팝업으로) 토큰 재발급
+        const requestSilentGoogleToken = () => {
+            if (!window.tokenClient || !loadGoogleSession()) return;
+            if (Date.now() - (window.__lastSilentGoogleAttempt || 0) < 15000) return;
+            window.__lastSilentGoogleAttempt = Date.now();
+            try {
+                window.tokenClient.requestAccessToken({ prompt: '' });
+            } catch (e) {
+                console.warn('Silent token request failed:', e);
+            }
+        };
+
         // silentMode: true → 자동 재인증 (interaction_required 실패는 조용히 무시)
         // silentMode: false → 수동 연결 (팝업 강제)
-        const initGapiAndGis = (clientId, onTokenReceived, onError, autoRequest = false, silentMode = false) => {
+        // onReady: gapi client 초기화 완료 후 호출 (저장된 토큰으로 바로 동기화할 때 사용)
+        const initGapiAndGis = (clientId, onTokenReceived, onError, autoRequest = false, silentMode = false, onReady = null) => {
             let attempts = 0;
             const check = setInterval(() => {
                 attempts++;
@@ -998,11 +1051,12 @@ import 'firebase/compat/firestore';
                                             if (onError) onError(resp.error_description || resp.error);
                                         }
                                     } else {
-                                        if (onTokenReceived) onTokenReceived(resp.access_token);
+                                        if (onTokenReceived) onTokenReceived(resp.access_token, resp.expires_in);
                                     }
                                 }
                             });
                             window.tokenClient = client;
+                            if (onReady) onReady();
                             // 이미 동의한 계정이 있으면 prompt 없이 자동으로 토큰 갱신 시도
                             if (autoRequest) {
                                 try {
@@ -1056,8 +1110,11 @@ import 'firebase/compat/firestore';
                     return;
                 }
                 setSdkError(null);
+                // 수동 로그인 → 새로운 24시간 세션 시작
+                clearGoogleSession();
                 // silentMode: false → 수동 연결이므로 팝업을 반드시 띄워야 함
-                initGapiAndGis(localClientId, (token) => {
+                initGapiAndGis(localClientId, (token, expiresIn) => {
+                    saveGoogleSession(token, expiresIn);
                     setGoogleToken(token);
                     triggerSync(token, localSpreadsheetId);
                 }, (err) => {
@@ -1079,6 +1136,7 @@ import 'firebase/compat/firestore';
                         console.error('Error revoking token:', e);
                     }
                 }
+                clearGoogleSession();
                 setGoogleToken(null);
                 alert('Disconnected from Google.');
             };
@@ -5628,6 +5686,7 @@ import 'firebase/compat/firestore';
                     console.error('Sync error:', err);
                     const isAuthError = err.status === 401 || (err.message && err.message.includes('401')) || (err.result && err.result.error && err.result.error.status === 'UNAUTHENTICATED');
                     if (isAuthError) {
+                        expireGoogleSessionToken();
                         setGoogleToken(null);
                         setSheetSyncStatus(prev => ({ ...prev, status: 'error', error: 'Authentication expired. Please reconnect.' }));
                     } else {
@@ -5637,18 +5696,57 @@ import 'firebase/compat/firestore';
             }, []);
 
             useEffect(() => {
-                if (googleClientId) {
-                    // autoRequest: true, silentMode: true → 팝업 없이 자동으로 토큰 갱신 시도
-                    // silent 실패(interaction_required 등)는 조용히 무시하고, 성공 시에만 동기화
-                    initGapiAndGis(googleClientId, (token) => {
-                        setGoogleToken(token);
-                        triggerSync(token, googleSpreadsheetId);
-                    }, (err) => {
-                        // 자동 재인증 실패는 치명적 에러가 아님 (사용자가 수동으로 Data Source에서 연결 가능)
-                        console.warn('Auto Google auth failed (user can reconnect manually):', err);
-                    }, true, true);
+                if (!googleClientId) return;
+                const session = loadGoogleSession();
+                const onToken = (token, expiresIn) => {
+                    saveGoogleSession(token, expiresIn);
+                    setGoogleToken(token);
+                    triggerSync(token, googleSpreadsheetId);
+                };
+                // 자동 재인증 실패는 치명적 에러가 아님 (사용자가 수동으로 Data Source에서 연결 가능)
+                const onErr = (err) => console.warn('Auto Google auth failed (user can reconnect manually):', err);
+
+                if (isGoogleTokenValid(session)) {
+                    // 1) 저장된 토큰이 아직 유효 → 팝업 없이 바로 사용
+                    initGapiAndGis(googleClientId, onToken, onErr, false, true, () => {
+                        setGoogleToken(session.token);
+                        triggerSync(session.token, googleSpreadsheetId);
+                    });
+                } else if (session) {
+                    // 2) 24시간 세션 내이지만 토큰 만료 → 무팝업 재발급 시도
+                    initGapiAndGis(googleClientId, onToken, onErr, true, true);
+                } else {
+                    // 3) 세션 없음(24시간 경과) → 클라이언트만 준비, 수동 로그인 필요
+                    initGapiAndGis(googleClientId, onToken, onErr, false, true);
                 }
             }, [googleClientId, googleSpreadsheetId, triggerSync]);
+
+            // 토큰 만료 5분 전 선제 갱신 (24시간 세션 동안)
+            useEffect(() => {
+                if (!googleToken) return;
+                const session = loadGoogleSession();
+                if (!session) return;
+                const delay = Math.max(session.expiresAt - Date.now() - 5 * 60 * 1000, 0);
+                const t = setTimeout(requestSilentGoogleToken, delay);
+                return () => clearTimeout(t);
+            }, [googleToken]);
+
+            // 브라우저가 사용자 동작 없는 팝업을 차단하는 경우 대비:
+            // 세션 내 토큰이 만료돼 있으면 첫 클릭/탭 복귀 시 무팝업 재발급 재시도
+            useEffect(() => {
+                if (!googleClientId) return;
+                const retry = () => {
+                    const s = loadGoogleSession();
+                    if (s && !isGoogleTokenValid(s)) requestSilentGoogleToken();
+                };
+                const onVisible = () => { if (document.visibilityState === 'visible') retry(); };
+                document.addEventListener('pointerdown', retry, true);
+                document.addEventListener('visibilitychange', onVisible);
+                return () => {
+                    document.removeEventListener('pointerdown', retry, true);
+                    document.removeEventListener('visibilitychange', onVisible);
+                };
+            }, [googleClientId]);
 
             useEffect(() => {
                 if (!googleToken || !googleSpreadsheetId || autoRefreshInterval <= 0) return;
