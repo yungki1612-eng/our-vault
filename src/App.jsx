@@ -2559,9 +2559,8 @@ import 'firebase/compat/firestore';
             const DEFAULT_CARD_ORDER = [
                 'telemetry', 'net_worth', 'invest_profit',
                 'asset_flow', 'financial_indicators',
-                'growth', 'cashflow', 'portfolio',
-                'yearly_ratio', 'allocation_strategy',
-                'loan_status', 'loan_trend', 'savings_trend',
+                'portfolio', 'yearly_ratio', 'loan_status',
+                'growth', 'cashflow', 'loan_trend',
                 'lifetime_earnings',
                 'memo'
             ];
@@ -2625,8 +2624,6 @@ import 'firebase/compat/firestore';
                 switch (cardId) {
                     case 'asset_flow':
                         return 'col-span-1 lg:col-span-4';
-                    case 'yearly_ratio':
-                    case 'allocation_strategy':
                     case 'lifetime_earnings':
                     case 'memo':
                         return 'col-span-1 lg:col-span-3';
@@ -3285,41 +3282,7 @@ import 'firebase/compat/firestore';
                                 </div>
                             </CollapsibleCard>
                         );
-                    case 'savings_trend':
-                        return (
-                            <CollapsibleCard 
-                                title="저축률 & 투자 비중 추이" 
-                                icon={Icons.TrendingUp} 
-                                className="h-full min-h-[256px]"
-                                headerExtra={
-                                    <div className="group/tip relative flex items-center">
-                                        <Icons.Info className="w-3.5 h-3.5 text-slate-500 hover:text-[#3182f6] cursor-help" />
-                                        <div className="absolute right-0 top-full mt-2 w-56 bg-slate-955/95 backdrop-blur-md text-white text-[12px] rounded-lg p-3 opacity-0 group-hover/tip:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl border border-white/10 leading-relaxed font-normal">
-                                            <p className="font-bold text-[#3182f6] border-b border-white/10 pb-1 mb-1.5 font-grotesk">산출 기준</p>
-                                            <div className="space-y-1">
-                                                <p><span className="text-slate-400">저축률:</span> (수입 - 지출) / 수입 * 100</p>
-                                                <p><span className="text-slate-400">투자 비중:</span> 투자 / 수입 * 100</p>
-                                                <p className="text-[11px] text-slate-500">* 수입, 지출, 투자 항목 기준</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
-                            >
-                                <div className="h-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <ComposedChart data={cashFlowData}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255, 255, 255, 0.05)" />
-                                            <XAxis dataKey="name" fontSize={10} stroke="#64748b" axisLine={false} tickLine={false} />
-                                            <YAxis fontSize={10} width={30} stroke="#64748b" unit="%" axisLine={false} tickLine={false} />
-                                            <RechartsTooltip formatter={(val, name) => [`${val}%`, name]} contentStyle={{ background: '#ffffff', border: '1px solid #e5e8eb', borderRadius: '12px', boxShadow: 'none', color: '#191f28' }} />
-                                            <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
-                                            <Bar dataKey="savingsRate" name="저축률" fill="#10b981" radius={[4,4,0,0]} barSize={16} />
-                                            <Line type="monotone" dataKey="investmentShare" name="투자 비중" stroke="#1b64da" strokeWidth={2} dot={{r:3}} isAnimationActive={false} label={false} />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </CollapsibleCard>
-                        );
+
                     case 'lifetime_earnings':
                         return (
                             <CollapsibleCard title="평생 소득 & 이력" icon={Icons.TrendingUp} initialOpen={true} className="h-full">
