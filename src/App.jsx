@@ -5754,8 +5754,8 @@ import 'firebase/compat/firestore';
                                         {tab.label}
                                     </button>
                                 ))}
-                                <a href={`https://docs.google.com/spreadsheets/d/${googleSpreadsheetId}/edit`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
-                                    Google Data <Icons.ExternalLink className="w-3 h-3"/>
+                                <a href={`https://docs.google.com/spreadsheets/d/${googleSpreadsheetId}/edit`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all text-slate-400 bg-white/5 hover:bg-white/10 hover:text-white">
+                                    구글 시트 <Icons.ExternalLink className="w-3 h-3 text-slate-500"/>
                                 </a>
                                 {/* Month selector: only shown on mobile when dashboard is active */}
                                 {activeTab === 'dashboard' && (
@@ -5787,10 +5787,10 @@ import 'firebase/compat/firestore';
                                             href={`https://docs.google.com/spreadsheets/d/${googleSpreadsheetId}/edit`} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold transition-all text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-emerald-500/20"
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-bold transition-all text-slate-400 hover:bg-white/5 hover:text-white border border-transparent group"
                                         >
-                                            <Icons.ExternalLink className="w-[18px] h-[18px] shrink-0"/> 
-                                            <span className="font-grotesk">Google Sheets 열기</span>
+                                            <Icons.ExternalLink className="w-[18px] h-[18px] shrink-0 text-slate-500 group-hover:text-slate-300"/> 
+                                            <span className="font-grotesk whitespace-nowrap">구글 시트 열기</span>
                                         </a>
                                     </div>
 
